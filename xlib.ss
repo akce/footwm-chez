@@ -6,8 +6,11 @@
           atom-name
           free
           void*->string
-          window-ids
-          window-property)
+          window-property-u32
+          window-property
+
+          XA-WINDOW
+          )
   (import (chezscheme))
 
   (define library-init
@@ -27,7 +30,7 @@
   (define-ftype u8* (* u8))
 
   ;; X atoms from Xatom.h
-  (define XA/WINDOW 33)
+  (define XA-WINDOW 33)
 
   (define (void*->string fptr)
     (utf8->string
@@ -60,26 +63,28 @@
               (foreign-free var) ...
               r)))]))
 
-  (define window-ids
-    (lambda (d wid a)
+  (define void*->u32
+    (lambda (ptr len)
+      (do ([i 0 (+ i 1)]
+           [v (make-vector len) (begin
+                                  (vector-set! v i (foreign-ref 'unsigned-32 ptr (* i (ftype-sizeof unsigned-32))))
+                                  v)])
+          ((= i len) v))))
+
+  (define window-property-u32
+    (lambda (d wid propatom atomtype)
       (fmem ([atr &atr atom]		;; atr = actual type return
              [afr &afr integer-32]	;; afr = actual format return
              [nir &nir unsigned-long]	;; nir = number of items return
              [bar &bar unsigned-long]	;; bar = bytes after return
              [pr  &pr u8*])		;; pr  = property return
-            (let ([rc (window-property d wid a 0 2048 #f XA/WINDOW &atr &afr &nir &bar &pr)])
+            (let ([rc (window-property d wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
               (if (= rc 0)
                   ;; success: extract window ids from pr.
                   (let* ([pr* (foreign-ref 'void* pr 0)]
-                         [vlen (foreign-ref 'unsigned-long nir 0)]
-                         [sz-u32 (ftype-sizeof unsigned-32)]
-                         [ids (do ([i 0 (+ i 1)]
-                                   [v (make-vector vlen) (begin
-                                                           (vector-set! v i (foreign-ref 'unsigned-32 pr* (* i sz-u32)))
-                                                           v)])
-                                  ((= i vlen) v))])
+                         [nums (void*->u32 pr* (foreign-ref 'unsigned-long nir 0))])
                     (free pr*)
-                    ids)
+                    nums)
                   ;; failure: return empty list.
                   (list))))))
 
