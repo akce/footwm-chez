@@ -47,38 +47,41 @@
   (proc XInternAtom set-atom! (dpy* string boolean) atom)
   (proc XFree free (void*) void)
 
+  ;; [syntax] (fmem ((var varptr type)) ...)
+  ;; a let that handles common foreign memory pointer alloc/free.
+  (define-syntax fmem
+    (syntax-rules ()
+      [(_ ((var varptr type) ...) first rest ...)
+       (let ([var (foreign-alloc (ftype-sizeof type))] ...)
+          (let ([varptr (make-ftype-pointer type var)] ...)
+            (let ((r first))
+              ;; TODO should be wrapped via exceptions.
+              rest ...
+              (foreign-free var) ...
+              r)))]))
+
   (define window-ids
     (lambda (d wid a)
-      (let ([atr (foreign-alloc (ftype-sizeof atom))]		;; atr = actual type return
-            [afr (foreign-alloc (ftype-sizeof integer-32))]	;; afr = actual format return
-            [nir (foreign-alloc (ftype-sizeof unsigned-long))]	;; nir = number of items return
-            [bar (foreign-alloc (ftype-sizeof unsigned-long))]	;; bar = bytes after return
-            [pr  (foreign-alloc (ftype-sizeof u8*))])		;; pr  = property return
-        (let ([&atr (make-ftype-pointer atom atr)]	;; ftype-pointers for foreign-alloc'd items
-              [&afr (make-ftype-pointer integer-32 afr)]
-              [&nir (make-ftype-pointer unsigned-long nir)]
-              [&bar (make-ftype-pointer unsigned-long bar)]
-              [&pr  (make-ftype-pointer u8* pr)])
-          (let ([ret (window-property d wid a 0 2048 #f XA/WINDOW &atr &afr &nir &bar &pr)])
-            (when (= ret 0)
-                ;; success: extract window ids from pr.
-              (let* ([pr* (foreign-ref 'void* pr 0)]
-                     [vlen (foreign-ref 'unsigned-long nir 0)]
-                     [sz-u32 (ftype-sizeof unsigned-32)]
-                     [ids (do ([i 0 (+ i 1)]
-                               [v (make-vector vlen) (begin
-                                                       (vector-set! v i (foreign-ref 'unsigned-32 pr* (* i sz-u32)))
-                                                       v)])
-                              ((= i vlen) v)
-                            #;(display (format "win: ~d~n" (foreign-ref 'unsigned-32 pr* (* i sz-u32)))))])
-                (free pr*)
-                (foreign-free atr)
-                (foreign-free afr)
-                (foreign-free nir)
-                (foreign-free bar)
-                (foreign-free pr)
-                ids)))))))
-
+      (fmem ([atr &atr atom]		;; atr = actual type return
+             [afr &afr integer-32]	;; afr = actual format return
+             [nir &nir unsigned-long]	;; nir = number of items return
+             [bar &bar unsigned-long]	;; bar = bytes after return
+             [pr  &pr u8*])		;; pr  = property return
+            (let ([rc (window-property d wid a 0 2048 #f XA/WINDOW &atr &afr &nir &bar &pr)])
+              (if (= rc 0)
+                  ;; success: extract window ids from pr.
+                  (let* ([pr* (foreign-ref 'void* pr 0)]
+                         [vlen (foreign-ref 'unsigned-long nir 0)]
+                         [sz-u32 (ftype-sizeof unsigned-32)]
+                         [ids (do ([i 0 (+ i 1)]
+                                   [v (make-vector vlen) (begin
+                                                           (vector-set! v i (foreign-ref 'unsigned-32 pr* (* i sz-u32)))
+                                                           v)])
+                                  ((= i vlen) v))])
+                    (free pr*)
+                    ids)
+                  ;; failure: return empty list.
+                  (list))))))
 
   (proc XGetWindowProperty window-property (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XOpenDisplay	open-display	(string)	dpy*)
