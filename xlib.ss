@@ -9,6 +9,9 @@
           window-property-u32
           window-property
 
+          get-text-property
+          text-property-utf8
+
           XA-WINDOW
           )
   (import (chezscheme))
@@ -25,6 +28,7 @@
   (define-ftype dpy* void*)
   (define-ftype window unsigned-32)
   (define-ftype atom unsigned-32)
+  (define-ftype status unsigned-32)
 
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
@@ -87,6 +91,31 @@
                     nums)
                   ;; failure: return empty list.
                   (list))))))
+
+  (define text-property-utf8
+    (lambda (d wid propatom)
+      (fmem ([tp &tp text-property-type])
+            (let ([rc (get-text-property d wid &tp propatom)])
+              (if (> rc 0)
+                  ;; success
+                  (let* (#;[enc (ftype-ref text-property-type (encoding) &tp)]
+                         #;[num (ftype-ref text-property-type (nitems) &tp)]
+                         [addr (ftype-pointer-address (ftype-ref text-property-type (value) &tp))]
+                         [str (void*->string addr)])
+                    #;(display (format "encoding ~d:~s nitems ~d ~n" enc (atom-name d enc) num))
+                    (free addr)
+                    str)
+                  #f)
+              ))))
+
+  (define-ftype text-property-type
+    (struct
+     [value	u8*]
+     [encoding	atom]
+     [format	integer-32]
+     [nitems	unsigned-long]))
+
+  (proc XGetTextProperty get-text-property (dpy* window (* text-property-type) atom) status)
 
   (proc XGetWindowProperty window-property (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XOpenDisplay	open-display	(string)	dpy*)
