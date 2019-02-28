@@ -10,7 +10,9 @@
           window-property
 
           get-text-property
-          text-property-utf8
+          text-property->utf8
+          tp->text-list
+          text-property->utf8s
 
           XA-WINDOW
           )
@@ -32,6 +34,7 @@
 
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
+  (define-ftype u8** (* u8*))
 
   ;; X atoms from Xatom.h
   (define XA-WINDOW 33)
@@ -92,7 +95,7 @@
                   ;; failure: return empty list.
                   (list))))))
 
-  (define text-property-utf8
+  (define text-property->utf8
     (lambda (d wid propatom)
       (fmem ([tp &tp text-property-type])
             (let ([rc (get-text-property d wid &tp propatom)])
@@ -108,6 +111,34 @@
                   #f)
               ))))
 
+  (define text-property->utf8s
+    (lambda (d wid propatom)
+      (fmem ([tp &tp text-property-type])
+            (let ([rc (get-text-property d wid &tp propatom)])
+              (if (> rc 0)
+                  ;; success
+                  (fmem ([nitems &nitems integer-32]
+                         [text-list &text-list u8**])
+                        (let* ([stat (tp->text-list d &tp &text-list &nitems)]
+                               [res (text-list->utf8s text-list nitems)])
+                          ;; TODO text-list foreign-ref is also calc'd in text-list->utf8s. Need to re-org.
+                          (free-text-list (foreign-ref 'void* text-list 0))
+                          res))
+                  #f)))))
+
+  (define text-list->utf8s
+    (lambda (text-list nitems)
+      (let ([n (foreign-ref 'integer-32 nitems 0)]
+            [strvect (foreign-ref 'void* text-list 0)]	;; strvect = vector of strings (utf8**)
+            [sz (ftype-sizeof void*)])
+        (do ([i 0 (+ i 1)]
+             [v (make-vector n)
+                (let ([saddr (foreign-ref 'void* strvect (* i sz))])
+                  (vector-set! v i (void*->string saddr))
+                  v)])
+            ;; TODO consider limiting to n-1 since the last string always seems to be "".
+            ((= i n) v)))))
+
   (define-ftype text-property-type
     (struct
      [value	u8*]
@@ -116,7 +147,10 @@
      [nitems	unsigned-long]))
 
   (proc XGetTextProperty get-text-property (dpy* window (* text-property-type) atom) status)
-
+  (proc Xutf8TextPropertyToTextList tp->text-list (dpy* (* text-property-type) (* u8**) (* integer-32)) integer-32)
+  ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
+  ;; void* points to anything so use that for now.
+  (proc XFreeStringList free-text-list (void*) void)
   (proc XGetWindowProperty window-property (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XOpenDisplay	open-display	(string)	dpy*)
   (proc XCloseDisplay	close-display	(dpy*)		int)
