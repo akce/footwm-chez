@@ -1,21 +1,25 @@
 (library (xlib)
-  (export open-display
-          close-display
-          default-root
-          set-atom!
-          atom-name
-          free
-          void*->string
-          window-property-u32
-          window-property
+  (export
+   XCloseDisplay
+   XDefaultRootWindow
+   XFree
+   XFreeStringList
+   XGetAtomName
+   XGetTextProperty
+   XGetWindowProperty
+   XInternAtom
+   XOpenDisplay
+   Xutf8TextPropertyToTextList
 
-          get-text-property
-          text-property->utf8
-          tp->text-list
-          text-property->utf8s
+   XA-WINDOW
 
-          XA-WINDOW
-          )
+   atom-name
+   void*->string
+   window-property-u32
+
+   text-property->utf8
+   text-property->utf8s
+   )
   (import (chezscheme))
 
   (define library-init
@@ -23,8 +27,8 @@
 
   (define-syntax proc
     (syntax-rules ()
-      [(_ libsym exportsym args return)
-       (define exportsym (foreign-procedure (symbol->string 'libsym) args return))]))
+      [(_ libsym args return)
+       (define libsym (foreign-procedure (symbol->string 'libsym) args return))]))
 
   ;; type aliases.
   (define-ftype dpy* void*)
@@ -48,14 +52,13 @@
              (let ([bv (f (fx+ i 1))])
                (bytevector-u8-set! bv i c)
                bv))))))
+
   (define atom-name
     (lambda (d a)
-      (let* ([ptr ((foreign-procedure "XGetAtomName" (dpy* atom) void*) d a)]
+      (let* ([ptr (XGetAtomName d a)]
              [str (void*->string ptr)])
-        (free ptr)
+        (XFree ptr)
         str)))
-  (proc XInternAtom set-atom! (dpy* string boolean) atom)
-  (proc XFree free (void*) void)
 
   ;; [syntax] (fmem ((var varptr type)) ...)
   ;; a let that handles common foreign memory pointer alloc/free.
@@ -85,44 +88,44 @@
              [nir &nir unsigned-long]	;; nir = number of items return
              [bar &bar unsigned-long]	;; bar = bytes after return
              [pr  &pr u8*])		;; pr  = property return
-            (let ([rc (window-property d wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
+            (let ([rc (XGetWindowProperty d wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
               (if (= rc 0)
                   ;; success: extract window ids from pr.
                   (let* ([pr* (foreign-ref 'void* pr 0)]
                          [nums (void*->u32 pr* (foreign-ref 'unsigned-long nir 0))])
-                    (free pr*)
+                    (XFree pr*)
                     nums)
                   ;; failure: return empty list.
                   (list))))))
 
   (define text-property->utf8
     (lambda (d wid propatom)
-      (fmem ([tp &tp text-property-type])
-            (let ([rc (get-text-property d wid &tp propatom)])
+      (fmem ([tp &tp XTextProperty])
+            (let ([rc (XGetTextProperty d wid &tp propatom)])
               (if (> rc 0)
                   ;; success
-                  (let* (#;[enc (ftype-ref text-property-type (encoding) &tp)]
-                         #;[num (ftype-ref text-property-type (nitems) &tp)]
-                         [addr (ftype-pointer-address (ftype-ref text-property-type (value) &tp))]
+                  (let* (#;[enc (ftype-ref XTextProperty (encoding) &tp)]
+                         #;[num (ftype-ref XTextProperty (nitems) &tp)]
+                         [addr (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))]
                          [str (void*->string addr)])
                     #;(display (format "encoding ~d:~s nitems ~d ~n" enc (atom-name d enc) num))
-                    (free addr)
+                    (XFree addr)
                     str)
                   #f)
               ))))
 
   (define text-property->utf8s
     (lambda (d wid propatom)
-      (fmem ([tp &tp text-property-type])
-            (let ([rc (get-text-property d wid &tp propatom)])
+      (fmem ([tp &tp XTextProperty])
+            (let ([rc (XGetTextProperty d wid &tp propatom)])
               (if (> rc 0)
                   ;; success
                   (fmem ([nitems &nitems integer-32]
                          [text-list &text-list u8**])
-                        (let* ([stat (tp->text-list d &tp &text-list &nitems)]
+                        (let* ([stat (Xutf8TextPropertyToTextList d &tp &text-list &nitems)]
                                [res (text-list->utf8s text-list nitems)])
                           ;; TODO text-list foreign-ref is also calc'd in text-list->utf8s. Need to re-org.
-                          (free-text-list (foreign-ref 'void* text-list 0))
+                          (XFreeStringList (foreign-ref 'void* text-list 0))
                           res))
                   #f)))))
 
@@ -139,19 +142,23 @@
             ;; TODO consider limiting to n-1 since the last string always seems to be "".
             ((= i n) v)))))
 
-  (define-ftype text-property-type
+  (define-ftype XTextProperty
     (struct
      [value	u8*]
      [encoding	atom]
      [format	integer-32]
      [nitems	unsigned-long]))
 
-  (proc XGetTextProperty get-text-property (dpy* window (* text-property-type) atom) status)
-  (proc Xutf8TextPropertyToTextList tp->text-list (dpy* (* text-property-type) (* u8**) (* integer-32)) integer-32)
+  (proc XCloseDisplay (dpy*) int)
+  (proc XDefaultRootWindow (dpy*) window)
+  (proc XFree (void*) void)
+  (proc XFreeStringList (void*) void)
+  (proc XGetAtomName (dpy* atom) void*)
+  (proc XGetTextProperty (dpy* window (* XTextProperty) atom) status)
   ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
   ;; void* points to anything so use that for now.
-  (proc XFreeStringList free-text-list (void*) void)
-  (proc XGetWindowProperty window-property (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
-  (proc XOpenDisplay	open-display	(string)	dpy*)
-  (proc XCloseDisplay	close-display	(dpy*)		int)
-  (proc XDefaultRootWindow default-root (dpy*)		window))
+  (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
+  (proc XInternAtom (dpy* string boolean) atom)
+  (proc XOpenDisplay (string) dpy*)
+  (proc Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* integer-32)) integer-32)
+  )

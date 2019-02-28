@@ -13,9 +13,9 @@
 
   (define client-list
     (lambda (d)
-      (x.window-property-u32 d (x.default-root d) (x.set-atom! d "_NET_CLIENT_LIST" #f) x.XA-WINDOW)))
+      (x.window-property-u32 d (x.XDefaultRootWindow d) (x.XInternAtom d "_NET_CLIENT_LIST" #f) x.XA-WINDOW)))
 
   (define client-list-stacking
     (lambda (d)
-      (x.window-property-u32 d (x.default-root d) (x.set-atom! d "_NET_CLIENT_LIST_STACKING" #f) x.XA-WINDOW)))
+      (x.window-property-u32 d (x.XDefaultRootWindow d) (x.XInternAtom d "_NET_CLIENT_LIST_STACKING" #f) x.XA-WINDOW)))
   )
