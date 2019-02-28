@@ -3,7 +3,8 @@
           client-list-stacking
           )
   (import (rnrs base)
-          (prefix (xlib) x.))
+          (xlib)
+          (prefix (xuser) x.))
 
   (define _NET_CLIENT_LIST #f)
   (define _NET_CLIENT_LIST_STACKING #f)
@@ -13,9 +14,9 @@
 
   (define client-list
     (lambda (d)
-      (x.window-property-u32 d (x.XDefaultRootWindow d) (x.XInternAtom d "_NET_CLIENT_LIST" #f) x.XA-WINDOW)))
+      (x.window-property-u32 d (XDefaultRootWindow d) (XInternAtom d "_NET_CLIENT_LIST" #f) XA-WINDOW)))
 
   (define client-list-stacking
     (lambda (d)
-      (x.window-property-u32 d (x.XDefaultRootWindow d) (x.XInternAtom d "_NET_CLIENT_LIST_STACKING" #f) x.XA-WINDOW)))
+      (x.window-property-u32 d (XDefaultRootWindow d) (XInternAtom d "_NET_CLIENT_LIST_STACKING" #f) XA-WINDOW)))
   )
