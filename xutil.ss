@@ -1,6 +1,7 @@
 (library (xutil)
   (export
    atom-name
+   open
    text-property->utf8
    text-property->utf8s
    void*->string
@@ -31,6 +32,12 @@
              [str (void*->string ptr)])
         (XFree ptr)
         str)))
+
+  ;; wraps XOpenDisplay so the connection string is optional.
+  (define open
+    (case-lambda
+     [() (open #f)]
+     [(s) (XOpenDisplay s)]))
 
    ;;;; basic atom manager.
   ;; Just a very thin wrapper around hash tables.
