@@ -20,16 +20,6 @@
              (foreign-free var) ...
              r)))]))
 
-  (define (void*->string fptr)
-      (utf8->string
-       (let f ([i 0])
-         (let ([c (foreign-ref 'unsigned-8 fptr i)])
-           (if (fx= c 0)
-               (make-bytevector i)
-               (let ([bv (f (fx+ i 1))])
-                 (bytevector-u8-set! bv i c)
-                 bv))))))
-
   (define atom-name
     (lambda (d a)
       (let* ([ptr (XGetAtomName d a)]
@@ -37,30 +27,18 @@
         (XFree ptr)
         str)))
 
-  (define void*->u32
-    (lambda (ptr len)
-      (do ([i 0 (+ i 1)]
-           [v (make-vector len) (begin
-                                  (vector-set! v i (foreign-ref 'unsigned-32 ptr (* i (ftype-sizeof unsigned-32))))
-                                  v)])
-          ((= i len) v))))
-
-  (define window-property-u32
-    (lambda (d wid propatom atomtype)
-      (fmem ([atr &atr atom]		;; atr = actual type return
-             [afr &afr integer-32]	;; afr = actual format return
-             [nir &nir unsigned-long]	;; nir = number of items return
-             [bar &bar unsigned-long]	;; bar = bytes after return
-             [pr  &pr u8*])		;; pr  = property return
-            (let ([rc (XGetWindowProperty d wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
-              (if (= rc 0)
-                  ;; success: extract window ids from pr.
-                  (let* ([pr* (foreign-ref 'void* pr 0)]
-                         [nums (void*->u32 pr* (foreign-ref 'unsigned-long nir 0))])
-                    (XFree pr*)
-                    nums)
-                  ;; failure: return empty list.
-                  (list))))))
+  (define text-list->utf8s
+    (lambda (text-list nitems)
+      (let ([n (foreign-ref 'integer-32 nitems 0)]
+            [strvect (foreign-ref 'void* text-list 0)]	;; strvect = vector of strings (utf8**)
+            [sz (ftype-sizeof void*)])
+        (do ([i 0 (+ i 1)]
+             [v (make-vector n)
+                (let ([saddr (foreign-ref 'void* strvect (* i sz))])
+                  (vector-set! v i (void*->string saddr))
+                  v)])
+            ;; TODO consider limiting to n-1 since the last string always seems to be "".
+            ((= i n) v)))))
 
   (define text-property->utf8
     (lambda (d wid propatom)
@@ -92,16 +70,38 @@
                           res))
                   #f)))))
 
-  (define text-list->utf8s
-    (lambda (text-list nitems)
-      (let ([n (foreign-ref 'integer-32 nitems 0)]
-            [strvect (foreign-ref 'void* text-list 0)]	;; strvect = vector of strings (utf8**)
-            [sz (ftype-sizeof void*)])
-        (do ([i 0 (+ i 1)]
-             [v (make-vector n)
-                (let ([saddr (foreign-ref 'void* strvect (* i sz))])
-                  (vector-set! v i (void*->string saddr))
-                  v)])
-            ;; TODO consider limiting to n-1 since the last string always seems to be "".
-            ((= i n) v)))))
+  (define (void*->string fptr)
+      (utf8->string
+       (let f ([i 0])
+         (let ([c (foreign-ref 'unsigned-8 fptr i)])
+           (if (fx= c 0)
+               (make-bytevector i)
+               (let ([bv (f (fx+ i 1))])
+                 (bytevector-u8-set! bv i c)
+                 bv))))))
+
+  (define void*->u32
+    (lambda (ptr len)
+      (do ([i 0 (+ i 1)]
+           [v (make-vector len) (begin
+                                  (vector-set! v i (foreign-ref 'unsigned-32 ptr (* i (ftype-sizeof unsigned-32))))
+                                  v)])
+          ((= i len) v))))
+
+  (define window-property-u32
+    (lambda (d wid propatom atomtype)
+      (fmem ([atr &atr atom]		;; atr = actual type return
+             [afr &afr integer-32]	;; afr = actual format return
+             [nir &nir unsigned-long]	;; nir = number of items return
+             [bar &bar unsigned-long]	;; bar = bytes after return
+             [pr  &pr u8*])		;; pr  = property return
+            (let ([rc (XGetWindowProperty d wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
+              (if (= rc 0)
+                  ;; success: extract window ids from pr.
+                  (let* ([pr* (foreign-ref 'void* pr 0)]
+                         [nums (void*->u32 pr* (foreign-ref 'unsigned-long nir 0))])
+                    (XFree pr*)
+                    nums)
+                  ;; failure: return empty list.
+                  (list))))))
 )
