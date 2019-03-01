@@ -5,7 +5,7 @@
    text-property->utf8
    text-property->utf8s
    void*->string
-   window-property-u32
+   property->u32*
 
    make-atoms
    init-atoms
@@ -110,7 +110,8 @@
                  (bytevector-u8-set! bv i c)
                  bv))))))
 
-  (define void*->u32
+  ;; internal: extract numbers from pointer location.
+  (define ptr->u32*
     (lambda (ptr len)
       (do ([i 0 (+ i 1)]
            [v (make-vector len) (begin
@@ -118,7 +119,8 @@
                                   v)])
           ((= i len) v))))
 
-  (define window-property-u32
+  ;; window property to vector of u32's.
+  (define property->u32*
     (lambda (d wid propatom atomtype)
       (fmem ([atr &atr atom]		;; atr = actual type return
              [afr &afr integer-32]	;; afr = actual format return
@@ -129,7 +131,7 @@
               (if (= rc 0)
                   ;; success: extract window ids from pr.
                   (let* ([pr* (foreign-ref 'void* pr 0)]
-                         [nums (void*->u32 pr* (foreign-ref 'unsigned-long nir 0))])
+                         [nums (ptr->u32* pr* (foreign-ref 'unsigned-long nir 0))])
                     (XFree pr*)
                     nums)
                   ;; failure: return empty list.
