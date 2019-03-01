@@ -1,7 +1,7 @@
 (import (prefix (ewmh) ewmh.)
         (prefix (icccm) icccm.)
         (xlib)
-        (prefix (xuser) xuser.)
+        (prefix (xutil) xutil.)
         (rnrs base))
 
 #;(define dpy (make-parameter))

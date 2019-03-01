@@ -5,7 +5,7 @@
    atom-ref
    )
   (import
-   (prefix (xuser) x.)
+   (prefix (xutil) xutil.)
    (rnrs base))
 
   (define atom-list
@@ -13,9 +13,9 @@
       WM_COMMAND
       WM_NAME
       ))
-  (define atoms (x.make-atoms))
+  (define atoms (xutil.make-atoms))
   (define init-atoms
     (lambda (d)
-      (x.init-atoms d atoms atom-list)))
-  (define atom-ref (x.make-atom-ref atoms))
+      (xutil.init-atoms d atoms atom-list)))
+  (define atom-ref (xutil.make-atom-ref atoms))
   )

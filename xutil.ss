@@ -1,4 +1,4 @@
-(library (xuser)
+(library (xutil)
   (export
    atom-name
    text-property->utf8

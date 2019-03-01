@@ -7,24 +7,24 @@
           )
   (import (chezscheme)
           (xlib)
-          (prefix (xuser) x.))
+          (prefix (xutil) xutil.))
 
   (define atom-list
     '(_NET_CLIENT_LIST
       _NET_CLIENT_LIST_STACKING
       _NET_WM_NAME
       ))
-  (define atoms (x.make-atoms))
+  (define atoms (xutil.make-atoms))
   (define init-atoms
     (lambda (d)
-      (x.init-atoms d atoms atom-list)))
-  (define atom-ref (x.make-atom-ref atoms))
+      (xutil.init-atoms d atoms atom-list)))
+  (define atom-ref (xutil.make-atom-ref atoms))
 
   (define client-list
     (lambda (d)
-      (x.window-property-u32 d (XDefaultRootWindow d) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
+      (xutil.window-property-u32 d (XDefaultRootWindow d) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
 
   (define client-list-stacking
     (lambda (d)
-      (x.window-property-u32 d (XDefaultRootWindow d) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
+      (xutil.window-property-u32 d (XDefaultRootWindow d) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
   )
