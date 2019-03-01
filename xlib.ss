@@ -2,6 +2,7 @@
   (export
    XTextProperty
 
+   XA-CARDINAL
    XA-WINDOW
 
    XCloseDisplay
@@ -50,6 +51,7 @@
      [nitems	unsigned-long]))
 
   ;; X atoms from Xatom.h
+  (define XA-CARDINAL 6)
   (define XA-WINDOW 33)
 
   (proc XCloseDisplay (dpy*) int)
