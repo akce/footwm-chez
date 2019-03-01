@@ -2,9 +2,8 @@
   (export
    atom-name
    open
-   text-property->utf8
-   text-property->utf8s
-   void*->string
+   property->string
+   property->string*
    property->u32*
 
    make-atoms
@@ -29,7 +28,7 @@
   (define atom-name
     (lambda (d a)
       (let* ([ptr (XGetAtomName d a)]
-             [str (void*->string ptr)])
+             [str (ptr->string ptr)])
         (XFree ptr)
         str)))
 
@@ -57,7 +56,7 @@
       (lambda (a)
         (hashtable-ref atoms a #f))))
 
-  (define text-list->utf8s
+  (define ptr->utf8s
     (lambda (text-list nitems)
       (let ([n (foreign-ref 'integer-32 nitems 0)]
             [strvect (foreign-ref 'void* text-list 0)]	;; strvect = vector of strings (utf8**)
@@ -65,12 +64,12 @@
         (do ([i 0 (+ i 1)]
              [v (make-vector n)
                 (let ([saddr (foreign-ref 'void* strvect (* i sz))])
-                  (vector-set! v i (void*->string saddr))
+                  (vector-set! v i (ptr->string saddr))
                   v)])
             ;; TODO consider limiting to n-1 since the last string always seems to be "".
             ((= i n) v)))))
 
-  (define text-property->utf8
+  (define property->string
     (lambda (d wid propatom)
       (fmem ([tp &tp XTextProperty])
             (let ([rc (XGetTextProperty d wid &tp propatom)])
@@ -79,13 +78,13 @@
                   (let* (#;[enc (ftype-ref XTextProperty (encoding) &tp)]
                          #;[num (ftype-ref XTextProperty (nitems) &tp)]
                          [addr (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))]
-                         [str (void*->string addr)])
+                         [str (ptr->string addr)])
                     #;(display (format "encoding ~d:~s nitems ~d ~n" enc (atom-name d enc) num))
                     (XFree addr)
                     str)
                   #f)))))
 
-  (define text-property->utf8s
+  (define property->string*
     (lambda (d wid propatom)
       (fmem ([tp &tp XTextProperty])
             (let ([rc (XGetTextProperty d wid &tp propatom)])
@@ -94,13 +93,13 @@
                   (fmem ([nitems &nitems integer-32]
                          [text-list &text-list u8**])
                         (let* ([stat (Xutf8TextPropertyToTextList d &tp &text-list &nitems)]
-                               [res (text-list->utf8s text-list nitems)])
+                               [res (ptr->utf8s text-list nitems)])
                           ;; TODO text-list foreign-ref is also calc'd in text-list->utf8s. Need to re-org.
                           (XFreeStringList (foreign-ref 'void* text-list 0))
                           res))
                   #f)))))
 
-  (define (void*->string fptr)
+  (define (ptr->string fptr)
       (utf8->string
        (let f ([i 0])
          (let ([c (foreign-ref 'unsigned-8 fptr i)])

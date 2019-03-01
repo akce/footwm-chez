@@ -59,12 +59,12 @@
 
   (define desktop-names
     (lambda (d wid)
-      (xutil.text-property->utf8s d wid (atom-ref '_NET_DESKTOP_NAMES))))
+      (xutil.property->string* d wid (atom-ref '_NET_DESKTOP_NAMES))))
 
   ;; Get the name for the window.
   (define name
     (lambda (d wid)
-      (xutil.text-property->utf8 d wid (atom-ref '_NET_WM_NAME))))
+      (xutil.property->string d wid (atom-ref '_NET_WM_NAME))))
 
   (define pid
     (lambda (d wid)

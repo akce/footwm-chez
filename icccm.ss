@@ -32,7 +32,7 @@
     (lambda (d wid)
       ;; This should use XGetClassHint but class hints are just two strings so
       ;; I'll save myself the hassle for now and use the text property stuff I've already got.
-      (xutil.text-property->utf8s d wid (atom-ref 'WM_CLASS))))
+      (xutil.property->string* d wid (atom-ref 'WM_CLASS))))
 
   (define class
     (lambda (d wid)
@@ -44,13 +44,13 @@
 
   (define client-machine
     (lambda (d wid)
-      (xutil.text-property->utf8 d wid (atom-ref 'WM_CLIENT_MACHINE))))
+      (xutil.property->string d wid (atom-ref 'WM_CLIENT_MACHINE))))
 
   (define command
     (lambda (d wid)
-      (xutil.text-property->utf8s d wid (atom-ref 'WM_COMMAND))))
+      (xutil.property->string* d wid (atom-ref 'WM_COMMAND))))
 
   (define name
     (lambda (d wid)
-      (xutil.text-property->utf8 d wid (atom-ref 'WM_NAME))))
+      (xutil.property->string d wid (atom-ref 'WM_NAME))))
   )
