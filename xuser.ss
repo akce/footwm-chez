@@ -4,7 +4,12 @@
    text-property->utf8
    text-property->utf8s
    void*->string
-   window-property-u32)
+   window-property-u32
+
+   make-atoms
+   init-atoms
+   make-atom-ref
+   )
   (import (chezscheme)
           (xlib))
 
@@ -26,6 +31,24 @@
              [str (void*->string ptr)])
         (XFree ptr)
         str)))
+
+   ;;;; basic atom manager.
+  ;; Just a very thin wrapper around hash tables.
+  (define make-atoms make-eq-hashtable)
+
+  ;; initialise atoms.
+  ;; For those atoms that require display so can only be initialised after a connection to X is made.
+  (define init-atoms
+    (lambda (d atoms atom-list)
+      (for-each
+       (lambda (a)
+         (hashtable-set! atoms a (XInternAtom d (symbol->string a) #f)))
+       atom-list)))
+
+  (define make-atom-ref
+    (lambda (atoms)
+      (lambda (a)
+        (hashtable-ref atoms a #f))))
 
   (define text-list->utf8s
     (lambda (text-list nitems)
