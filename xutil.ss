@@ -1,10 +1,12 @@
 (library (xutil)
   (export
    atom-name
+   cardinal-set!
    open
    property->string
    property->string*
    property->u32*
+   send-message-cardinal
 
    make-atoms
    init-atoms
@@ -68,6 +70,12 @@
                   v)])
             ;; TODO consider limiting to n-1 since the last string always seems to be "".
             ((= i n) v)))))
+
+  (define cardinal-set!
+    (lambda (d wid atomprop value)
+      (fmem ([num &num unsigned-32])
+            (foreign-set! 'unsigned-32 num 0 value)
+            (XChangeProperty d wid atomprop XA-CARDINAL 32 0 &num 1))))
 
   (define property->string
     (lambda (d wid propatom)
@@ -135,4 +143,16 @@
                     nums)
                   ;; failure: return empty list.
                   (list))))))
+
+  (define send-message-cardinal
+    (lambda (d root wid atom value)
+      (fmem ([ev &ev XEvent])
+            (let ([event-mask (fxlogor SubstructureNotify SubstructureRedirect)])
+              (ftype-set! XEvent (client-message type) &ev ClientMessage)
+              (ftype-set! XEvent (client-message wid) &ev wid)
+              (ftype-set! XEvent (client-message message-type) &ev atom)
+              (ftype-set! XEvent (client-message send-event) &ev #t)
+              (ftype-set! XEvent (client-message format) &ev 32)
+              (ftype-set! XEvent (client-message data l 0) &ev value)
+              (XSendEvent d root #f event-mask &ev)))))
 )

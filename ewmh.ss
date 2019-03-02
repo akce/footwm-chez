@@ -6,8 +6,10 @@
    current-desktop
    desktop
    desktop-names
+   desktop-set!
    name
    pid
+   request-desktop
 
    init-atoms
    atoms
@@ -57,6 +59,11 @@
     (lambda (d wid)
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL) 0)))
 
+  ;; Used by the WM to set the desktop for a window. Clients must use 'request-desktop'.
+  (define desktop-set!
+    (lambda (d wid number)
+      (xutil.cardinal-set! d wid (atom-ref '_NET_WM_DESKTOP) number)))
+
   (define desktop-names
     (lambda (d wid)
       (xutil.property->string* d wid (atom-ref '_NET_DESKTOP_NAMES))))
@@ -69,4 +76,9 @@
   (define pid
     (lambda (d wid)
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
+
+  ;; Send a message to the WM requesting window wid be moved to desktop-number.
+  (define request-desktop
+    (lambda (d r wid desktop-number)
+      (xutil.send-message-cardinal d r wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
   )

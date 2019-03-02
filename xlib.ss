@@ -1,10 +1,42 @@
 (library (xlib)
   (export
+   XEvent
+   XClientMessageEvent
    XTextProperty
 
    XA-CARDINAL
    XA-WINDOW
 
+   NoEvent
+   KeyPress
+   KeyRelease
+   ButtonPress
+   ButtonRelease
+   EnterWindow
+   LeaveWindow
+   PointerMotion
+   PointerMotionHint
+   Button1Motion
+   Button2Motion
+   Button3Motion
+   Button4Motion
+   Button5Motion
+   ButtonMotion
+   KeymapState
+   Exposure
+   VisibilityChange
+   StructureNotify
+   ResizeRedirect
+   SubstructureNotify
+   SubstructureRedirect
+   FocusChange
+   PropertyChange
+   ColormapChange
+   OwnerGrabButton
+
+   ClientMessage
+
+   XChangeProperty
    XCloseDisplay
    XDefaultRootWindow
    XFree
@@ -14,6 +46,7 @@
    XGetWindowProperty
    XInternAtom
    XOpenDisplay
+   XSendEvent
    Xutf8TextPropertyToTextList
 
    dpy*
@@ -43,6 +76,28 @@
   (define-ftype u8* (* u8))
   (define-ftype u8** (* u8*))
 
+  (define-ftype b20 (array 20 char))
+  (define-ftype s10 (array 10 short))
+  (define-ftype l5  (array 5 long))
+
+  (define-ftype XClientMessageEvent
+    (struct
+     [type		integer-32]	;; ClientMessage
+     [serial		unsigned-long]	;; number of last request handled by server
+     [send-event	boolean]	;; #t if this came from a SendEvent
+     [d			dpy*]		;; display this was read from
+     [wid		window]
+     [message-type	atom]		;; message type
+     [format		integer-32]
+     [data		(union
+                         [b b20]
+                         [s s10]
+                         [l l5])]))
+
+  (define-ftype XEvent
+    (union
+     [client-message XClientMessageEvent]))
+
   (define-ftype XTextProperty
     (struct
      [value	u8*]
@@ -54,6 +109,39 @@
   (define XA-CARDINAL 6)
   (define XA-WINDOW 33)
 
+  ;; Input event mask.
+  (define NoEvent              0)
+  (define KeyPress             (fxsll 1 0))
+  (define KeyRelease           (fxsll 1 1))
+  (define ButtonPress          (fxsll 1 2))
+  (define ButtonRelease        (fxsll 1 3))
+  (define EnterWindow          (fxsll 1 4))
+  (define LeaveWindow          (fxsll 1 5))
+  (define PointerMotion        (fxsll 1 6))
+  (define PointerMotionHint    (fxsll 1 7))
+  (define Button1Motion        (fxsll 1 8))
+  (define Button2Motion        (fxsll 1 9))
+  (define Button3Motion        (fxsll 1 10))
+  (define Button4Motion        (fxsll 1 11))
+  (define Button5Motion        (fxsll 1 12))
+  (define ButtonMotion         (fxsll 1 13))
+  (define KeymapState          (fxsll 1 14))
+  (define Exposure             (fxsll 1 15))
+  (define VisibilityChange     (fxsll 1 16))
+  (define StructureNotify      (fxsll 1 17))
+  (define ResizeRedirect       (fxsll 1 18))
+  (define SubstructureNotify   (fxsll 1 19))
+  (define SubstructureRedirect (fxsll 1 20))
+  (define FocusChange          (fxsll 1 21))
+  (define PropertyChange       (fxsll 1 22))
+  (define ColormapChange       (fxsll 1 23))
+  (define OwnerGrabButton      (fxsll 1 24))
+
+  ;; EventName
+  (define ClientMessage 33)
+
+  ;; data should be a u8* but using a void* instead.
+  (proc XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
   (proc XCloseDisplay (dpy*) int)
   (proc XDefaultRootWindow (dpy*) window)
   (proc XFree (void*) void)
@@ -65,5 +153,6 @@
   (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XInternAtom (dpy* string boolean) atom)
   (proc XOpenDisplay (string) dpy*)
+  (proc XSendEvent (dpy* window boolean long (* XEvent)) status)
   (proc Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* integer-32)) integer-32)
   )
