@@ -10,6 +10,7 @@
    name
    pid
    current-desktop-request!
+   window-active-request!
    window-close-request!
    window-desktop-request!
 
@@ -79,6 +80,11 @@
   (define pid
     (lambda (d wid)
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
+
+  ;; Request WM activate window.
+  (define window-active-request!
+    (lambda (d r wid)
+      (xutil.send-message-cardinal d r wid (atom-ref '_NET_ACTIVE_WINDOW) 0)))
 
   ;; Request WM to close the window.
   (define window-close-request!
