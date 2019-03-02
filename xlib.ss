@@ -39,6 +39,7 @@
    XChangeProperty
    XCloseDisplay
    XDefaultRootWindow
+   XFlush
    XFree
    XFreeStringList
    XGetAtomName
@@ -144,6 +145,7 @@
   (proc XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
   (proc XCloseDisplay (dpy*) int)
   (proc XDefaultRootWindow (dpy*) window)
+  (proc XFlush (dpy*) integer-32)
   (proc XFree (void*) void)
   (proc XFreeStringList (void*) void)
   (proc XGetAtomName (dpy* atom) void*)
