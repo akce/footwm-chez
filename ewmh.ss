@@ -9,7 +9,8 @@
    desktop-set!
    name
    pid
-   request-desktop
+   current-desktop-request!
+   window-desktop-request!
 
    init-atoms
    atoms
@@ -78,7 +79,11 @@
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
 
   ;; Send a message to the WM requesting window wid be moved to desktop-number.
-  (define request-desktop
+  (define window-desktop-request!
     (lambda (d r wid desktop-number)
       (xutil.send-message-cardinal d r wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
+
+  (define current-desktop-request!
+    (lambda (d r desktop-number)
+      (xutil.send-message-cardinal d r 0 (atom-ref '_NET_CURRENT_DESKTOP) desktop-number)))
   )
