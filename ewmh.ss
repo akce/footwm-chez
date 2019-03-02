@@ -10,6 +10,7 @@
    name
    pid
    current-desktop-request!
+   window-close-request!
    window-desktop-request!
 
    init-atoms
@@ -24,6 +25,7 @@
     '(_NET_ACTIVE_WINDOW
       _NET_CLIENT_LIST
       _NET_CLIENT_LIST_STACKING
+      _NET_CLOSE_WINDOW
       _NET_CURRENT_DESKTOP
       _NET_DESKTOP_NAMES
       _NET_WM_DESKTOP
@@ -77,6 +79,11 @@
   (define pid
     (lambda (d wid)
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
+
+  ;; Request WM to close the window.
+  (define window-close-request!
+    (lambda (d r wid)
+      (xutil.send-message-cardinal d r wid (atom-ref '_NET_CLOSE_WINDOW) 0)))
 
   ;; Send a message to the WM requesting window wid be moved to desktop-number.
   (define window-desktop-request!
