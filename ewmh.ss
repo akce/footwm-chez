@@ -4,9 +4,9 @@
    client-list
    client-list-stacking
    current-desktop
-   desktop
    desktop-names
-   desktop-set!
+   window-desktop
+   window-desktop-set!
    name
    pid
    current-desktop-request!
@@ -59,12 +59,12 @@
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL) 0)))
 
   ;; Get the desktop number for the window.
-  (define desktop
+  (define window-desktop
     (lambda (d wid)
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL) 0)))
 
-  ;; Used by the WM to set the desktop for a window. Clients must use 'request-desktop'.
-  (define desktop-set!
+  ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
+  (define window-desktop-set!
     (lambda (d wid number)
       (xutil.cardinal-set! d wid (atom-ref '_NET_WM_DESKTOP) number)))
 
