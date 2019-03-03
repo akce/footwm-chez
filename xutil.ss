@@ -7,6 +7,7 @@
    property->string*
    property->u32*
    send-message-cardinal
+   text-property-set!
 
    make-atoms
    init-atoms
@@ -154,5 +155,52 @@
               (ftype-set! XEvent (client-message send-event) &ev #t)
               (ftype-set! XEvent (client-message format) &ev 32)
               (ftype-set! XEvent (client-message data l 0) &ev value)
+              (ftype-set! XEvent (client-message data l 1) &ev 0)	;; zero out.
               (XSendEvent d root #f event-mask &ev)))))
+
+  (define strdup
+    (lambda (str)
+      ;; foreign-alloc every string and copy in the bytes.
+      (let* ([bv (string->utf8 str)]
+             [len (bytevector-length bv)])
+        (let ([ret
+               (do ([i 0 (fx+ i 1)]
+                    [fv (foreign-alloc (fx+ 1 len))
+                        (begin
+                          (foreign-set! 'unsigned-8 fv i (bytevector-u8-ref bv i))
+                          fv)])
+                   ((= i len) fv))])
+          (foreign-set! 'unsigned-8 ret len 0)	;; null terminate.
+          ret))))
+
+  (define str*->u8**
+    (lambda (str*)
+      (let ([len (length str*)])
+        (do ([i 0 (+ i 1)]
+             [v (foreign-alloc (* len (ftype-sizeof u8*)))
+                (let ([fstr (strdup (list-ref str* i))])
+                  (foreign-set! 'void* v (* i (ftype-sizeof u8*)) fstr)
+                  v)])
+            ((= i len) v)))))
+
+  (define free/u8**
+    (lambda (u8** len)
+      ;; free individual string pointers.
+      (for-each
+       (lambda (i)
+         (foreign-free (foreign-ref 'void* u8** (* i (ftype-sizeof u8*)))))
+       (iota len))
+      ;; free containing block.
+      (foreign-free u8**)))
+
+  (define text-property-set!
+    (lambda (d wid str* propatom)
+      (fmem ([tp &tp XTextProperty])
+            (let ([u8mem (str*->u8** str*)])
+              (let ([rc (Xutf8TextListToTextProperty d u8mem (length str*) UTF8String &tp)])
+                (if (fx= rc 0)
+                    (XSetTextProperty d wid &tp propatom))
+                (free/u8** u8mem (length str*))
+                ;; the steps below cast tp->value to void*.
+                (XFree (ftype-pointer-address (make-ftype-pointer void* (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))))))))))
 )

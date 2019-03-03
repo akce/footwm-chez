@@ -36,6 +36,8 @@
 
    ClientMessage
 
+   UTF8String
+
    XChangeProperty
    XCloseDisplay
    XDefaultRootWindow
@@ -48,6 +50,8 @@
    XInternAtom
    XOpenDisplay
    XSendEvent
+   XSetTextProperty
+   Xutf8TextListToTextProperty
    Xutf8TextPropertyToTextList
 
    dpy*
@@ -141,6 +145,9 @@
   ;; EventName
   (define ClientMessage 33)
 
+  ;; Xutil.h  XICCEncodingStyle
+  (define UTF8String 4)
+
   ;; data should be a u8* but using a void* instead.
   (proc XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
   (proc XCloseDisplay (dpy*) int)
@@ -156,5 +163,9 @@
   (proc XInternAtom (dpy* string boolean) atom)
   (proc XOpenDisplay (string) dpy*)
   (proc XSendEvent (dpy* window boolean long (* XEvent)) status)
+  (proc XSetTextProperty (dpy* window (* XTextProperty) atom) void)
+  ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
+  ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
+  (proc Xutf8TextListToTextProperty (dpy* void* int unsigned-32 (* XTextProperty)) int)
   (proc Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* integer-32)) integer-32)
   )
