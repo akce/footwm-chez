@@ -46,12 +46,12 @@
       (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW) 0)))
 
   (define client-list
-    (lambda (d)
-      (xutil.property->u32* d (XDefaultRootWindow d) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
+    (lambda (d r)
+      (xutil.property->u32* d r (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
 
   (define client-list-stacking
-    (lambda (d)
-      (xutil.property->u32* d (XDefaultRootWindow d) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
+    (lambda (d r)
+      (xutil.property->u32* d r (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
 
   ;; wm: the current active desktop number.
   (define current-desktop
