@@ -1,4 +1,5 @@
 (import (prefix (ewmh) ewmh.)
+        (globals)
         (prefix (wm) wm.)
         (prefix (icccm) icccm.)
         (prefix (shell) sh.)
@@ -6,9 +7,9 @@
         (prefix (xutil) xutil.)
         (rnrs base))
 
-(define d (xutil.open))
-(define r (XDefaultRootWindow d))
+(current-display (xutil.open))
+(root (XDefaultRootWindow (current-display)))
 
-(icccm.init-atoms d)
-(ewmh.init-atoms d)
-(wm.init-atoms d)
+(icccm.init-atoms)
+(ewmh.init-atoms)
+(wm.init-atoms)

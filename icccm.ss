@@ -24,33 +24,33 @@
       ))
   (define atoms (xutil.make-atoms))
   (define init-atoms
-    (lambda (d)
-      (xutil.init-atoms d atoms atom-list)))
+    (lambda ()
+      (xutil.init-atoms atoms atom-list)))
   (define atom-ref (xutil.make-atom-ref atoms))
 
   (define class-hint
-    (lambda (d wid)
+    (lambda (wid)
       ;; This should use XGetClassHint but class hints are just two strings so
       ;; I'll save myself the hassle for now and use the text property stuff I've already got.
-      (xutil.property->string* d wid (atom-ref 'WM_CLASS))))
+      (xutil.property->string* wid (atom-ref 'WM_CLASS))))
 
   (define class
-    (lambda (d wid)
-      (vector-ref (class-hint d wid) 1)))
+    (lambda (wid)
+      (vector-ref (class-hint wid) 1)))
 
   (define resource
-    (lambda (d wid)
-      (vector-ref (class-hint d wid) 0)))
+    (lambda (wid)
+      (vector-ref (class-hint wid) 0)))
 
   (define client-machine
-    (lambda (d wid)
-      (xutil.property->string d wid (atom-ref 'WM_CLIENT_MACHINE))))
+    (lambda (wid)
+      (xutil.property->string wid (atom-ref 'WM_CLIENT_MACHINE))))
 
   (define command
-    (lambda (d wid)
-      (xutil.property->string* d wid (atom-ref 'WM_COMMAND))))
+    (lambda (wid)
+      (xutil.property->string* wid (atom-ref 'WM_COMMAND))))
 
   (define name
-    (lambda (d wid)
-      (xutil.property->string d wid (atom-ref 'WM_NAME))))
+    (lambda (wid)
+      (xutil.property->string wid (atom-ref 'WM_NAME))))
   )

@@ -13,8 +13,10 @@
    init-atoms
    make-atom-ref
    )
-  (import (chezscheme)
-          (xlib))
+  (import
+   (chezscheme)
+   (globals)
+   (xlib))
 
   ;; [syntax] (fmem ((var varptr type)) ...)
   (define-syntax fmem
@@ -29,8 +31,8 @@
              r)))]))
 
   (define atom-name
-    (lambda (d a)
-      (let* ([ptr (XGetAtomName d a)]
+    (lambda (a)
+      (let* ([ptr (XGetAtomName (current-display) a)]
              [str (ptr->string ptr)])
         (XFree ptr)
         str)))
@@ -48,10 +50,10 @@
   ;; initialise atoms.
   ;; For those atoms that require display so can only be initialised after a connection to X is made.
   (define init-atoms
-    (lambda (d atoms atom-list)
+    (lambda (atoms atom-list)
       (for-each
        (lambda (a)
-         (hashtable-set! atoms a (XInternAtom d (symbol->string a) #f)))
+         (hashtable-set! atoms a (XInternAtom (current-display) (symbol->string a) #f)))
        atom-list)))
 
   (define make-atom-ref
@@ -73,35 +75,35 @@
             ((= i n) v)))))
 
   (define cardinal-set!
-    (lambda (d wid atomprop value)
+    (lambda (wid atomprop value)
       (fmem ([num &num unsigned-32])
             (foreign-set! 'unsigned-32 num 0 value)
-            (XChangeProperty d wid atomprop XA-CARDINAL 32 0 &num 1))))
+            (XChangeProperty (current-display) wid atomprop XA-CARDINAL 32 0 &num 1))))
 
   (define property->string
-    (lambda (d wid propatom)
+    (lambda (wid propatom)
       (fmem ([tp &tp XTextProperty])
-            (let ([rc (XGetTextProperty d wid &tp propatom)])
+            (let ([rc (XGetTextProperty (current-display) wid &tp propatom)])
               (if (> rc 0)
                   ;; success
                   (let* (#;[enc (ftype-ref XTextProperty (encoding) &tp)]
                          #;[num (ftype-ref XTextProperty (nitems) &tp)]
                          [addr (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))]
                          [str (ptr->string addr)])
-                    #;(display (format "encoding ~d:~s nitems ~d ~n" enc (atom-name d enc) num))
+                    #;(display (format "encoding ~d:~s nitems ~d ~n" enc (atom-name (current-display) enc) num))
                     (XFree addr)
                     str)
                   #f)))))
 
   (define property->string*
-    (lambda (d wid propatom)
+    (lambda (wid propatom)
       (fmem ([tp &tp XTextProperty])
-            (let ([rc (XGetTextProperty d wid &tp propatom)])
+            (let ([rc (XGetTextProperty (current-display) wid &tp propatom)])
               (if (> rc 0)
                   ;; success
                   (fmem ([nitems &nitems integer-32]
                          [text-list &text-list u8**])
-                        (let* ([stat (Xutf8TextPropertyToTextList d &tp &text-list &nitems)]
+                        (let* ([stat (Xutf8TextPropertyToTextList (current-display) &tp &text-list &nitems)]
                                [res (ptr->utf8s text-list nitems)])
                           ;; TODO text-list foreign-ref is also calc'd in text-list->utf8s. Need to re-org.
                           (XFreeStringList (foreign-ref 'void* text-list 0))
@@ -129,13 +131,13 @@
 
   ;; window property to vector of u32's.
   (define property->u32*
-    (lambda (d wid propatom atomtype)
+    (lambda (wid propatom atomtype)
       (fmem ([atr &atr atom]		;; atr = actual type return
              [afr &afr integer-32]	;; afr = actual format return
              [nir &nir unsigned-long]	;; nir = number of items return
              [bar &bar unsigned-long]	;; bar = bytes after return
              [pr  &pr u8*])		;; pr  = property return
-            (let ([rc (XGetWindowProperty d wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
+            (let ([rc (XGetWindowProperty (current-display) wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
               (if (= rc 0)
                   ;; success: extract window ids from pr.
                   (let* ([pr* (foreign-ref 'void* pr 0)]
@@ -146,7 +148,7 @@
                   (list))))))
 
   (define send-message-cardinal
-    (lambda (d root wid atom value)
+    (lambda (root wid atom value)
       (fmem ([ev &ev XEvent])
             (let ([event-mask (fxlogor SubstructureNotify SubstructureRedirect)])
               (ftype-set! XEvent (client-message type) &ev ClientMessage)
@@ -156,7 +158,7 @@
               (ftype-set! XEvent (client-message format) &ev 32)
               (ftype-set! XEvent (client-message data l 0) &ev value)
               (ftype-set! XEvent (client-message data l 1) &ev 0)	;; zero out.
-              (XSendEvent d root #f event-mask &ev)))))
+              (XSendEvent (current-display) root #f event-mask &ev)))))
 
   (define strdup
     (lambda (str)
@@ -194,12 +196,12 @@
       (foreign-free u8**)))
 
   (define text-property-set!
-    (lambda (d wid str* propatom)
+    (lambda (wid str* propatom)
       (fmem ([tp &tp XTextProperty])
             (let ([u8mem (str*->u8** str*)])
-              (let ([rc (Xutf8TextListToTextProperty d u8mem (length str*) UTF8String &tp)])
+              (let ([rc (Xutf8TextListToTextProperty (current-display) u8mem (length str*) UTF8String &tp)])
                 (if (fx= rc 0)
-                    (XSetTextProperty d wid &tp propatom))
+                    (XSetTextProperty (current-display) wid &tp propatom))
                 (free/u8** u8mem (length str*))
                 ;; the steps below cast tp->value to void*.
                 (XFree (ftype-pointer-address (make-ftype-pointer void* (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))))))))))

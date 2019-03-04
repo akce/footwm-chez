@@ -19,6 +19,7 @@
    atom-ref
    )
   (import (chezscheme)
+          (globals)
           (xlib)
           (prefix (xutil) xutil.))
 
@@ -37,66 +38,66 @@
       ))
   (define atoms (xutil.make-atoms))
   (define init-atoms
-    (lambda (d)
-      (xutil.init-atoms d atoms atom-list)))
+    (lambda ()
+      (xutil.init-atoms atoms atom-list)))
   (define atom-ref (xutil.make-atom-ref atoms))
 
   (define active-window
-    (lambda (d wid)
-      (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW) 0)))
+    (lambda (wid)
+      (vector-ref (xutil.property->u32* wid (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW) 0)))
 
   (define client-list
-    (lambda (d r)
-      (xutil.property->u32* d r (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
+    (lambda (r)
+      (xutil.property->u32* r (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
 
   (define client-list-stacking
-    (lambda (d r)
-      (xutil.property->u32* d r (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
+    (lambda (r)
+      (xutil.property->u32* r (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
 
   ;; wm: the current active desktop number.
   (define current-desktop
-    (lambda (d wid)
-      (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL) 0)))
+    (lambda (wid)
+      (vector-ref (xutil.property->u32* wid (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL) 0)))
 
   ;; Get the desktop number for the window.
   (define window-desktop
-    (lambda (d wid)
-      (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL) 0)))
+    (lambda (wid)
+      (vector-ref (xutil.property->u32* wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL) 0)))
 
   ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
   (define window-desktop-set!
-    (lambda (d wid number)
-      (xutil.cardinal-set! d wid (atom-ref '_NET_WM_DESKTOP) number)))
+    (lambda (wid number)
+      (xutil.cardinal-set! wid (atom-ref '_NET_WM_DESKTOP) number)))
 
   (define desktop-names
-    (lambda (d wid)
-      (xutil.property->string* d wid (atom-ref '_NET_DESKTOP_NAMES))))
+    (lambda (wid)
+      (xutil.property->string* wid (atom-ref '_NET_DESKTOP_NAMES))))
 
   ;; Get the name for the window.
   (define name
-    (lambda (d wid)
-      (xutil.property->string d wid (atom-ref '_NET_WM_NAME))))
+    (lambda (wid)
+      (xutil.property->string wid (atom-ref '_NET_WM_NAME))))
 
   (define pid
-    (lambda (d wid)
-      (vector-ref (xutil.property->u32* d wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
+    (lambda (wid)
+      (vector-ref (xutil.property->u32* wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
 
   ;; Request WM activate window.
   (define window-active-request!
-    (lambda (d r wid)
-      (xutil.send-message-cardinal d r wid (atom-ref '_NET_ACTIVE_WINDOW) 0)))
+    (lambda (r wid)
+      (xutil.send-message-cardinal r wid (atom-ref '_NET_ACTIVE_WINDOW) 0)))
 
   ;; Request WM to close the window.
   (define window-close-request!
-    (lambda (d r wid)
-      (xutil.send-message-cardinal d r wid (atom-ref '_NET_CLOSE_WINDOW) 0)))
+    (lambda (r wid)
+      (xutil.send-message-cardinal r wid (atom-ref '_NET_CLOSE_WINDOW) 0)))
 
   ;; Send a message to the WM requesting window wid be moved to desktop-number.
   (define window-desktop-request!
-    (lambda (d r wid desktop-number)
-      (xutil.send-message-cardinal d r wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
+    (lambda (r wid desktop-number)
+      (xutil.send-message-cardinal r wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
 
   (define current-desktop-request!
-    (lambda (d r desktop-number)
-      (xutil.send-message-cardinal d r 0 (atom-ref '_NET_CURRENT_DESKTOP) desktop-number)))
+    (lambda (r desktop-number)
+      (xutil.send-message-cardinal r 0 (atom-ref '_NET_CURRENT_DESKTOP) desktop-number)))
   )

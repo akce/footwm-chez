@@ -15,19 +15,19 @@
 
 (define atoms (xutil.make-atoms))
 (define init-atoms
-  (lambda (d)
-    (xutil.init-atoms d atoms atom-list)))
+  (lambda ()
+    (xutil.init-atoms atoms atom-list)))
 (define atom-ref (xutil.make-atom-ref atoms))
 
 (define desktop-add
-  (lambda (d r name index)
-    (xutil.text-property-set! d r `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+  (lambda (r name index)
+    (xutil.text-property-set! r `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
 
 (define desktop-delete
-  (lambda (d r index)
-    (xutil.text-property-set! d r `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+  (lambda (r index)
+    (xutil.text-property-set! r `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
 
 (define desktop-rename
-  (lambda (d r index new-name)
-    (xutil.text-property-set! d r `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
+  (lambda (r index new-name)
+    (xutil.text-property-set! r `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
 )
