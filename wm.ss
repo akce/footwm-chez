@@ -7,6 +7,7 @@
    atom-ref
    init-atoms)
 (import
+ (globals)
  (prefix (xutil) xutil.)
  (rnrs base))
 
@@ -20,14 +21,14 @@
 (define atom-ref (xutil.make-atom-ref atoms))
 
 (define desktop-add
-  (lambda (r name index)
-    (xutil.text-property-set! r `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+  (lambda (name index)
+    (xutil.text-property-set! (root) `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
 
 (define desktop-delete
-  (lambda (r index)
-    (xutil.text-property-set! r `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+  (lambda (index)
+    (xutil.text-property-set! (root) `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
 
 (define desktop-rename
-  (lambda (r index new-name)
-    (xutil.text-property-set! r `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
+  (lambda (index new-name)
+    (xutil.text-property-set! (root) `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
 )

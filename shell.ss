@@ -22,8 +22,8 @@
              (loop (fx+ i 1))])))))
 
   (define desktops
-    (lambda (r)
-      (let ([names (e.desktop-names r)])
+    (lambda ()
+      (let ([names (e.desktop-names)])
         (vector-for-each
          (lambda (desk)
            (display (desktop-display-string desk))
@@ -32,12 +32,12 @@
 
   ;; prints out the windows list in most-recently-used order.
   (define windows
-    (lambda (r)
+    (lambda ()
       (vector-for-each
        (lambda (wid)
          (display (window-display-string wid))
          (newline))
-       (e.client-list-stacking r))))
+       (e.client-list-stacking))))
 
   (define desktop-display-string
     (lambda (desk)
