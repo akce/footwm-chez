@@ -9,9 +9,7 @@
    send-message-cardinal
    text-property-set!
 
-   make-atoms
-   init-atoms
-   make-atom-ref
+   make-atom-manager
    )
   (import
    (chezscheme)
@@ -43,23 +41,23 @@
      [() (open #f)]
      [(s) (XOpenDisplay s)]))
 
-   ;;;; basic atom manager.
+  ;;;; basic atom manager.
   ;; Just a very thin wrapper around hash tables.
-  (define make-atoms make-eq-hashtable)
-
-  ;; initialise atoms.
-  ;; For those atoms that require display so can only be initialised after a connection to X is made.
-  (define init-atoms
-    (lambda (atoms atom-list)
-      (for-each
-       (lambda (a)
-         (hashtable-set! atoms a (XInternAtom (current-display) (symbol->string a) #f)))
-       atom-list)))
-
-  (define make-atom-ref
-    (lambda (atoms)
-      (lambda (a)
-        (hashtable-ref atoms a #f))))
+  (define make-atom-manager
+    (lambda (atom-list)
+      (define atoms (make-eq-hashtable))
+      (define init-atoms
+        ;; initialise atoms.
+        ;; For those atoms that require display so can only be initialised after a connection to X is made.
+        (lambda ()
+          (for-each
+           (lambda (a)
+             (hashtable-set! atoms a (XInternAtom (current-display) (symbol->string a) #f)))
+           atom-list)))
+      (define atom-ref
+        (lambda (a)
+          (hashtable-ref atoms a #f)))
+      (values init-atoms atom-ref)))
 
   (define ptr->utf8s
     (lambda (text-list nitems)

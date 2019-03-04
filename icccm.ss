@@ -1,7 +1,6 @@
 (library (icccm)
   (export
    init-atoms
-   atoms
    atom-ref
 
    class
@@ -14,7 +13,8 @@
    )
   (import
    (prefix (xutil) xutil.)
-   (rnrs base))
+   (rnrs base)
+   (only (chezscheme) define-values))
 
   (define atom-list
     '(WM_CLASS
@@ -22,11 +22,8 @@
       WM_COMMAND
       WM_NAME
       ))
-  (define atoms (xutil.make-atoms))
-  (define init-atoms
-    (lambda ()
-      (xutil.init-atoms atoms atom-list)))
-  (define atom-ref (xutil.make-atom-ref atoms))
+  (define-values
+      (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
 
   (define class-hint
     (lambda (wid)

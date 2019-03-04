@@ -15,7 +15,6 @@
    window-desktop-request!
 
    init-atoms
-   atoms
    atom-ref
    )
   (import (chezscheme)
@@ -36,11 +35,8 @@
 
       ;UTF8_STRING
       ))
-  (define atoms (xutil.make-atoms))
-  (define init-atoms
-    (lambda ()
-      (xutil.init-atoms atoms atom-list)))
-  (define atom-ref (xutil.make-atom-ref atoms))
+  (define-values
+      (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
 
   (define active-window
     (lambda ()

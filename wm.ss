@@ -3,22 +3,16 @@
    desktop-add
    desktop-delete
    desktop-rename
-   atom-list
    atom-ref
    init-atoms)
 (import
  (globals)
  (prefix (xutil) xutil.)
- (rnrs base))
+ (rnrs base)
+ (only (chezscheme) define-values))
 
-(define atom-list
-  '(FOOT_COMMANDV))
-
-(define atoms (xutil.make-atoms))
-(define init-atoms
-  (lambda ()
-    (xutil.init-atoms atoms atom-list)))
-(define atom-ref (xutil.make-atom-ref atoms))
+(define-values
+    (init-atoms atom-ref) (xutil.make-atom-manager '(FOOT_COMMANDV)))
 
 (define desktop-add
   (lambda (name index)
