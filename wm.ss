@@ -1,14 +1,14 @@
-(import (prefix (ewmh) ewmh.)
-        (prefix (icccm) icccm.)
-        (xlib)
-        (prefix (xutil) xutil.)
-        (rnrs base))
-
-(define d (xutil.open))
-(define r (XDefaultRootWindow d))
-
-;; XFree86 extension.
-(define UTF8_STRING (XInternAtom d "UTF8_STRING" #f))
+(library (wm)
+  (export
+   desktop-add
+   desktop-delete
+   desktop-rename
+   atom-list
+   atom-ref
+   init-atoms)
+(import
+ (prefix (xutil) xutil.)
+ (rnrs base))
 
 (define atom-list
   '(FOOT_COMMANDV))
@@ -18,10 +18,6 @@
   (lambda (d)
     (xutil.init-atoms d atoms atom-list)))
 (define atom-ref (xutil.make-atom-ref atoms))
-
-(icccm.init-atoms d)
-(ewmh.init-atoms d)
-(init-atoms d)
 
 (define desktop-add
   (lambda (d r name index)
@@ -34,3 +30,4 @@
 (define desktop-rename
   (lambda (d r index new-name)
     (xutil.text-property-set! d r `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
+)
