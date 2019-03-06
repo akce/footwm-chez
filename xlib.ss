@@ -2,10 +2,14 @@
   (export
    XEvent
    XClientMessageEvent
+   XErrorEvent
    XTextProperty
 
    XA-CARDINAL
    XA-WINDOW
+
+   Success
+   BadAccess
 
    NoEvent
    KeyPress
@@ -49,8 +53,11 @@
    XGetWindowProperty
    XInternAtom
    XOpenDisplay
+   XSelectInput
    XSendEvent
+   XSetErrorHandler
    XSetTextProperty
+   XSync
    Xutf8TextListToTextProperty
    Xutf8TextPropertyToTextList
 
@@ -76,6 +83,7 @@
   (define-ftype window unsigned-32)
   (define-ftype atom unsigned-32)
   (define-ftype status unsigned-32)
+  (define-ftype xid unsigned-32)
 
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
@@ -99,9 +107,20 @@
                          [s s10]
                          [l l5])]))
 
+  (define-ftype XErrorEvent
+    (struct
+     [type		integer-32]
+     [d			dpy*]
+     [resourceid	xid]
+     [serial		unsigned-long]
+     [error-code	u8]
+     [request-code	u8]
+     [minor-code	u8]))
+
   (define-ftype XEvent
     (union
-     [client-message XClientMessageEvent]))
+     [client-message	XClientMessageEvent]
+     [xerror		XErrorEvent]))
 
   (define-ftype XTextProperty
     (struct
@@ -113,6 +132,10 @@
   ;; X atoms from Xatom.h
   (define XA-CARDINAL 6)
   (define XA-WINDOW 33)
+
+  ;; Error codes. From X.h
+  (define Success		0)
+  (define BadAccess		10)
 
   ;; Input event mask.
   (define NoEvent              0)
@@ -162,8 +185,13 @@
   (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XInternAtom (dpy* string boolean) atom)
   (proc XOpenDisplay (string) dpy*)
+  (proc XSelectInput (dpy* window long) integer-32)
   (proc XSendEvent (dpy* window boolean long (* XEvent)) status)
+  ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
+  ;; So deviating and marking it as void* instead.
+  (proc XSetErrorHandler (void*) void*)
   (proc XSetTextProperty (dpy* window (* XTextProperty) atom) void)
+  (proc XSync (dpy* boolean) integer-32)
   ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
   ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
   (proc Xutf8TextListToTextProperty (dpy* void* int unsigned-32 (* XTextProperty)) int)
