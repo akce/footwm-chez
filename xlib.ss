@@ -4,6 +4,7 @@
    XClientMessageEvent
    XErrorEvent
    XTextProperty
+   XWindowAttributes
 
    XA-CARDINAL
    XA-WINDOW
@@ -50,6 +51,7 @@
    XFreeStringList
    XGetAtomName
    XGetTextProperty
+   XGetWindowAttributes
    XGetWindowProperty
    XInternAtom
    XOpenDisplay
@@ -86,6 +88,7 @@
   (define-ftype atom unsigned-32)
   (define-ftype status unsigned-32)
   (define-ftype xid unsigned-32)
+  (define-ftype Colormap xid)
 
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
@@ -131,6 +134,32 @@
      [encoding	atom]
      [format	integer-32]
      [nitems	unsigned-long]))
+
+  (define-ftype XWindowAttributes
+    (struct
+     [x			integer-32]
+     [y			integer-32]
+     [width		integer-32]
+     [height		integer-32]
+     [border-width	integer-32]
+     [depth		integer-32]
+     [visual		void*]
+     [root		window]
+     [class		integer-32]
+     [bit-gravity	integer-32]
+     [win-gravity	integer-32]
+     [backing-store	integer-32]
+     [backing-planes	unsigned-32]
+     [backing-pixel	unsigned-32]
+     [save-under	boolean]
+     [colormap		Colormap]
+     [map-installed	boolean]
+     [map-state		integer-32]
+     [all-event-masks	unsigned-32]
+     [your-event-mask	unsigned-32]
+     [do-not-propagate-mask	unsigned-32]
+     [override-redirect	boolean]
+     [screen		void*]))
 
   ;; X atoms from Xatom.h
   (define XA-CARDINAL 6)
@@ -183,6 +212,7 @@
   (proc XFreeStringList (void*) void)
   (proc XGetAtomName (dpy* atom) void*)
   (proc XGetTextProperty (dpy* window (* XTextProperty) atom) status)
+  (proc XGetWindowAttributes (dpy* window (* XWindowAttributes)) status)
   ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
   ;; void* points to anything so use that for now.
   (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)

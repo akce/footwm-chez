@@ -1,8 +1,19 @@
 (library (xutil)
   (export
+   geometry
+   geometry-x
+   geometry-y
+   geometry-width
+   geometry-height
+   window-attributes
+   window-attributes-geom
+   window-attributes-override-redirect
+   window-attributes-map-state
+
    atom-name
    cardinal-set!
    get-child-windows
+   get-window-attributes
    open
    property->string
    property->string*
@@ -16,6 +27,12 @@
    (chezscheme)
    (globals)
    (xlib))
+
+  (define-record-type geometry
+    (fields x y width height))
+
+  (define-record-type window-attributes
+    (fields geom override-redirect map-state))
 
   ;; [syntax] (fmem ((var varptr type)) ...)
   (define-syntax fmem
@@ -219,4 +236,19 @@
                       (XFree ptr)
                       wids))
                   '())))))
+
+  (define get-window-attributes
+    (lambda (wid)
+      (fmem ([wa &wa XWindowAttributes])
+            (let ([rc (XGetWindowAttributes (current-display) wid &wa)])
+              (if (= rc 0)
+                  ;; failure.
+                  #f
+                  (let ([x (ftype-ref XWindowAttributes (x) &wa)]
+                        [y (ftype-ref XWindowAttributes (y) &wa)]
+                        [w (ftype-ref XWindowAttributes (width) &wa)]
+                        [h (ftype-ref XWindowAttributes (height) &wa)]
+                        [map-state (ftype-ref XWindowAttributes (map-state) &wa)]
+                        [override (ftype-ref XWindowAttributes (override-redirect) &wa)])
+			(make-window-attributes (make-geometry x y w h) override map-state)))))))
 )
