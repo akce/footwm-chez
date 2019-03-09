@@ -22,7 +22,7 @@
 
 (let ([argv (command-line)])
   (cond
-   [(fx=? (length argv) 0)
+   [(fx=? (length argv) 1)
     (new-cafe)]
    [else
     (sh.main argv)]))

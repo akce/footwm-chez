@@ -53,6 +53,7 @@
    XGetWindowProperty
    XInternAtom
    XOpenDisplay
+   XQueryTree
    XSelectInput
    XSendEvent
    XSetErrorHandler
@@ -67,6 +68,7 @@
    status
    u8*
    u8**
+   window*
    )
   (import (chezscheme))
 
@@ -88,6 +90,7 @@
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
   (define-ftype u8** (* u8*))
+  (define-ftype window* (* window))
 
   (define-ftype b20 (array 20 char))
   (define-ftype s10 (array 10 short))
@@ -185,6 +188,7 @@
   (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XInternAtom (dpy* string boolean) atom)
   (proc XOpenDisplay (string) dpy*)
+  (proc XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned-32)) status)
   (proc XSelectInput (dpy* window long) integer-32)
   (proc XSendEvent (dpy* window boolean long (* XEvent)) status)
   ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.

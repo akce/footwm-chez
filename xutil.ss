@@ -2,6 +2,7 @@
   (export
    atom-name
    cardinal-set!
+   get-child-windows
    open
    property->string
    property->string*
@@ -203,4 +204,19 @@
                 (free/u8** u8mem (length str*))
                 ;; the steps below cast tp->value to void*.
                 (XFree (ftype-pointer-address (make-ftype-pointer void* (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))))))))))
+
+  (define get-child-windows
+    (lambda (wid)
+      (fmem ([root-return &rr window]
+             [parent-return &pr window]
+             [children-return &cr window*]
+             [num-children &nc unsigned-32])
+            (let ([rc (XQueryTree (current-display) wid &rr &pr &cr &nc)])
+              (if (and (> rc 0) (> num-children 0))
+                  (let ([ptr (foreign-ref 'void* children-return 0)]
+                        [len (foreign-ref 'unsigned-32 num-children 0)])
+                    (let ([wids (ptr->u32* ptr len)])
+                      (XFree ptr)
+                      wids))
+                  '())))))
 )
