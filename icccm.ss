@@ -10,12 +10,19 @@
    client-machine
    command
    get-wm-state
+   manage-window?
    name
    )
   (import
    (prefix (xutil) xutil.)
    (rnrs base)
    (only (chezscheme) define-values))
+
+  ;; Only define current ICCCM values. See Xutil.h
+  ;; MapState
+  (define IsUnmapped	0)
+  (define IsUnviewable	1)
+  (define IsViewable	2)
 
   ;; WM_STATE window state. See Xutil.h & ICCCM 4.1.3.1
   #;(define Withdrawn	0)
@@ -69,6 +76,26 @@
               [(1) 'NORMAL]
               [(3) 'ICONIC])
             #f))))
+
+  ;; Return #t if the window should be managed
+  (define manage-window?
+    (lambda (wid)
+      ;; Never manage cases where override_redirect=True.
+      ;; We have two extra restrictions when importing windows at program startup.
+      ;; Allow import of windows that have MapState=IsViewable, or WM_STATE exists.
+      ;; This is because X has an extra restriction about windows to manage. ie, X apps can create children of the
+      ;; root window, with their override_redirect=False but never Map them and the window manager then has to ignore them.
+      ;; With these checks we're assuming that IsViewable means the window will want to Map itself or that a prior window
+      ;; manager decided to manage the window and added a WM_STATE attribute so we'll manage it too.
+      (let ([wa (xutil.get-window-attributes wid)])
+        (cond
+         [(= (xutil.window-attributes-map-state wa) IsViewable)
+          #t]
+         [(get-wm-state wid)
+          #t]
+         [(eq? #f (xutil.window-attributes-override-redirect wa))
+          #f]
+         [else #f]))))
 
   (define name
     (lambda (wid)
