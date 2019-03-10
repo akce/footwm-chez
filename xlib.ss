@@ -3,7 +3,11 @@
    XEvent
    XClientMessageEvent
    XCreateWindowEvent
+   XDestroyWindowEvent
    XErrorEvent
+   XMapEvent
+   XMapRequestEvent
+   XUnmapEvent
    XTextProperty
    XWindowAttributes
 
@@ -42,6 +46,10 @@
 
    ClientMessage
    CreateNotify
+   DestroyNotify
+   MapNotify
+   MapRequest
+   UnmapNotify
 
    UTF8String
 
@@ -130,6 +138,11 @@
      [border-width	integer-32]
      [override-redirect	boolean]))
 
+  (define-ftype XDestroyWindowEvent
+    (struct
+     [xany		XAnyEvent]
+     [wid		window]))	; wid is the window that was destroyed.
+
   (define-ftype XErrorEvent
     (struct
      [type		integer-32]
@@ -140,12 +153,33 @@
      [request-code	u8]
      [minor-code	u8]))
 
+  (define-ftype XMapEvent
+    (struct
+     [xany		XAnyEvent]
+     [wid		window]		; wid is the window that was mapped.
+     [override-redirect	boolean]))	; usually true for things like pop-up windows.
+
+  (define-ftype XMapRequestEvent
+    (struct
+     [xany		XAnyEvent]
+     [wid		window]))	; wid is the window to be mapped.
+
+  (define-ftype XUnmapEvent
+    (struct
+     [xany		XAnyEvent]
+     [wid		window]		; wid is the window that was unmapped.
+     [from-configure	boolean]))	; man XUnmapEvent for a description of this param.
+
   (define-ftype XEvent
     (union
      [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
      [xcreatewindow	XCreateWindowEvent]
-     [xerror		XErrorEvent]))
+     [xdestroywindow	XDestroyWindowEvent]
+     [xerror		XErrorEvent]
+     [xmap		XMapEvent]
+     [xmaprequest	XMapRequestEvent]
+     [xunmap		XUnmapEvent]))
 
   (define-ftype XTextProperty
     (struct
@@ -218,6 +252,10 @@
 
   ;; EventName
   (define CreateNotify  16)	; XCreateWindowEvent
+  (define DestroyNotify 17)	; XDestroyWindowEvent
+  (define UnmapNotify	18)	; XUnmapNotify
+  (define MapNotify	19)	; XMapEvent
+  (define MapRequest	20)	; XMapRequestEvent
   (define ClientMessage 33)
 
   ;; Xutil.h  XICCEncodingStyle
