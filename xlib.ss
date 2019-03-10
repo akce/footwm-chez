@@ -2,6 +2,7 @@
   (export
    XEvent
    XClientMessageEvent
+   XCreateWindowEvent
    XErrorEvent
    XTextProperty
    XWindowAttributes
@@ -40,6 +41,7 @@
    OwnerGrabButton
 
    ClientMessage
+   CreateNotify
 
    UTF8String
 
@@ -117,6 +119,17 @@
                          [s s10]
                          [l l5])]))
 
+  (define-ftype XCreateWindowEvent
+    (struct
+     [xany		XAnyEvent]	; (xany wid) is the parent of the window created.
+     [wid		window]		; window id of the window created.
+     [x			integer-32]
+     [y			integer-32]
+     [width		integer-32]
+     [height		integer-32]
+     [border-width	integer-32]
+     [override-redirect	boolean]))
+
   (define-ftype XErrorEvent
     (struct
      [type		integer-32]
@@ -131,6 +144,7 @@
     (union
      [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
+     [xcreatewindow	XCreateWindowEvent]
      [xerror		XErrorEvent]))
 
   (define-ftype XTextProperty
@@ -203,6 +217,7 @@
   (define OwnerGrabButton      (fxsll 1 24))
 
   ;; EventName
+  (define CreateNotify  16)	; XCreateWindowEvent
   (define ClientMessage 33)
 
   ;; Xutil.h  XICCEncodingStyle
