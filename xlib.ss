@@ -95,17 +95,21 @@
   (define-ftype u8** (* u8*))
   (define-ftype window* (* window))
 
+  (define-ftype XAnyEvent
+    (struct
+     [type		integer-32]	;; message type id
+     [serial		unsigned-long]	;; number of last request handled by server
+     [send-event	boolean]	;; #t if this came from a SendEvent
+     [d			dpy*]		;; display this was read from
+     [wid		window]))
+
   (define-ftype b20 (array 20 char))
   (define-ftype s10 (array 10 short))
   (define-ftype l5  (array 5 long))
 
   (define-ftype XClientMessageEvent
     (struct
-     [type		integer-32]	;; ClientMessage
-     [serial		unsigned-long]	;; number of last request handled by server
-     [send-event	boolean]	;; #t if this came from a SendEvent
-     [d			dpy*]		;; display this was read from
-     [wid		window]
+     [xany		XAnyEvent]
      [message-type	atom]		;; message type
      [format		integer-32]
      [data		(union
@@ -125,6 +129,7 @@
 
   (define-ftype XEvent
     (union
+     [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
      [xerror		XErrorEvent]))
 

@@ -167,10 +167,10 @@
     (lambda (root wid atom value)
       (fmem ([ev &ev XEvent])
             (let ([event-mask (fxlogor SubstructureNotify SubstructureRedirect)])
-              (ftype-set! XEvent (client-message type) &ev ClientMessage)
-              (ftype-set! XEvent (client-message wid) &ev wid)
+              (ftype-set! XEvent (client-message xany type) &ev ClientMessage)
+              (ftype-set! XEvent (client-message xany wid) &ev wid)
+              (ftype-set! XEvent (client-message xany send-event) &ev #t)
               (ftype-set! XEvent (client-message message-type) &ev atom)
-              (ftype-set! XEvent (client-message send-event) &ev #t)
               (ftype-set! XEvent (client-message format) &ev 32)
               (ftype-set! XEvent (client-message data l 0) &ev value)
               (ftype-set! XEvent (client-message data l 1) &ev 0)	;; zero out.
