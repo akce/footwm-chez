@@ -2,6 +2,7 @@
   (export
    XEvent
    XClientMessageEvent
+   XConfigureRequestEvent
    XCreateWindowEvent
    XDestroyWindowEvent
    XErrorEvent
@@ -45,6 +46,7 @@
    OwnerGrabButton
 
    ClientMessage
+   ConfigureRequest
    CreateNotify
    DestroyNotify
    MapNotify
@@ -127,6 +129,19 @@
                          [s s10]
                          [l l5])]))
 
+  (define-ftype XConfigureRequestEvent
+    (struct
+     [xany		XAnyEvent]	; (xany wid) is the parent of the window to be reconfigured.
+     [wid		window]		; window id of the window to be reconfigured.
+     [x			integer-32]
+     [y			integer-32]
+     [width		integer-32]
+     [height		integer-32]
+     [border-width	integer-32]
+     [above		window]
+     [detail		integer-32]
+     [value-mask	unsigned-32]))	; the components specified in the ConfigureWindow request.
+
   (define-ftype XCreateWindowEvent
     (struct
      [xany		XAnyEvent]	; (xany wid) is the parent of the window created.
@@ -174,6 +189,7 @@
     (union
      [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
+     [xconfigurerequest	XConfigureRequestEvent]
      [xcreatewindow	XCreateWindowEvent]
      [xdestroywindow	XDestroyWindowEvent]
      [xerror		XErrorEvent]
@@ -251,12 +267,13 @@
   (define OwnerGrabButton      (fxsll 1 24))
 
   ;; EventName
-  (define CreateNotify  16)	; XCreateWindowEvent
-  (define DestroyNotify 17)	; XDestroyWindowEvent
-  (define UnmapNotify	18)	; XUnmapNotify
-  (define MapNotify	19)	; XMapEvent
-  (define MapRequest	20)	; XMapRequestEvent
-  (define ClientMessage 33)
+  (define CreateNotify 		16)	; XCreateWindowEvent
+  (define DestroyNotify		17)	; XDestroyWindowEvent
+  (define UnmapNotify		18)	; XUnmapNotify
+  (define MapNotify		19)	; XMapEvent
+  (define MapRequest		20)	; XMapRequestEvent
+  (define ConfigureRequest	23)	; XConfigureRequestEvent
+  (define ClientMessage		33)
 
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
