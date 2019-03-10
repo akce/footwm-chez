@@ -2,6 +2,7 @@
   (export
    XEvent
    XClientMessageEvent
+   XConfigureEvent
    XConfigureRequestEvent
    XCreateWindowEvent
    XDestroyWindowEvent
@@ -46,6 +47,7 @@
    OwnerGrabButton
 
    ClientMessage
+   ConfigureNotify
    ConfigureRequest
    CreateNotify
    DestroyNotify
@@ -129,6 +131,18 @@
                          [s s10]
                          [l l5])]))
 
+  (define-ftype XConfigureEvent
+    (struct
+     [xany		XAnyEvent]	; (xany wid) is the parent of the window configured.
+     [wid		window]		; window id of the window configured.
+     [x			integer-32]
+     [y			integer-32]
+     [width		integer-32]
+     [height		integer-32]
+     [border-width	integer-32]
+     [above		window]
+     [override-redirect	boolean]))
+
   (define-ftype XConfigureRequestEvent
     (struct
      [xany		XAnyEvent]	; (xany wid) is the parent of the window to be reconfigured.
@@ -189,6 +203,7 @@
     (union
      [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
+     [xconfigure	XConfigureEvent]
      [xconfigurerequest	XConfigureRequestEvent]
      [xcreatewindow	XCreateWindowEvent]
      [xdestroywindow	XDestroyWindowEvent]
@@ -273,6 +288,7 @@
   (define MapNotify		19)	; XMapEvent
   (define MapRequest		20)	; XMapRequestEvent
   (define ConfigureRequest	23)	; XConfigureRequestEvent
+  (define ConfigureNotify	22)	; XConfigureEvent
   (define ClientMessage		33)
 
   ;; Xutil.h  XICCEncodingStyle
