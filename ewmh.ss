@@ -4,7 +4,11 @@
    client-list
    client-list-stacking
    current-desktop
+   current-desktop-set!
+   desktop-count
+   desktop-count-set!
    desktop-names
+   desktop-names-set!
    window-desktop
    window-desktop-set!
    name
@@ -29,6 +33,7 @@
       _NET_CLOSE_WINDOW
       _NET_CURRENT_DESKTOP
       _NET_DESKTOP_NAMES
+      _NET_NUMBER_OF_DESKTOPS
       _NET_WM_DESKTOP
       _NET_WM_NAME
       _NET_WM_PID
@@ -38,36 +43,66 @@
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
 
+  ;; Return first (and likely only) item in vector or false if vector is empty.
+  (define first-or-false
+    (lambda (vect)
+      (if (fx=? 0 (vector-length vect))
+          #f
+          (vector-ref vect 0))))
+
+  ;; Return the property vector, or #f if empty.
+  (define property-or-false
+    (lambda (vect)
+      (if (fx=? 0 (vector-length vect))
+          #f
+          vect)))
+
   (define active-window
     (lambda ()
-      (vector-ref (xutil.property->u32* (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW) 0)))
+      (first-or-false (xutil.property->u32* (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
 
   (define client-list
     (lambda ()
-      (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
+      (property-or-false (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
 
   (define client-list-stacking
     (lambda ()
-      (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
+      (property-or-false (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
 
   ;; wm: the current active desktop number.
   (define current-desktop
     (lambda ()
-      (vector-ref (xutil.property->u32* (root) (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL) 0)))
+      (first-or-false (xutil.property->u32* (root) (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL))))
+
+  (define current-desktop-set!
+    (lambda (number)
+      (xutil.cardinal-set! (root) (atom-ref '_NET_CURRENT_DESKTOP) number)))
 
   ;; Get the desktop number for the window.
   (define window-desktop
     (lambda (wid)
-      (vector-ref (xutil.property->u32* wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL) 0)))
+      (first-or-false (xutil.property->u32* wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL))))
 
   ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
   (define window-desktop-set!
     (lambda (wid number)
       (xutil.cardinal-set! wid (atom-ref '_NET_WM_DESKTOP) number)))
 
+  (define desktop-count
+    (lambda ()
+      (first-or-false (xutil.property->u32* (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) XA-CARDINAL))))
+
+  (define desktop-count-set!
+    (lambda (number)
+      (xutil.cardinal-set! (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) number)))
+
   (define desktop-names
     (lambda ()
       (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES))))
+
+  (define desktop-names-set!
+    (lambda (names)
+      (xutil.text-property-set! (root) names (atom-ref '_NET_DESKTOP_NAMES))))
 
   ;; Get the name for the window.
   (define name
@@ -76,7 +111,7 @@
 
   (define pid
     (lambda (wid)
-      (vector-ref (xutil.property->u32* wid (atom-ref '_NET_WM_PID) XA-CARDINAL) 0)))
+      (first-or-false (xutil.property->u32* wid (atom-ref '_NET_WM_PID) XA-CARDINAL))))
 
   ;; Request WM activate window.
   (define window-active-request!

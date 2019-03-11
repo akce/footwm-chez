@@ -5,10 +5,12 @@
    desktop-rename
    atom-ref
    init-atoms
-   install)
+   init-desktops
+   init-windows)
   (import
    (globals)
    (xlib)
+   (prefix (ewmh) ewmh.)
    (prefix (xutil) xutil.)
    (chezscheme))
 
@@ -35,11 +37,15 @@
 
   (define setup
     (lambda ()
-      (install)
+      #;(load-config)
+      (install-as-wm)
       #;(install-error-handler)
-      #;(import-existing-windows)))
+      (init-desktops)
+      (init-windows)))
 
-  (define install
+  ;; Install ourselves as *the* window manager.
+  ;; raises an error condition on failure.
+  (define install-as-wm
     (lambda ()
       (let* ([installed #t]
              [check-bad-access
@@ -57,6 +63,23 @@
           (unlock-object check-bad-access)
           (unless installed
             (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running."))))))))
+
+  (define init-desktops
+    (lambda ()
+      ;; footwm needs _NET_DESKTOP_NAMES, _NET_NUMBER_OF_DESKTOPS, and _NET_CURRENT_DESKTOP.
+      ;; Make sure they exist or create if necessary.
+      (if (not (ewmh.current-desktop))
+          (ewmh.current-desktop-set! 0))
+      (if (not (ewmh.desktop-names))
+          (ewmh.desktop-names-set! '("Unassigned")))
+      (if (not (ewmh.desktop-count))
+          (ewmh.desktop-count-set! 1))
+      (XSync (current-display) #f)))
+
+  (define init-windows
+    (lambda ()
+      ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
+      #f))
 
   (define run
     (lambda ()
