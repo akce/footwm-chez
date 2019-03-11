@@ -2,7 +2,9 @@
   (export
    active-window
    client-list
+   client-list-set!
    client-list-stacking
+   client-list-stacking-set!
    current-desktop
    current-desktop-set!
    desktop-count
@@ -65,9 +67,17 @@
     (lambda ()
       (property-or-false (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
 
+  (define client-list-set!
+    (lambda (wids)
+      (xutil.u32*-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
+
   (define client-list-stacking
     (lambda ()
       (property-or-false (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
+
+  (define client-list-stacking-set!
+    (lambda (wids)
+      (xutil.u32*-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) wids XA-WINDOW)))
 
   ;; wm: the current active desktop number.
   (define current-desktop

@@ -18,6 +18,7 @@
    property->string
    property->string*
    property->u32*
+   u32*-property-set!
    send-message-cardinal
    text-property-set!
 
@@ -39,6 +40,14 @@
     (syntax-rules ()
       [(_ ((var varptr type) ...) first rest ...)
        (let ([var (foreign-alloc (ftype-sizeof type))] ...)
+         (let ([varptr (make-ftype-pointer type var)] ...)
+           (let ((r first))
+             ;; TODO should be wrapped via exceptions.
+             rest ...
+             (foreign-free var) ...
+             r)))]
+      [(_ ((var varptr type num) ...) first rest ...)
+       (let ([var (foreign-alloc (* num (ftype-sizeof type)))] ...)
          (let ([varptr (make-ftype-pointer type var)] ...)
            (let ((r first))
              ;; TODO should be wrapped via exceptions.
@@ -95,6 +104,18 @@
       (fmem ([num &num unsigned-32])
             (foreign-set! 'unsigned-32 num 0 value)
             (XChangeProperty (current-display) wid atomprop XA-CARDINAL 32 0 &num 1))))
+
+  (define u32*-property-set!
+    (lambda (wid atomprop vect typeatom)
+      (let ([len (vector-length vect)])
+        (fmem ([v &v unsigned-32 len])
+              (vector-for-each
+               (lambda (val offset)
+                 (foreign-set! 'unsigned-32 v offset val))
+               vect (list->vector (map (lambda (i)
+                                         (* i (ftype-sizeof unsigned-32)))
+                                       (iota len))))
+              (XChangeProperty (current-display) wid atomprop typeatom 32 0 &v len)))))
 
   (define property->string
     (lambda (wid propatom)

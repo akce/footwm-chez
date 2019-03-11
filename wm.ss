@@ -11,6 +11,7 @@
    (globals)
    (xlib)
    (prefix (ewmh) ewmh.)
+   (prefix (icccm) icccm.)
    (prefix (xutil) xutil.)
    (chezscheme))
 
@@ -77,9 +78,21 @@
       (XSync (current-display) #f)))
 
   (define init-windows
+    ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
-      ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
-      #f))
+      (let ([mws (list->vector (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root)))))]) ; managed wid list
+        ;; set the current desktop for each window.
+        (vector-for-each
+         (lambda (wid)
+           (unless (ewmh.window-desktop wid)
+             (ewmh.window-desktop-set! wid 0)))
+         mws)
+        ;; set client-list/stacking ewmh hints.
+        (unless (ewmh.client-list)
+          (ewmh.client-list-set! mws))
+        (unless (ewmh.client-list-stacking)
+          (ewmh.client-list-stacking-set! mws))
+        (XSync (current-display) #f))))
 
   (define run
     (lambda ()
