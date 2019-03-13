@@ -1,15 +1,97 @@
 (library (xlib)
   (export
    XEvent
-   XClientMessageEvent
-   XConfigureEvent
-   XConfigureRequestEvent
-   XCreateWindowEvent
-   XDestroyWindowEvent
    XErrorEvent
+
+   make-xanyevent
+   xanyevent?
+   xanyevent-type
+   xanyevent-serial
+   xanyevent-send-event
+   xanyevent-d
+   xanyevent-wid
+
+   XClientMessageEvent
+   ClientMessage
+   make-xclientmessageevent
+   xclientmessageevent?
+   xclientmessageevent-xany
+   xclientmessageevent-message-type
+   xclientmessageevent-format
+   xclientmessageevent-data
+
+   XConfigureEvent
+   ConfigureNotify
+   make-xconfigureevent
+   xconfigureevent?
+   xconfigureevent-xany
+   xconfigureevent-wid
+   xconfigureevent-x
+   xconfigureevent-y
+   xconfigureevent-width
+   xconfigureevent-height
+   xconfigureevent-border-width
+   xconfigureevent-above
+   xconfigureevent-override-redirect
+
+   XConfigureRequestEvent
+   ConfigureRequest
+   make-xconfigurerequestevent
+   xconfigurerequestevent?
+   xconfigurerequestevent-xany
+   xconfigurerequestevent-wid
+   xconfigurerequestevent-x
+   xconfigurerequestevent-y
+   xconfigurerequestevent-width
+   xconfigurerequestevent-height
+   xconfigurerequestevent-border-width
+   xconfigurerequestevent-above
+   xconfigurerequestevent-detail
+   xconfigurerequestevent-value-mask
+
+   XCreateWindowEvent
+   CreateNotify
+   make-xcreatewindowevent
+   xcreatewindowevent?
+   xcreatewindowevent-xany
+   xcreatewindowevent-wid
+   xcreatewindowevent-x
+   xcreatewindowevent-y
+   xcreatewindowevent-width
+   xcreatewindowevent-height
+   xcreatewindowevent-border-width
+   xcreatewindowevent-override-redirect
+
+   XDestroyWindowEvent
+   DestroyNotify
+   make-xdestroywindowevent
+   xdestroywindowevent?
+   xdestroywindowevent-xany
+   xdestroywindowevent-wid
+
    XMapEvent
+   MapNotify
+   make-xmapevent
+   xmapevent?
+   xmapevent-xany
+   xmapevent-wid
+   xmapevent-override-redirect
+
    XMapRequestEvent
+   MapRequest
+   make-xmaprequestevent
+   xmaprequestevent?
+   xmaprequestevent-xany
+   xmaprequestevent-wid
+
    XUnmapEvent
+   UnmapNotify
+   make-xunmapevent
+   xunmapevent?
+   xunmapevent-xany
+   xunmapevent-wid
+   xunmapevent-from-configure
+
    XTextProperty
    XWindowAttributes
 
@@ -46,14 +128,6 @@
    ColormapChange
    OwnerGrabButton
 
-   ClientMessage
-   ConfigureNotify
-   ConfigureRequest
-   CreateNotify
-   DestroyNotify
-   MapNotify
-   MapRequest
-   UnmapNotify
 
    UTF8String
 
@@ -99,14 +173,15 @@
 
   (define-syntax define-xevent
     (syntax-rules ()
-      [(_ name (idname idval)
+      [(_ name (record idname idval)
           ((field type) (fieldn typen) ...))
        (begin
          (define-ftype name
           (struct
            [field type]
            [fieldn typen] ...))
-         (define idname idval))]))
+         (define idname idval)
+         (define-record-type record (fields field fieldn ...)))]))
 
   ;; type aliases.
   (define-ftype dpy* void*)
@@ -128,13 +203,15 @@
      [send-event	boolean]	;; #t if this came from a SendEvent
      [d			dpy*]		;; display this was read from
      [wid		window]))
+  (define-record-type xanyevent
+    (fields type serial send-event d wid))
 
   (define-ftype b20 (array 20 char))
   (define-ftype s10 (array 10 short))
   (define-ftype l5  (array 5 long))
 
   (define-xevent XClientMessageEvent
-    (ClientMessage	33)
+    (xclientmessageevent	ClientMessage	33)
     ([xany		XAnyEvent]
      [message-type	atom]		;; message type
      [format		integer-32]
@@ -144,7 +221,7 @@
                          [l l5])]))
 
   (define-xevent XConfigureEvent
-    (ConfigureNotify	22)
+    (xconfigureevent	ConfigureNotify	22)
     ([xany		XAnyEvent]	; (xany wid) is the parent of the window configured.
      [wid		window]		; window id of the window configured.
      [x			integer-32]
@@ -156,7 +233,7 @@
      [override-redirect	boolean]))
 
   (define-xevent XConfigureRequestEvent
-    (ConfigureRequest	23)
+    (xconfigurerequestevent	ConfigureRequest	23)
     ([xany		XAnyEvent]	; (xany wid) is the parent of the window to be reconfigured.
      [wid		window]		; window id of the window to be reconfigured.
      [x			integer-32]
@@ -169,7 +246,7 @@
      [value-mask	unsigned-32]))	; the components specified in the ConfigureWindow request.
 
   (define-xevent XCreateWindowEvent
-    (CreateNotify 	16)
+    (xcreatewindowevent	CreateNotify 	16)
     ([xany		XAnyEvent]	; (xany wid) is the parent of the window created.
      [wid		window]		; window id of the window created.
      [x			integer-32]
@@ -180,7 +257,7 @@
      [override-redirect	boolean]))
 
   (define-xevent XDestroyWindowEvent
-    (DestroyNotify	17)
+    (xdestroywindowevent	DestroyNotify	17)
     ([xany		XAnyEvent]
      [wid		window]))	; wid is the window that was destroyed.
 
@@ -195,18 +272,18 @@
      [minor-code	u8]))
 
   (define-xevent XMapEvent
-    (MapNotify		19)
+    (xmapevent	MapNotify		19)
     ([xany		XAnyEvent]
      [wid		window]		; wid is the window that was mapped.
      [override-redirect	boolean]))	; usually true for things like pop-up windows.
 
   (define-xevent XMapRequestEvent
-    (MapRequest		20)
+    (xmaprequestevent	MapRequest		20)
     ([xany		XAnyEvent]
      [wid		window]))	; wid is the window to be mapped.
 
   (define-xevent XUnmapEvent
-    (UnmapNotify	18)
+    (xunmapevent	UnmapNotify	18)
     ([xany		XAnyEvent]
      [wid		window]		; wid is the window that was unmapped.
      [from-configure	boolean]))	; man XUnmapEvent for a description of this param.
