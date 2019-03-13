@@ -97,6 +97,17 @@
       [(_ libsym args return)
        (define libsym (foreign-procedure (symbol->string 'libsym) args return))]))
 
+  (define-syntax define-xevent
+    (syntax-rules ()
+      [(_ name (idname idval)
+          ((field type) (fieldn typen) ...))
+       (begin
+         (define-ftype name
+          (struct
+           [field type]
+           [fieldn typen] ...))
+         (define idname idval))]))
+
   ;; type aliases.
   (define-ftype dpy* void*)
   (define-ftype window unsigned-32)
@@ -122,9 +133,9 @@
   (define-ftype s10 (array 10 short))
   (define-ftype l5  (array 5 long))
 
-  (define-ftype XClientMessageEvent
-    (struct
-     [xany		XAnyEvent]
+  (define-xevent XClientMessageEvent
+    (ClientMessage	33)
+    ([xany		XAnyEvent]
      [message-type	atom]		;; message type
      [format		integer-32]
      [data		(union
@@ -132,9 +143,9 @@
                          [s s10]
                          [l l5])]))
 
-  (define-ftype XConfigureEvent
-    (struct
-     [xany		XAnyEvent]	; (xany wid) is the parent of the window configured.
+  (define-xevent XConfigureEvent
+    (ConfigureNotify	22)
+    ([xany		XAnyEvent]	; (xany wid) is the parent of the window configured.
      [wid		window]		; window id of the window configured.
      [x			integer-32]
      [y			integer-32]
@@ -144,9 +155,9 @@
      [above		window]
      [override-redirect	boolean]))
 
-  (define-ftype XConfigureRequestEvent
-    (struct
-     [xany		XAnyEvent]	; (xany wid) is the parent of the window to be reconfigured.
+  (define-xevent XConfigureRequestEvent
+    (ConfigureRequest	23)
+    ([xany		XAnyEvent]	; (xany wid) is the parent of the window to be reconfigured.
      [wid		window]		; window id of the window to be reconfigured.
      [x			integer-32]
      [y			integer-32]
@@ -157,9 +168,9 @@
      [detail		integer-32]
      [value-mask	unsigned-32]))	; the components specified in the ConfigureWindow request.
 
-  (define-ftype XCreateWindowEvent
-    (struct
-     [xany		XAnyEvent]	; (xany wid) is the parent of the window created.
+  (define-xevent XCreateWindowEvent
+    (CreateNotify 	16)
+    ([xany		XAnyEvent]	; (xany wid) is the parent of the window created.
      [wid		window]		; window id of the window created.
      [x			integer-32]
      [y			integer-32]
@@ -168,9 +179,9 @@
      [border-width	integer-32]
      [override-redirect	boolean]))
 
-  (define-ftype XDestroyWindowEvent
-    (struct
-     [xany		XAnyEvent]
+  (define-xevent XDestroyWindowEvent
+    (DestroyNotify	17)
+    ([xany		XAnyEvent]
      [wid		window]))	; wid is the window that was destroyed.
 
   (define-ftype XErrorEvent
@@ -183,20 +194,20 @@
      [request-code	u8]
      [minor-code	u8]))
 
-  (define-ftype XMapEvent
-    (struct
-     [xany		XAnyEvent]
+  (define-xevent XMapEvent
+    (MapNotify		19)
+    ([xany		XAnyEvent]
      [wid		window]		; wid is the window that was mapped.
      [override-redirect	boolean]))	; usually true for things like pop-up windows.
 
-  (define-ftype XMapRequestEvent
-    (struct
-     [xany		XAnyEvent]
+  (define-xevent XMapRequestEvent
+    (MapRequest		20)
+    ([xany		XAnyEvent]
      [wid		window]))	; wid is the window to be mapped.
 
-  (define-ftype XUnmapEvent
-    (struct
-     [xany		XAnyEvent]
+  (define-xevent XUnmapEvent
+    (UnmapNotify	18)
+    ([xany		XAnyEvent]
      [wid		window]		; wid is the window that was unmapped.
      [from-configure	boolean]))	; man XUnmapEvent for a description of this param.
 
@@ -284,16 +295,6 @@
   (define PropertyChange       (fxsll 1 22))
   (define ColormapChange       (fxsll 1 23))
   (define OwnerGrabButton      (fxsll 1 24))
-
-  ;; EventName
-  (define CreateNotify 		16)	; XCreateWindowEvent
-  (define DestroyNotify		17)	; XDestroyWindowEvent
-  (define UnmapNotify		18)	; XUnmapNotify
-  (define MapNotify		19)	; XMapEvent
-  (define MapRequest		20)	; XMapRequestEvent
-  (define ConfigureRequest	23)	; XConfigureRequestEvent
-  (define ConfigureNotify	22)	; XConfigureEvent
-  (define ClientMessage		33)
 
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
