@@ -68,6 +68,7 @@
    XGetWindowAttributes
    XGetWindowProperty
    XInternAtom
+   XNextEvent
    XOpenDisplay
    XQueryTree
    XSelectInput
@@ -199,8 +200,10 @@
      [wid		window]		; wid is the window that was unmapped.
      [from-configure	boolean]))	; man XUnmapEvent for a description of this param.
 
+  (define-ftype xevent-size  (array 24 long))
   (define-ftype XEvent
     (union
+     [type		integer-32]
      [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
      [xconfigure	XConfigureEvent]
@@ -210,7 +213,8 @@
      [xerror		XErrorEvent]
      [xmap		XMapEvent]
      [xmaprequest	XMapRequestEvent]
-     [xunmap		XUnmapEvent]))
+     [xunmap		XUnmapEvent]
+     [pad		xevent-size]))
 
   (define-ftype XTextProperty
     (struct
@@ -308,6 +312,7 @@
   ;; void* points to anything so use that for now.
   (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
   (proc XInternAtom (dpy* string boolean) atom)
+  (proc XNextEvent (dpy* (* XEvent)) integer-32)
   (proc XOpenDisplay (string) dpy*)
   (proc XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned-32)) status)
   (proc XSelectInput (dpy* window long) integer-32)
