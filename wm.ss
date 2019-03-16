@@ -6,7 +6,8 @@
    atom-ref
    init-atoms
    init-desktops
-   init-windows)
+   init-windows
+   main)
   (import
    (globals)
    (xlib)
@@ -97,6 +98,18 @@
   (define run
     (lambda ()
       (let loop ()
+        (let ([ev (xutil.get-next-event)])
+          (cond
+           ((xclientmessageevent? ev)	(display "XClientMessageEvent"))
+           ((xconfigureevent? ev)	(display "XConfigureEvent"))
+           ((xconfigurerequestevent? ev)	(display "XConfigureRequestEvent"))
+           ((xcreatewindowevent? ev)	(display "XCreateWindowEvent"))
+           ((xdestroywindowevent? ev)	(display "XDestroyWindowEvent"))
+           ((xmapevent? ev)		(display "XMapEvent"))
+           ((xmaprequestevent? ev)	(display "XMapRequestEvent"))
+           ((xunmapevent? ev)		(display "XUnmapEvent"))
+           (else			(display (format "Unknown event ~d" ev))))
+          (newline))
         (loop))))
 
   (define cleanup

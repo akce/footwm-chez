@@ -1,5 +1,6 @@
 (library (xlib)
   (export
+   XAnyEvent
    XEvent
    XErrorEvent
 
