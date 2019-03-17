@@ -100,18 +100,54 @@
       (let loop ()
         (let ([ev (xutil.get-next-event)])
           (cond
-           ((xclientmessageevent? ev)	(display "XClientMessageEvent"))
-           ((xconfigureevent? ev)	(display "XConfigureEvent"))
-           ((xconfigurerequestevent? ev)	(display "XConfigureRequestEvent"))
-           ((xcreatewindowevent? ev)	(display "XCreateWindowEvent"))
-           ((xdestroywindowevent? ev)	(display "XDestroyWindowEvent"))
-           ((xmapevent? ev)		(display "XMapEvent"))
-           ((xmaprequestevent? ev)	(display "XMapRequestEvent"))
-           ((xpropertyevent? ev)	(display (format "XPropertyEvent ~a" (xutil.atom-name (xpropertyevent-propatom ev)))))
-           ((xunmapevent? ev)		(display "XUnmapEvent"))
-           (else			(display (format "Unknown event ~d" (xanyevent-type ev)))))
-          (newline))
+           ((xclientmessageevent? ev)		(on-client-message ev))
+           ((xconfigureevent? ev)		(on-configure ev))
+           ((xconfigurerequestevent? ev)	(on-configure-request ev))
+           ((xcreatewindowevent? ev)		(on-create-window ev))
+           ((xdestroywindowevent? ev)		(on-destroy-window ev))
+           ((xmapevent? ev)			(on-map ev))
+           ((xmaprequestevent? ev)		(on-map-request ev))
+           ((xpropertyevent? ev)		(on-property ev))
+           ((xunmapevent? ev)			(on-unmap ev))
+           (else
+	    (display (format "Unknown event ~d~n" (xanyevent-type ev))))))
         (loop))))
+
+  (define on-client-message
+    (lambda (ev)
+      (display "XClientMessageEvent\n")))
+
+  (define on-configure
+    (lambda (ev)
+      (display "XConfigureEvent\n")))
+
+  (define on-configure-request
+    (lambda (ev)
+      (display "XConfigureRequestEvent\n")))
+
+  (define on-create-window
+    (lambda (ev)
+      (display "XCreateWindowEvent\n")))
+
+  (define on-destroy-window
+    (lambda (ev)
+      (display "XDestroyWindowEvent\n")))
+
+  (define on-map
+    (lambda (ev)
+      (display "XMapEvent\n")))
+
+  (define on-map-request
+    (lambda (ev)
+      (display "XMapRequestEvent\n")))
+
+  (define on-property
+    (lambda (ev)
+      (display (format "XPropertyEvent ~a~n" (xutil.atom-name (xpropertyevent-propatom ev))))))
+
+  (define on-unmap
+    (lambda (ev)
+      (display "XUnmapEvent\n")))
 
   (define cleanup
     (lambda ()
