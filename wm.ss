@@ -70,11 +70,11 @@
     (lambda ()
       ;; footwm needs _NET_DESKTOP_NAMES, _NET_NUMBER_OF_DESKTOPS, and _NET_CURRENT_DESKTOP.
       ;; Make sure they exist or create if necessary.
-      (if (not (ewmh.current-desktop))
+      (unless (ewmh.current-desktop)
           (ewmh.current-desktop-set! 0))
-      (if (not (ewmh.desktop-names))
+      (unless (ewmh.desktop-names)
           (ewmh.desktop-names-set! '("Unassigned")))
-      (if (not (ewmh.desktop-count))
+      (unless (ewmh.desktop-count)
           (ewmh.desktop-count-set! 1))
       (XSync (current-display) #f)))
 
