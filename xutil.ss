@@ -182,8 +182,8 @@
                          [nums (ptr->u32* pr* (foreign-ref 'unsigned-long nir 0))])
                     (XFree pr*)
                     nums)
-                  ;; failure: return empty list.
-                  (list))))))
+                  ;; failure: return empty.
+                  (vector))))))
 
   (define send-message-cardinal
     (lambda (root wid atom value)
