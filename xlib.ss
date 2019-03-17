@@ -85,6 +85,14 @@
    xmaprequestevent-xany
    xmaprequestevent-wid
 
+   XPropertyEvent
+   PropertyNotify
+   make-xpropertyevent
+   xpropertyevent?
+   xpropertyevent-propatom
+   xpropertyevent-time
+   xpropertyevent-state
+
    XUnmapEvent
    UnmapNotify
    make-xunmapevent
@@ -191,6 +199,7 @@
   (define-ftype status unsigned-32)
   (define-ftype xid unsigned-32)
   (define-ftype Colormap xid)
+  (define-ftype Time unsigned-long)
 
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
@@ -283,6 +292,13 @@
     ([xany		XAnyEvent]
      [wid		window]))	; wid is the window to be mapped.
 
+  (define-xevent XPropertyEvent
+    (xpropertyevent	PropertyNotify		28)
+    ([xany		XAnyEvent]
+     [propatom		atom]
+     [time		Time]
+     [state		integer-32]))
+
   (define-xevent XUnmapEvent
     (xunmapevent	UnmapNotify	18)
     ([xany		XAnyEvent]
@@ -302,6 +318,7 @@
      [xerror		XErrorEvent]
      [xmap		XMapEvent]
      [xmaprequest	XMapRequestEvent]
+     [xproperty		XPropertyEvent]
      [xunmap		XUnmapEvent]
      [pad		xevent-size]))
 

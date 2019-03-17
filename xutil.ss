@@ -292,9 +292,9 @@
   (define-syntax ftype-fields
     (syntax-rules ()
       [(_ type obj ((field name offset) ...))
-       ((ftype-ref type (field name offset) obj) ...)]
+       (list (ftype-ref XEvent (type field name offset) obj) ...)]
       [(_ type obj (field ...))
-       ((ftype-ref type (field) obj) ...)]))
+       (list (ftype-ref XEvent (type field) obj) ...)]))
 
   ;; Convert the cevent struct to a scheme record.
   ;; TODO this c-struct->scheme-record conversion to be done in xlib as part of define-xevent??
@@ -305,9 +305,9 @@
           ((ClientMessage
             (make-xclientmessageevent
              (make-xany cevent)
-             (ftype-ref XClientMessageEvent (message-type) cevent)
-             (ftype-ref XClientMessageEvent (format) cevent)
-             (ftype-fields XClientMessageEvent cevent
+             (ftype-ref XEvent (client-message message-type) cevent)
+             (ftype-ref XEvent (client-message format) cevent)
+             (ftype-fields client-message cevent
                            ((data l 0)
                             (data l 1)
                             (data l 2)
@@ -316,36 +316,40 @@
            (ConfigureNotify
             (apply make-xconfigureevent
              (make-xany cevent)
-             (ftype-fields XConfigureEvent cevent (wid x y width height border-width above override-redirect))))
+             (ftype-fields xconfigure cevent (wid x y width height border-width above override-redirect))))
            (ConfigureRequest
             (apply make-xconfigurerequestevent
              (make-xany cevent)
-             (ftype-fields XConfigureRequestEvent cevent (wid x y width height border-width above detail value-mask))))
+             (ftype-fields xconfigurerequest cevent (wid x y width height border-width above detail value-mask))))
            (CreateNotify
             (apply make-xcreatewindowevent
              (make-xany cevent)
-             (ftype-fields XCreateWindowEvent cevent (wid x y width height border-width override-redirect))))
+             (ftype-fields xcreatewindow cevent (wid x y width height border-width override-redirect))))
            (DestroyNotify
             (apply make-xdestroywindowevent
              (make-xany cevent)
-             (ftype-fields XDestroyWindowEvent cevent (wid))))
+             (ftype-fields xdestroywindow cevent (wid))))
            (MapNotify
             (apply make-xmapevent
              (make-xany cevent)
-             (ftype-fields XMapEvent cevent (wid override-redirect))))
+             (ftype-fields xmap cevent (wid override-redirect))))
            (MapRequest
             (apply make-xmaprequestevent
              (make-xany cevent)
-             (ftype-fields XMapRequestEvent cevent (wid))))
+             (ftype-fields xmaprequest cevent (wid))))
+           (PropertyNotify
+            (apply make-xpropertyevent
+             (make-xany cevent)
+             (ftype-fields xproperty cevent (propatom time state))))
            (UnmapNotify
             (apply make-xunmapevent
              (make-xany cevent)
-             (ftype-fields XUnmapEvent cevent (wid from-configure))))
+             (ftype-fields xunmap cevent (wid from-configure))))
            (else
             (ftype-ref XEvent (type) cevent)))))))
 
   (define make-xany
     (lambda (cevent)
       (apply make-xanyevent
-       (ftype-fields XAnyEvent cevent (type serial send-event d wid)))))
+       (ftype-fields xany cevent (type serial send-event d wid)))))
 )
