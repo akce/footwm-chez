@@ -109,7 +109,7 @@
            ((xmaprequestevent? ev)	(display "XMapRequestEvent"))
            ((xpropertyevent? ev)	(display (format "XPropertyEvent ~a" (xutil.atom-name (xpropertyevent-propatom ev)))))
            ((xunmapevent? ev)		(display "XUnmapEvent"))
-           (else			(display (format "Unknown event ~d" ev))))
+           (else			(display (format "Unknown event ~d" (xanyevent-type ev)))))
           (newline))
         (loop))))
 

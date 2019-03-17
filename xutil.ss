@@ -346,7 +346,7 @@
              (make-xany cevent)
              (ftype-fields xunmap cevent (wid from-configure))))
            (else
-            (ftype-ref XEvent (type) cevent)))))))
+            (make-xany cevent)))))))
 
   (define make-xany
     (lambda (cevent)
