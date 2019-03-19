@@ -137,11 +137,20 @@
    ColormapChange
    OwnerGrabButton
 
+   ;; configure-window-request
+   CWX
+   CWY
+   CWWidth
+   CWHeight
+   CWBorderWidth
+   CWSibling
+   CWStackMode
 
    UTF8String
 
    XChangeProperty
    XCloseDisplay
+   XConfigureWindow
    XDefaultRootWindow
    XFlush
    XFree
@@ -403,12 +412,23 @@
    (ColormapChange       23)
    (OwnerGrabButton      24))
 
+  ;; for value-mask in XConfigureRequestEvent
+  (enum configure-window-mask
+   (CWX             0)
+   (CWY             1)
+   (CWWidth         2)
+   (CWHeight        3)
+   (CWBorderWidth   4)
+   (CWSibling       5)
+   (CWStackMode     6))
+
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
 
   ;; data should be a u8* but using a void* instead.
   (proc XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
   (proc XCloseDisplay (dpy*) int)
+  (proc XConfigureWindow (dpy* window unsigned-32 void*) int)
   (proc XDefaultRootWindow (dpy*) window)
   (proc XFlush (dpy*) integer-32)
   (proc XFree (void*) void)
