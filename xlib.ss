@@ -103,6 +103,7 @@
 
    XTextProperty
    XWindowAttributes
+   XWindowChanges
 
    XA-CARDINAL
    XA-WINDOW
@@ -381,6 +382,16 @@
      [override-redirect	boolean]
      [screen		void*]))
 
+  (define-ftype XWindowChanges
+    (struct
+     [x			integer-32]
+     [y			integer-32]
+     [width		integer-32]
+     [height		integer-32]
+     [border-width	integer-32]
+     [sibling		window]
+     [stack-mode	unsigned-32]))
+
   ;; X atoms from Xatom.h
   (enum XA
         (XA-CARDINAL 6)
@@ -443,7 +454,7 @@
    ;; data should be a u8* but using a void* instead.
    (XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
    (XCloseDisplay (dpy*) int)
-   (XConfigureWindow (dpy* window unsigned-32 void*) int)
+   (XConfigureWindow (dpy* window unsigned-32 (* XWindowChanges)) int)
    (XDefaultRootWindow (dpy*) window)
    (XFlush (dpy*) integer-32)
    (XFree (void*) void)
