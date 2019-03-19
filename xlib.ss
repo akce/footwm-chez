@@ -146,6 +146,12 @@
    CWSibling
    CWStackMode
 
+   ;; stacking method
+   Above
+   Below
+   TopIf
+   BottomIf
+
    UTF8String
 
    XChangeProperty
@@ -422,6 +428,13 @@
    (CWBorderWidth   4)
    (CWSibling       5)
    (CWStackMode     6))
+
+  ;; window stacking method for configuring windows.
+  (enum stacking-method
+   (Above     0)
+   (Below     1)
+   (TopIf     2)
+   (BottomIf  3))
 
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
