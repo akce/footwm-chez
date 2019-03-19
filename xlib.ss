@@ -192,6 +192,16 @@
          (define idname idval)
          (define-record-type record (fields field fieldn ...)))]))
 
+  (define-syntax bitmap
+    (syntax-rules ()
+      [(_ name (symbol bit) ...)
+       (begin (define symbol (fxsll 1 bit)) ...)]))
+
+  (define-syntax enum
+    (syntax-rules ()
+      [(_ name (symbol value) ...)
+       (begin (define symbol value) ...)]))
+
   ;; type aliases.
   (define-ftype dpy* void*)
   (define-ftype window unsigned-32)
@@ -356,17 +366,14 @@
      [screen		void*]))
 
   ;; X atoms from Xatom.h
-  (define XA-CARDINAL 6)
-  (define XA-WINDOW 33)
+  (enum XA
+        (XA-CARDINAL 6)
+        (XA-WINDOW 33))
 
   ;; Error codes. From X.h
-  (define Success		0)
-  (define BadAccess		10)
-
-  (define-syntax bitmap
-    (syntax-rules ()
-      [(_ name (symbol bit) ...)
-       (begin (define symbol (fxsll 1 bit)) ...)]))
+  (enum error-codes
+        (Success		0)
+        (BadAccess		10))
 
   (define NoEvent              0)
   (bitmap input-event-mask
