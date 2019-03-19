@@ -184,10 +184,11 @@
   (define library-init
     (load-shared-object "libX11.so"))
 
-  (define-syntax proc
+  (define-syntax define-x
     (syntax-rules ()
-      [(_ libsym args return)
-       (define libsym (foreign-procedure (symbol->string 'libsym) args return))]))
+      [(_ (libsym args return) ...)
+       (begin
+         (define libsym (foreign-procedure (symbol->string 'libsym) args return)) ...)]))
 
   (define-syntax define-xevent
     (syntax-rules ()
@@ -425,33 +426,33 @@
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
 
-  ;; data should be a u8* but using a void* instead.
-  (proc XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
-  (proc XCloseDisplay (dpy*) int)
-  (proc XConfigureWindow (dpy* window unsigned-32 void*) int)
-  (proc XDefaultRootWindow (dpy*) window)
-  (proc XFlush (dpy*) integer-32)
-  (proc XFree (void*) void)
-  (proc XFreeStringList (void*) void)
-  (proc XGetAtomName (dpy* atom) void*)
-  (proc XGetTextProperty (dpy* window (* XTextProperty) atom) status)
-  (proc XGetWindowAttributes (dpy* window (* XWindowAttributes)) status)
-  ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
-  ;; void* points to anything so use that for now.
-  (proc XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
-  (proc XInternAtom (dpy* string boolean) atom)
-  (proc XNextEvent (dpy* (* XEvent)) integer-32)
-  (proc XOpenDisplay (string) dpy*)
-  (proc XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned-32)) status)
-  (proc XSelectInput (dpy* window long) integer-32)
-  (proc XSendEvent (dpy* window boolean long (* XEvent)) status)
-  ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
-  ;; So deviating and marking it as void* instead.
-  (proc XSetErrorHandler (void*) void*)
-  (proc XSetTextProperty (dpy* window (* XTextProperty) atom) void)
-  (proc XSync (dpy* boolean) integer-32)
-  ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
-  ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
-  (proc Xutf8TextListToTextProperty (dpy* void* int unsigned-32 (* XTextProperty)) int)
-  (proc Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* integer-32)) integer-32)
-  )
+  (define-x
+   ;; data should be a u8* but using a void* instead.
+   (XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
+   (XCloseDisplay (dpy*) int)
+   (XConfigureWindow (dpy* window unsigned-32 void*) int)
+   (XDefaultRootWindow (dpy*) window)
+   (XFlush (dpy*) integer-32)
+   (XFree (void*) void)
+   (XFreeStringList (void*) void)
+   (XGetAtomName (dpy* atom) void*)
+   (XGetTextProperty (dpy* window (* XTextProperty) atom) status)
+   (XGetWindowAttributes (dpy* window (* XWindowAttributes)) status)
+   ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
+   ;; void* points to anything so use that for now.
+   (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
+   (XInternAtom (dpy* string boolean) atom)
+   (XNextEvent (dpy* (* XEvent)) integer-32)
+   (XOpenDisplay (string) dpy*)
+   (XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned-32)) status)
+   (XSelectInput (dpy* window long) integer-32)
+   (XSendEvent (dpy* window boolean long (* XEvent)) status)
+   ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
+   ;; So deviating and marking it as void* instead.
+   (XSetErrorHandler (void*) void*)
+   (XSetTextProperty (dpy* window (* XTextProperty) atom) void)
+   (XSync (dpy* boolean) integer-32)
+   ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
+   ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
+   (Xutf8TextListToTextProperty (dpy* void* int unsigned-32 (* XTextProperty)) int)
+   (Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* integer-32)) integer-32)))
