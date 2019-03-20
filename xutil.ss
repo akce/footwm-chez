@@ -28,6 +28,7 @@
   (import
    (chezscheme)
    (globals)
+   (util)
    (xlib))
 
   (define-record-type geometry
@@ -35,26 +36,6 @@
 
   (define-record-type window-attributes
     (fields geom override-redirect map-state))
-
-  ;; [syntax] (fmem ((var varptr type)) ...)
-  (define-syntax fmem
-    (syntax-rules ()
-      [(_ ((var varptr type) ...) first rest ...)
-       (let ([var (foreign-alloc (ftype-sizeof type))] ...)
-         (let ([varptr (make-ftype-pointer type var)] ...)
-           (let ((r first))
-             ;; TODO should be wrapped via exceptions.
-             rest ...
-             (foreign-free var) ...
-             r)))]
-      [(_ ((var varptr type num) ...) first rest ...)
-       (let ([var (foreign-alloc (* num (ftype-sizeof type)))] ...)
-         (let ([varptr (make-ftype-pointer type var)] ...)
-           (let ((r first))
-             ;; TODO should be wrapped via exceptions.
-             rest ...
-             (foreign-free var) ...
-             r)))]))
 
   (define atom-name
     (lambda (a)

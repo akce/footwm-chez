@@ -111,6 +111,11 @@
    Success
    BadAccess
 
+   ;; XWindowAttributes map-state
+   IsUnmapped
+   IsUnviewable
+   IsViewable
+
    NoEvent
    KeyPress
    KeyRelease
@@ -184,9 +189,10 @@
    status
    u8*
    u8**
-   window*
-   )
-  (import (chezscheme))
+   window*)
+  (import
+   (chezscheme)
+   (util))
 
   (define library-init
     (load-shared-object "libX11.so"))
@@ -208,16 +214,6 @@
            [fieldn typen] ...))
          (define idname idval)
          (define-record-type record (fields field fieldn ...)))]))
-
-  (define-syntax bitmap
-    (syntax-rules ()
-      [(_ name (symbol bit) ...)
-       (begin (define symbol (fxsll 1 bit)) ...)]))
-
-  (define-syntax enum
-    (syntax-rules ()
-      [(_ name (symbol value) ...)
-       (begin (define symbol value) ...)]))
 
   ;; type aliases.
   (define-ftype dpy* void*)
@@ -401,6 +397,11 @@
   (enum error-codes
         (Success		0)
         (BadAccess		10))
+
+  (enum map-state
+        (IsUnmapped	0)
+        (IsUnviewable	1)
+        (IsViewable	2))
 
   (define NoEvent              0)
   (bitmap input-event-mask

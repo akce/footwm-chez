@@ -10,6 +10,7 @@
    main)
   (import
    (globals)
+   (util)
    (xlib)
    (prefix (ewmh) ewmh.)
    (prefix (icccm) icccm.)
@@ -123,11 +124,12 @@
 
   (define on-configure-request
     (lambda (ev)
-      (display "XConfigureRequestEvent\n")))
+      (icccm.on-configure-request ev)))
 
   (define on-create-window
     (lambda (ev)
-      (display "XCreateWindowEvent\n")))
+      (display "XCreateWindowEvent\n")
+      (icccm.on-create-window ev)))
 
   (define on-destroy-window
     (lambda (ev)
