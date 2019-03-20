@@ -83,9 +83,10 @@
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
       (let ([mws (list->vector (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root)))))]) ; managed wid list
-        ;; set the current desktop for each window.
+        ;; set WM_STATE & _NET_WM_DESKTOP for each window.
         (vector-for-each
          (lambda (wid)
+           (icccm.init-window wid)
            (unless (ewmh.window-desktop wid)
              (ewmh.window-desktop-set! wid 0)))
          mws)

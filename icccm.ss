@@ -78,7 +78,8 @@
    command
 
    ;; Misc util functions.
-   manage-window?)
+   manage-window?
+   init-window)
   (import
    (globals)
    (util)
@@ -310,4 +311,13 @@
                   (if state
                       (or (eq? state 'NORMAL) (eq? state 'ICONIC))
                       (= (xutil.window-attributes-map-state wa) IsViewable))))
-            #f #| window without attributes, probably one we won't want to manage |#)))))
+            #f #| window without attributes, probably one we won't want to manage |#))))
+
+  ;; Initialise a window according to ICCCM requirements.
+  (define init-window
+    (lambda (wid)
+      ;; Really only involves making sure the window has WM_STATE property.
+      ;; Always set new state to NORMAL, do nothing if there's already one.
+      ;; Assumes that the layout/arrange function will update to relevant values.
+      (unless (get-wm-state wid)
+        (wm-state-set! wid NormalState)))))
