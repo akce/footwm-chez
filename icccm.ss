@@ -269,19 +269,13 @@
     (lambda (ev)
       ;; Honour all configure requests as not all clients behave nicely otherwise.
       ;; We'll resize (if necessary) in the configure notify handler.
-      (let ([change-mask 0])
-        (fmem ([changes &changes XWindowChanges])
+      (let ([x #f] [y #f] [w #f] [h #f])
           (bit-case (xconfigurerequestevent-value-mask ev)
-            ((CWX (ftype-set! XWindowChanges (x) changes (xconfigurerequestevent-x ev))
-                  (set! change-mask (bitwise-copy-bit change-mask CWX 1)))
-             (CWY (ftype-set! XWindowChanges (y) changes (xconfigurerequestevent-y ev))
-                  (set! change-mask (bitwise-copy-bit change-mask CWY 1)))
-             (CWWidth (ftype-set! XWindowChanges (width) changes (xconfigurerequestevent-width ev))
-                      (set! change-mask (bitwise-copy-bit change-mask CWWidth 1)))
-             (CWHeight (ftype-set! XWindowChanges (height) changes (xconfigurerequestevent-height ev))
-                       (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))))
-          (XConfigureWindow (current-display) (xconfigurerequestevent-wid ev) change-mask &changes)
-          (display (format "#x~x XConfigureRequestEvent change-mask #b~b~n" (xconfigurerequestevent-wid ev) change-mask))))))
+            ((CWX (set! x (xconfigurerequestevent-x ev)))
+             (CWY (set! y (xconfigurerequestevent-y ev)))
+             (CWWidth (set! w (xconfigurerequestevent-width ev)))
+             (CWHeight (set! h (xconfigurerequestevent-height ev)))))
+          (xutil.resize-window (xconfigurerequestevent-wid ev) x y w h))))
 
   ;;;;;; ICCCM Appendix C Obsolete Session management conventions.
 

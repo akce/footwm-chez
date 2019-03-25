@@ -24,7 +24,8 @@
    text-property-set!
 
    make-atom-manager
-   )
+
+   resize-window)
   (import
    (chezscheme)
    (globals)
@@ -333,4 +334,23 @@
     (lambda (cevent)
       (apply make-xanyevent
        (ftype-fields xany cevent (type serial send-event d wid)))))
+
+  (define resize-window
+    (lambda (wid x y w h)
+      (let ([change-mask 0])
+        (fmem ([changes &changes XWindowChanges])
+          (when x
+            (ftype-set! XWindowChanges (x) changes x)
+            (set! change-mask (bitwise-copy-bit change-mask CWX 1)))
+          (when y
+            (ftype-set! XWindowChanges (y) changes y)
+            (set! change-mask (bitwise-copy-bit change-mask CWY 1)))
+          (when w
+            (ftype-set! XWindowChanges (width) changes w)
+            (set! change-mask (bitwise-copy-bit change-mask CWWidth 1)))
+          (when h
+            (ftype-set! XWindowChanges (height) changes h)
+            (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))
+          (XConfigureWindow (current-display) wid change-mask &changes)
+          (display (format "#x~x XConfigureWindow change-mask #b~b~n" wid change-mask))))))
 )
