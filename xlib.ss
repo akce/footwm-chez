@@ -183,19 +183,21 @@
    Xutf8TextListToTextProperty
    Xutf8TextPropertyToTextList
 
-   dpy*
-   window
    atom
+   card32
+   dpy*
+   pixmap
    status
    u8*
    u8**
+   window
    window*)
   (import
    (chezscheme)
    (util))
 
   (define library-init
-    (load-shared-object "libX11.so"))
+    (load-shared-object "libX11.so.6"))
 
   (define-syntax define-x
     (syntax-rules ()
@@ -216,12 +218,14 @@
          (define-record-type record (fields field fieldn ...)))]))
 
   ;; type aliases.
+  (define-ftype card32 integer-32)
   (define-ftype dpy* void*)
-  (define-ftype window unsigned-32)
-  (define-ftype atom unsigned-32)
-  (define-ftype status unsigned-32)
-  (define-ftype xid unsigned-32)
+  (define-ftype xid unsigned-long)
+  (define-ftype window xid)
+  (define-ftype atom unsigned-long)
+  (define-ftype status int)
   (define-ftype Colormap xid)
+  (define-ftype pixmap xid)
   (define-ftype Time unsigned-long)
 
   (define-ftype u8 unsigned-8)
@@ -231,7 +235,7 @@
 
   (define-ftype XAnyEvent
     (struct
-     [type		integer-32]	;; message type id
+     [type		int]		;; message type id
      [serial		unsigned-long]	;; number of last request handled by server
      [send-event	boolean]	;; #t if this came from a SendEvent
      [d			dpy*]		;; display this was read from
@@ -247,7 +251,7 @@
     (xclientmessageevent	ClientMessage	33)
     ([xany		XAnyEvent]
      [message-type	atom]		;; message type
-     [format		integer-32]
+     [format		int]
      [data		(union
                          [b b20]
                          [s s10]
@@ -257,11 +261,11 @@
     (xconfigureevent	ConfigureNotify	22)
     ([xany		XAnyEvent]	; (xany wid) is the parent of the window configured.
      [wid		window]		; window id of the window configured.
-     [x			integer-32]
-     [y			integer-32]
-     [width		integer-32]
-     [height		integer-32]
-     [border-width	integer-32]
+     [x			int]
+     [y			int]
+     [width		int]
+     [height		int]
+     [border-width	int]
      [above		window]
      [override-redirect	boolean]))
 
@@ -269,24 +273,24 @@
     (xconfigurerequestevent	ConfigureRequest	23)
     ([xany		XAnyEvent]	; (xany wid) is the parent of the window to be reconfigured.
      [wid		window]		; window id of the window to be reconfigured.
-     [x			integer-32]
-     [y			integer-32]
-     [width		integer-32]
-     [height		integer-32]
-     [border-width	integer-32]
+     [x			int]
+     [y			int]
+     [width		int]
+     [height		int]
+     [border-width	int]
      [above		window]
-     [detail		integer-32]
+     [detail		int]
      [value-mask	unsigned-32]))	; the components specified in the ConfigureWindow request.
 
   (define-xevent XCreateWindowEvent
     (xcreatewindowevent	CreateNotify 	16)
     ([xany		XAnyEvent]	; (xany wid) is the parent of the window created.
      [wid		window]		; window id of the window created.
-     [x			integer-32]
-     [y			integer-32]
-     [width		integer-32]
-     [height		integer-32]
-     [border-width	integer-32]
+     [x			int]
+     [y			int]
+     [width		int]
+     [height		int]
+     [border-width	int]
      [override-redirect	boolean]))
 
   (define-xevent XDestroyWindowEvent
@@ -296,7 +300,7 @@
 
   (define-ftype XErrorEvent
     (struct
-     [type		integer-32]
+     [type		int]
      [d			dpy*]
      [resourceid	xid]
      [serial		unsigned-long]
@@ -320,7 +324,7 @@
     ([xany		XAnyEvent]
      [propatom		atom]
      [time		Time]
-     [state		integer-32]))
+     [state		int]))
 
   (define-xevent XUnmapEvent
     (xunmapevent	UnmapNotify	18)
@@ -331,7 +335,7 @@
   (define-ftype xevent-size  (array 24 long))
   (define-ftype XEvent
     (union
-     [type		integer-32]
+     [type		int]
      [xany		XAnyEvent]
      [client-message	XClientMessageEvent]
      [xconfigure	XConfigureEvent]
@@ -349,44 +353,44 @@
     (struct
      [value	u8*]
      [encoding	atom]
-     [format	integer-32]
+     [format	int]
      [nitems	unsigned-long]))
 
   (define-ftype XWindowAttributes
     (struct
-     [x			integer-32]
-     [y			integer-32]
-     [width		integer-32]
-     [height		integer-32]
-     [border-width	integer-32]
-     [depth		integer-32]
+     [x			int]
+     [y			int]
+     [width		int]
+     [height		int]
+     [border-width	int]
+     [depth		int]
      [visual		void*]
      [root		window]
-     [class		integer-32]
-     [bit-gravity	integer-32]
-     [win-gravity	integer-32]
-     [backing-store	integer-32]
-     [backing-planes	unsigned-32]
-     [backing-pixel	unsigned-32]
+     [class		int]
+     [bit-gravity	int]
+     [win-gravity	int]
+     [backing-store	int]
+     [backing-planes	unsigned]
+     [backing-pixel	unsigned]
      [save-under	boolean]
      [colormap		Colormap]
      [map-installed	boolean]
-     [map-state		integer-32]
-     [all-event-masks	unsigned-32]
-     [your-event-mask	unsigned-32]
-     [do-not-propagate-mask	unsigned-32]
+     [map-state		int]
+     [all-event-masks	unsigned]
+     [your-event-mask	unsigned]
+     [do-not-propagate-mask	unsigned]
      [override-redirect	boolean]
      [screen		void*]))
 
   (define-ftype XWindowChanges
     (struct
-     [x			integer-32]
-     [y			integer-32]
-     [width		integer-32]
-     [height		integer-32]
-     [border-width	integer-32]
+     [x			int]
+     [y			int]
+     [width		int]
+     [height		int]
+     [border-width	int]
      [sibling		window]
-     [stack-mode	unsigned-32]))
+     [stack-mode	unsigned]))
 
   ;; X atoms from Xatom.h
   (enum XA
@@ -453,11 +457,11 @@
 
   (define-x
    ;; data should be a u8* but using a void* instead.
-   (XChangeProperty (dpy* window atom atom integer-32 integer-32 (* unsigned-32) integer-32) integer-32)
+   (XChangeProperty (dpy* window atom atom int int (* unsigned) int) int)
    (XCloseDisplay (dpy*) int)
-   (XConfigureWindow (dpy* window unsigned-32 (* XWindowChanges)) int)
+   (XConfigureWindow (dpy* window unsigned (* XWindowChanges)) int)
    (XDefaultRootWindow (dpy*) window)
-   (XFlush (dpy*) integer-32)
+   (XFlush (dpy*) int)
    (XFree (void*) void)
    (XFreeStringList (void*) void)
    (XGetAtomName (dpy* atom) void*)
@@ -465,19 +469,19 @@
    (XGetWindowAttributes (dpy* window (* XWindowAttributes)) status)
    ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
    ;; void* points to anything so use that for now.
-   (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* integer-32) (* unsigned-long) (* unsigned-long) (* u8*)) int)
+   (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
    (XInternAtom (dpy* string boolean) atom)
-   (XNextEvent (dpy* (* XEvent)) integer-32)
+   (XNextEvent (dpy* (* XEvent)) int)
    (XOpenDisplay (string) dpy*)
-   (XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned-32)) status)
-   (XSelectInput (dpy* window long) integer-32)
+   (XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned)) status)
+   (XSelectInput (dpy* window long) int)
    (XSendEvent (dpy* window boolean long (* XEvent)) status)
    ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
    ;; So deviating and marking it as void* instead.
    (XSetErrorHandler (void*) void*)
    (XSetTextProperty (dpy* window (* XTextProperty) atom) void)
-   (XSync (dpy* boolean) integer-32)
+   (XSync (dpy* boolean) int)
    ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
    ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
-   (Xutf8TextListToTextProperty (dpy* void* int unsigned-32 (* XTextProperty)) int)
-   (Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* integer-32)) integer-32)))
+   (Xutf8TextListToTextProperty (dpy* void* int unsigned (* XTextProperty)) int)
+   (Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* int)) int)))

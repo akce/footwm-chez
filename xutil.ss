@@ -18,7 +18,8 @@
    open
    property->string
    property->string*
-   property->u32*
+   get-property-ptr
+   property->ulongs
    u32*-property-set!
    send-message-cardinal
    text-property-set!
@@ -71,7 +72,7 @@
 
   (define ptr->utf8s
     (lambda (text-list nitems)
-      (let ([n (foreign-ref 'integer-32 nitems 0)]
+      (let ([n (foreign-ref 'int nitems 0)]
             [strvect (foreign-ref 'void* text-list 0)]	;; strvect = vector of strings (utf8**)
             [sz (ftype-sizeof void*)])
         (do ([i 0 (+ i 1)]
@@ -121,7 +122,7 @@
             (let ([rc (XGetTextProperty (current-display) wid &tp propatom)])
               (if (> rc 0)
                   ;; success
-                  (fmem ([nitems &nitems integer-32]
+                  (fmem ([nitems &nitems int]
                          [text-list &text-list u8**])
                         (let* ([stat (Xutf8TextPropertyToTextList (current-display) &tp &text-list &nitems)]
                                [res (ptr->utf8s text-list nitems)])
@@ -141,31 +142,48 @@
                  bv))))))
 
   ;; internal: extract numbers from pointer location.
-  (define ptr->u32*
+  (define ptr->ulongs
     (lambda (ptr len)
       (do ([i 0 (+ i 1)]
            [v (make-vector len) (begin
-                                  (vector-set! v i (foreign-ref 'unsigned-32 ptr (* i (ftype-sizeof unsigned-32))))
+                                  (vector-set! v i (foreign-ref 'unsigned-long ptr (* i (ftype-sizeof unsigned-long))))
                                   v)])
           ((= i len) v))))
 
-  ;; window property to vector of u32's.
-  (define property->u32*
+  ;; Return list/pair (address length) of property memory data or #f on failure.
+  ;; Caller *Must* foreign-free returned address.
+  ;; (Using list as the fmem macro won't allow a values return.)
+  (define get-property-ptr
     (lambda (wid propatom atomtype)
       (fmem ([atr &atr atom]		;; atr = actual type return
-             [afr &afr integer-32]	;; afr = actual format return
+             [afr &afr int]		;; afr = actual format return
              [nir &nir unsigned-long]	;; nir = number of items return
              [bar &bar unsigned-long]	;; bar = bytes after return
-             [pr  &pr u8*])		;; pr  = property return
-            (let ([rc (XGetWindowProperty (current-display) wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
-              (if (= rc 0)
-                  ;; success: extract window ids from pr.
-                  (let* ([pr* (foreign-ref 'void* pr 0)]
-                         [nums (ptr->u32* pr* (foreign-ref 'unsigned-long nir 0))])
-                    (XFree pr*)
-                    nums)
-                  ;; failure: return empty.
-                  (vector))))))
+             [pr  &pr void*])		;; pr  = property return
+        (let* ([pr (foreign-alloc (ftype-sizeof void*))]
+               [&pr (make-ftype-pointer void* pr)]
+               [rc (XGetWindowProperty (current-display) wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
+          (if (= rc 0)
+              ;; success: return data ptr and length.
+              (list pr (foreign-ref 'unsigned-long nir 0))
+              ;; failure: return false.
+              #f)))))
+
+  ;; window property to vector of unsigned longs.
+  (define property->ulongs
+    (lambda (wid propatom atomtype)
+      (let ([ptrlen (get-property-ptr wid propatom atomtype)])
+        (if ptrlen
+            ;; success: extract window ids from pr.
+            (let* ([ptr (list-ref ptrlen 0)]
+                   [*ptr (foreign-ref 'void* ptr 0)]
+                   [len (list-ref ptrlen 1)]
+                   [nums (ptr->ulongs *ptr len)])
+              (XFree *ptr)
+              (foreign-free ptr)
+              nums)
+            ;; failure: return empty.
+            (vector)))))
 
   (define send-message-cardinal
     (lambda (root wid atom value)
@@ -231,12 +249,12 @@
       (fmem ([root-return &rr window]
              [parent-return &pr window]
              [children-return &cr window*]
-             [num-children &nc unsigned-32])
+             [num-children &nc unsigned])
             (let ([rc (XQueryTree (current-display) wid &rr &pr &cr &nc)])
               (if (and (> rc 0) (> num-children 0))
                   (let ([ptr (foreign-ref 'void* children-return 0)]
-                        [len (foreign-ref 'unsigned-32 num-children 0)])
-                    (let ([wids (ptr->u32* ptr len)])
+                        [len (foreign-ref 'unsigned num-children 0)])
+                    (let ([wids (ptr->ulongs ptr len)])
                       (XFree ptr)
                       wids))
                   '())))))

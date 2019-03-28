@@ -61,11 +61,11 @@
 
   (define active-window
     (lambda ()
-      (first-or-false (xutil.property->u32* (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
 
   (define client-list
     (lambda ()
-      (property-or-false (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
+      (property-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
 
   (define client-list-set!
     (lambda (wids)
@@ -73,7 +73,7 @@
 
   (define client-list-stacking
     (lambda ()
-      (property-or-false (xutil.property->u32* (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
+      (property-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
 
   (define client-list-stacking-set!
     (lambda (wids)
@@ -82,7 +82,7 @@
   ;; wm: the current active desktop number.
   (define current-desktop
     (lambda ()
-      (first-or-false (xutil.property->u32* (root) (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL))))
 
   (define current-desktop-set!
     (lambda (number)
@@ -91,7 +91,7 @@
   ;; Get the desktop number for the window.
   (define window-desktop
     (lambda (wid)
-      (first-or-false (xutil.property->u32* wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL))))
 
   ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
   (define window-desktop-set!
@@ -100,7 +100,7 @@
 
   (define desktop-count
     (lambda ()
-      (first-or-false (xutil.property->u32* (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) XA-CARDINAL))))
 
   (define desktop-count-set!
     (lambda (number)
@@ -121,7 +121,7 @@
 
   (define pid
     (lambda (wid)
-      (first-or-false (xutil.property->u32* wid (atom-ref '_NET_WM_PID) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_PID) XA-CARDINAL))))
 
   ;; Request WM activate window.
   (define window-active-request!

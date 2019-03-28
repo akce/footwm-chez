@@ -67,7 +67,6 @@
    IconicState
 
    get-wm-state
-   get-state
    wm-state-set!
 
    ;; Changing window state.
@@ -91,6 +90,7 @@
     '(WM_CLASS
       WM_CLIENT_MACHINE
       WM_COMMAND
+      WM_HINTS
       WM_NAME
       WM_NORMAL_HINTS
       WM_SIZE_HINTS
@@ -123,24 +123,57 @@
         (PBaseSize	8)
         (PWinGravity	9))
 
+  (define-ftype c-size-hints
+    (struct
+     [flags		card32]
+     [pad1		card32]
+     [pad2		card32]
+     [pad3		card32]
+     [pad4		card32]
+     [min-width		integer-32]
+     [min-height	integer-32]
+     [max-width		integer-32]
+     [max-height	integer-32]
+     [width-inc		integer-32]
+     [height-inc	integer-32]
+     [min-aspect-x	integer-32]
+     [min-aspect-y	integer-32]
+     [max-aspect-x	integer-32]
+     [max-aspect-y	integer-32]
+     [base-width	integer-32]
+     [base-height	integer-32]
+     [win-gravity	integer-32]))
+
   (define-record-type size-hints
     (fields flags min-w min-h max-w max-h w-inc h-inc min-aspect-x min-aspect-y max-aspect-x max-aspect-y base-w base-h win-gravity))
 
   (define get-normal-hints
     (lambda (wid)
       ;; WM_NORMAL_HINTS is of type WM_SIZE_HINTS.
-      ;; But, WM_SIZE_HINTS is just a list of 32bit integers, so save defining a C struct by grabbing the vector
-      ;; and creating the record from it.
-      (let ([buf (xutil.property->u32* wid (atom-ref 'WM_NORMAL_HINTS) (atom-ref 'WM_SIZE_HINTS))])
-        (if (> (vector-length buf) 0)
-            ;; Maybe not defining the c-struct wasn't such a good idea......
-            (make-size-hints
-             (vector-ref buf 0)		; flags
-             (vector-ref buf 5) (vector-ref buf 6) (vector-ref buf 7) (vector-ref buf 8) ; min/max w/h
-             (vector-ref buf 9) (vector-ref buf 10)	; width/height increment
-             (vector-ref buf 11) (vector-ref buf 12) (vector-ref buf 13) (vector-ref buf 14)	; aspect min/max (x,y)
-             (vector-ref buf 15) (vector-ref buf 16)	; base width/height
-             (vector-ref buf 17))	; win-gravity
+      (let ([ptrlen (xutil.get-property-ptr wid (atom-ref 'WM_NORMAL_HINTS) (atom-ref 'WM_SIZE_HINTS))])
+        (if ptrlen
+            (let* ([ptr (car ptrlen)]
+                   [*ptr (foreign-ref 'void* ptr 0)]
+                   [wp (make-ftype-pointer c-size-hints *ptr)]
+                   ;; Make the record.
+                   [ret (make-size-hints
+                         (ftype-ref c-size-hints (flags) wp)
+                         (ftype-ref c-size-hints (min-width) wp)
+                         (ftype-ref c-size-hints (min-height) wp)
+                         (ftype-ref c-size-hints (max-width) wp)
+                         (ftype-ref c-size-hints (max-height) wp)
+                         (ftype-ref c-size-hints (width-inc) wp)
+                         (ftype-ref c-size-hints (height-inc) wp)
+                         (ftype-ref c-size-hints (min-aspect-x) wp)
+                         (ftype-ref c-size-hints (min-aspect-y) wp)
+                         (ftype-ref c-size-hints (max-aspect-x) wp)
+                         (ftype-ref c-size-hints (max-aspect-y) wp)
+                         (ftype-ref c-size-hints (base-width) wp)
+                         (ftype-ref c-size-hints (base-height) wp)
+                         (ftype-ref c-size-hints (win-gravity) wp))])
+              (XFree *ptr)
+              (foreign-free ptr)
+              ret)
             #f))))
 
   ;;;; ICCCM 4.1.2.4 WM_HINTS.
@@ -156,21 +189,40 @@
         ;; MessageHint is obsolete.
         (UrgencyHint		8))
 
+  (define-ftype c-wm-hints
+    (struct
+     [flags		card32]
+     [input		card32]		; client input model
+     [initial-state	card32]
+     [icon-pixmap	pixmap]
+     [icon-window	window]
+     [icon-x		integer-32]
+     [icon-y		integer-32]
+     [icon-mask		pixmap]
+     [window-group	window]))
+
   (define-record-type wm-hints
     (fields flags input initial-state window-group))
 
   (define get-wm-hints
     (lambda (wid)
       ;; WM_HINTS has type WM_HINTS.
-      (let ([buf (xutil.property->u32* wid (atom-ref 'WM_HINTS) (atom-ref 'WM_HINTS))])
-        (if (> (vector-length buf) 0)
-            ;; Make the record.
-            (make-wm-hints
-             (vector-ref buf 0)		; flags
-             (vector-ref buf 1)		; client input model
-             (vector-ref buf 2)		; initial state
-             ;; skip the icon stuff since this wm doesn't support icons.
-             (vector-ref buf 8))	; window group
+      (let* ([at (atom-ref 'WM_HINTS)]
+             [ptrlen (xutil.get-property-ptr wid at at)])
+        (if ptrlen
+            (let* ([ptr (car ptrlen)]
+                   [*ptr (foreign-ref 'void* ptr 0)]
+                   [wp (make-ftype-pointer c-wm-hints *ptr)]
+                   ;; Make the record.
+                   [ret (make-wm-hints
+                         (ftype-ref c-wm-hints (flags) wp)
+                         (ftype-ref c-wm-hints (input) wp)
+                         (ftype-ref c-wm-hints (initial-state) wp)
+                         ;; skip the icon stuff since this wm doesn't support icons.
+                         (ftype-ref c-wm-hints (window-group) wp))])
+              (XFree *ptr)
+              (foreign-free ptr)
+              ret)
             #f))))
 
   ;;;; ICCCM 4.1.2.5 WM_CLASS
@@ -215,31 +267,39 @@
         (NormalState	1)	;; Client should animate its window.
         (IconicState	3))	;; Client should animate its icon window.
 
+  ;; Note that this struct will have padding on a 64bit client (as icon/window is 64bits on a 64bit client).
+  ;; I haven't found a reference in ICCCM as to whether this should be packed.
+  (define-ftype wm-state
+    (struct
+     [state	integer-32]	;; CARD32: one of wm-state-state.
+     [icon	window]))
+
   (define get-wm-state
     (lambda (wid)
-      (let* ([at (atom-ref 'WM_STATE)]
-             [res (xutil.property->u32* wid at at)])
-        (if (> (vector-length res) 0)
-            res
-            #f))))
-
-  (define get-state
-    (lambda (wid)
-      (let ([res (get-wm-state wid)])
-        ;; The second WM_STATE field is the icon window. Ignore as we don't support icons.
-        (if res
-            (case (vector-ref res 0)
-              [(0)	'WITHDRAWN]
-              [(1)	'NORMAL]
-              [(3)	'ICONIC]
-              [else	#f])
-            #f))))
+      (let ([at (atom-ref 'WM_STATE)])
+        (let ([ptrlen (xutil.get-property-ptr wid at at)])
+          (if ptrlen
+              (let* ([ptr (car ptrlen)]
+                     [*ptr (foreign-ref 'void* ptr 0)]
+                     [wp (make-ftype-pointer wm-state *ptr)]
+                     [state (ftype-ref wm-state (state) wp)])
+                (XFree *ptr)
+                (foreign-free ptr)
+                (case state
+                  [(0)	'WITHDRAWN]
+                  [(1)	'NORMAL]
+                  [(3)	'ICONIC]
+                  [else	#f]))
+              #f)))))
 
   ;; WM *must* set in top-level windows.
   (define wm-state-set!
     (lambda (wid state)
       (let ([at (atom-ref 'WM_STATE)])
-        (xutil.u32*-property-set! wid at (vector state 0) at))))
+        (fmem ([ws &ws wm-state])
+          (ftype-set! wm-state (state) &ws state)
+          (ftype-set! wm-state (icon) &ws 0)
+          (XChangeProperty (current-display) wid at at 32 0 &ws (* 4 (ftype-sizeof wm-state)))))))
 
   ;;;; ICCCM 4.1.3.2 WM_ICON_SIZE
   ;; N/A
@@ -301,7 +361,7 @@
         (if wa
             (if (xutil.window-attributes-override-redirect wa)
                 #f	;; always ignore override-redirect == true
-                (let ([state (get-state wid)])
+                (let ([state (get-wm-state wid)])
                   (if state
                       (or (eq? state 'NORMAL) (eq? state 'ICONIC))
                       (= (xutil.window-attributes-map-state wa) IsViewable))))
