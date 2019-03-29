@@ -26,7 +26,9 @@
 
    make-atom-manager
 
-   resize-window)
+   resize-window
+
+   void*-cast)
   (import
    (chezscheme)
    (globals)
@@ -241,6 +243,11 @@
       ;; free containing block.
       (foreign-free u8**)))
 
+  ;; return an ftype-pointer of void* type for ftype-pointer fptr.
+  (define void*-cast
+    (lambda (fptr)
+      (make-ftype-pointer void* (ftype-pointer-address fptr))))
+
   (define text-property-set!
     (lambda (wid str* propatom)
       (fmem ([tp &tp XTextProperty])
@@ -249,8 +256,7 @@
                 (if (fx= rc 0)
                     (XSetTextProperty (current-display) wid &tp propatom))
                 (free/u8** u8mem (length str*))
-                ;; the steps below cast tp->value to void*.
-                (XFree (ftype-pointer-address (make-ftype-pointer void* (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))))))))))
+                (XFree (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
 
   (define get-child-windows
     (lambda (wid)
