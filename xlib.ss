@@ -105,6 +105,7 @@
    XWindowAttributes
    XWindowChanges
 
+   XA-ATOM
    XA-CARDINAL
    XA-WINDOW
 
@@ -158,6 +159,13 @@
    TopIf
    BottomIf
 
+   CurrentTime
+
+   ;; input focus
+   RevertToNone
+   RevertToPointerRoot
+   RevertToParent
+
    UTF8String
 
    XChangeProperty
@@ -173,12 +181,14 @@
    XGetWindowProperty
    XInternAtom
    XMapWindow
+   XMoveResizeWindow
    XNextEvent
    XOpenDisplay
    XQueryTree
    XSelectInput
    XSendEvent
    XSetErrorHandler
+   XSetInputFocus
    XSetTextProperty
    XSync
    XUnmapWindow
@@ -396,6 +406,7 @@
 
   ;; X atoms from Xatom.h
   (enum XA
+        (XA-ATOM 4)
         (XA-CARDINAL 6)
         (XA-WINDOW 33))
 
@@ -454,6 +465,13 @@
    (TopIf     2)
    (BottomIf  3))
 
+  (define CurrentTime 0)
+
+  (enum input-focus
+    (RevertToNone		 0)
+    (RevertToPointerRoot	 1)
+    (RevertToParent		 2))
+
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
 
@@ -474,6 +492,7 @@
    (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
    (XInternAtom (dpy* string boolean) atom)
    (XMapWindow (dpy* window) int)
+   (XMoveResizeWindow (dpy* window int int unsigned unsigned) int)
    (XNextEvent (dpy* (* XEvent)) int)
    (XOpenDisplay (string) dpy*)
    (XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned)) status)
@@ -482,6 +501,7 @@
    ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
    ;; So deviating and marking it as void* instead.
    (XSetErrorHandler (void*) void*)
+   (XSetInputFocus (dpy* window int Time) int)
    (XSetTextProperty (dpy* window (* XTextProperty) atom) void)
    (XSync (dpy* boolean) int)
    (XUnmapWindow (dpy* window) int)

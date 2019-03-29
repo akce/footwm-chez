@@ -58,6 +58,10 @@
    class
    instance
 
+   ;; WM_PROTOCOLS
+   get-wm-protocols
+   has-wm-protocol?
+
    ;; WM_CLIENT_MACHINE
    client-machine
 
@@ -75,12 +79,15 @@
    deiconify-window
    on-configure-request
 
+   focus-window
+
    ;; WM_COMMAND
    command
 
    ;; Misc util functions.
    manage-window?
-   init-window)
+   init-window
+   send-client-message)
   (import
    (globals)
    (util)
@@ -95,9 +102,10 @@
       WM_HINTS
       WM_NAME
       WM_NORMAL_HINTS
+      WM_PROTOCOLS
       WM_SIZE_HINTS
       WM_STATE
-      ))
+      WM_TAKE_FOCUS))
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
 
@@ -249,7 +257,15 @@
   ;; TODO
 
   ;;;; ICCCM 4.1.2.7 WM_PROTOCOLS
-  ;; TODO
+  (define get-wm-protocols
+    (lambda (wid)
+      (vector->list (xutil.property->ulongs wid (atom-ref 'WM_PROTOCOLS) XA-ATOM))))
+
+  (define has-wm-protocol?
+    (lambda (wid proto-atom)
+      (if (memq proto-atom (get-wm-protocols wid))
+          #t
+          #f)))
 
   ;;;; ICCCM 4.1.2.8 WM_COLORMAP_WINDOWS
   ;; TODO
@@ -358,6 +374,22 @@
              (CWHeight (set! h (xconfigurerequestevent-height ev)))))
           (xutil.resize-window (xconfigurerequestevent-wid ev) x y w h))))
 
+  ;;;;;; ICCCM 4.1.7 Input Focus.
+  (define focus-window
+    (lambda (wid)
+      (let* ([h (get-wm-hints wid)]
+             [input-hint
+              (if h
+                  (wm-hints-input h)
+                  #f)]
+             [take-focus (has-wm-protocol? wid (atom-ref 'WM_TAKE_FOCUS))])
+        (if take-focus
+            ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
+            (send-client-message wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS))
+            (if input-hint
+                ;; Passive: manually set input focus.
+                (XSetInputFocus (current-display) wid RevertToNone CurrentTime))))))
+
   ;;;;;; ICCCM Appendix C Obsolete Session management conventions.
 
   ;;;; ICCCM C.1.1 WM_COMMAND
@@ -395,4 +427,16 @@
       ;; Always set new state to NORMAL, do nothing if there's already one.
       ;; Assumes that the layout/arrange function will update to relevant values.
       (unless (get-wm-state wid)
-        (wm-state-set! wid NormalState)))))
+        (wm-state-set! wid NormalState))))
+
+  (define send-client-message
+    (lambda (wid type sub-type)
+      (fmem ([ev &ev XEvent])
+        (ftype-set! XEvent (client-message xany type) &ev ClientMessage)
+        (ftype-set! XEvent (client-message xany wid) &ev wid)
+        (ftype-set! XEvent (client-message xany send-event) &ev #t)
+        (ftype-set! XEvent (client-message message-type) &ev type)
+        (ftype-set! XEvent (client-message format) &ev 32)
+        (ftype-set! XEvent (client-message data l 0) &ev sub-type)
+        (ftype-set! XEvent (client-message data l 1) &ev CurrentTime)
+        (XSendEvent (current-display) wid #f NoEvent &ev)))))

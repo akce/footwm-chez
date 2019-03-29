@@ -1,5 +1,7 @@
 (library (wm)
   (export
+   arrange-windows
+
    desktop-add
    desktop-delete
    desktop-rename
@@ -44,7 +46,8 @@
       (install-as-wm)
       #;(install-error-handler)
       (init-desktops)
-      (init-windows)))
+      (init-windows)
+      (arrange-windows)))
 
   ;; Install ourselves as *the* window manager.
   ;; raises an error condition on failure.
@@ -82,20 +85,43 @@
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
-      (let ([mws (list->vector (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root)))))]) ; managed wid list
+      (let ([ws (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root))))])
         ;; set WM_STATE & _NET_WM_DESKTOP for each window.
-        (vector-for-each
+        (for-each
          (lambda (wid)
            (icccm.init-window wid)
            (unless (ewmh.window-desktop wid)
              (ewmh.window-desktop-set! wid 0)))
-         mws)
+         ws)
         ;; set client-list/stacking ewmh hints.
         (unless (ewmh.client-list)
-          (ewmh.client-list-set! mws))
+          (ewmh.client-list-set! (list->vector ws)))
         (unless (ewmh.client-list-stacking)
-          (ewmh.client-list-stacking-set! mws))
+          (ewmh.client-list-stacking-set! (list->vector ws)))
         (XSync (current-display) #f))))
+
+  (define arrange-window
+    (lambda (wid)
+      ;; give it the same dimensions as the root window.
+      (let ([rgeom (xutil.window-attributes-geom (xutil.get-window-attributes (root)))])
+        (display (format "top window #x~x ~a~n" wid rgeom))
+        (xutil.resize-window wid (xutil.geometry-x rgeom) (xutil.geometry-y rgeom) (xutil.geometry-width rgeom) (xutil.geometry-height rgeom)))))
+
+  (define arrange-windows
+    (lambda ()
+      ;; client-list-stacking is bottom to top, reverse so we can easily get to the first window later.
+      (let ([aws (reverse (vector->list (ewmh.client-list-stacking)))]
+            [d (ewmh.current-desktop)])
+        (let-values ([(ws ows) (partition (lambda (w) (= d (ewmh.window-desktop w))) aws)])
+          (for-each icccm.iconify-window ows)	; should do this only on wm-init and desktop change..
+          (unless (null? ws)
+            (let ([vis (car ws)]		; visible window
+                  [hs (cdr ws)])		; hidden windows
+              (for-each icccm.iconify-window hs)
+              (icccm.wm-state-set! vis icccm.NormalState)
+              (XMapWindow (current-display) vis)
+              (arrange-window vis)
+              (icccm.focus-window vis)))))))
 
   (define run
     (lambda ()
