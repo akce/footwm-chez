@@ -172,6 +172,7 @@
    XGetWindowAttributes
    XGetWindowProperty
    XInternAtom
+   XMapWindow
    XNextEvent
    XOpenDisplay
    XQueryTree
@@ -180,6 +181,7 @@
    XSetErrorHandler
    XSetTextProperty
    XSync
+   XUnmapWindow
    Xutf8TextListToTextProperty
    Xutf8TextPropertyToTextList
 
@@ -471,6 +473,7 @@
    ;; void* points to anything so use that for now.
    (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
    (XInternAtom (dpy* string boolean) atom)
+   (XMapWindow (dpy* window) int)
    (XNextEvent (dpy* (* XEvent)) int)
    (XOpenDisplay (string) dpy*)
    (XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned)) status)
@@ -481,6 +484,7 @@
    (XSetErrorHandler (void*) void*)
    (XSetTextProperty (dpy* window (* XTextProperty) atom) void)
    (XSync (dpy* boolean) int)
+   (XUnmapWindow (dpy* window) int)
    ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
    ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
    (Xutf8TextListToTextProperty (dpy* void* int unsigned (* XTextProperty)) int)

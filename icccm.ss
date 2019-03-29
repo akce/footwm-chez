@@ -71,6 +71,8 @@
 
    ;; Changing window state.
    on-create-window
+   iconify-window
+   deiconify-window
    on-configure-request
 
    ;; WM_COMMAND
@@ -315,6 +317,25 @@
         (if (= (xanyevent-wid (xcreatewindowevent-xany ev)) (xcreatewindowevent-wid ev))
             ;; yes: add WM_STATE set to WithdrawnState.
             (wm-state-set! (xcreatewindowevent-wid ev) WithdrawnState)))))
+
+  ;;;;;; ICCCM 4.1.4 Changing Window State.
+  (define iconify-window
+    (lambda (wid)
+      (if (eq? (get-wm-state wid) 'NORMAL)
+          (begin
+            (XUnmapWindow (current-display) wid)
+            (wm-state-set! wid IconicState)
+            #t)
+          #f)))
+
+  (define deiconify-window
+    (lambda (wid)
+      (if (eq? (get-wm-state wid) 'ICONIC)
+          (begin
+            (XMapWindow (current-display) wid)
+            (wm-state-set! wid NormalState)
+            #t)
+          #f)))
 
   ;;;;;; ICCCM 4.1.5 Configuring the Window.
   (define-syntax bit-case
