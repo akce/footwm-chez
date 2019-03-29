@@ -20,7 +20,7 @@
    property->string*
    get-property-ptr
    property->ulongs
-   u32*-property-set!
+   ulongs-property-set!
    send-message-cardinal
    text-property-set!
 
@@ -87,19 +87,19 @@
     (lambda (wid atomprop value)
       (fmem ([num &num unsigned-32])
             (foreign-set! 'unsigned-32 num 0 value)
-            (XChangeProperty (current-display) wid atomprop XA-CARDINAL 32 0 &num 1))))
+            (XChangeProperty (current-display) wid atomprop XA-CARDINAL 32 0 num 1))))
 
-  (define u32*-property-set!
+  (define ulongs-property-set!
     (lambda (wid atomprop vect typeatom)
       (let ([len (vector-length vect)])
-        (fmem ([v &v unsigned-32 len])
+        (fmem ([v &v unsigned-long len])
               (vector-for-each
                (lambda (val offset)
-                 (foreign-set! 'unsigned-32 v offset val))
+                 (foreign-set! 'unsigned-long v offset val))
                vect (list->vector (map (lambda (i)
-                                         (* i (ftype-sizeof unsigned-32)))
+                                         (* i (ftype-sizeof unsigned-long)))
                                        (iota len))))
-              (XChangeProperty (current-display) wid atomprop typeatom 32 0 &v len)))))
+              (XChangeProperty (current-display) wid atomprop typeatom 32 0 v len)))))
 
   (define property->string
     (lambda (wid propatom)
@@ -164,8 +164,16 @@
                [&pr (make-ftype-pointer void* pr)]
                [rc (XGetWindowProperty (current-display) wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
           (if (= rc 0)
-              ;; success: return data ptr and length.
-              (list pr (foreign-ref 'unsigned-long nir 0))
+              ;; maybe success: make sure there was something returned.
+              (let ([len (foreign-ref 'unsigned-long nir 0)])
+                (if (> len 0)
+                    ;; more success: return data ptr and length.
+                    (list pr len)
+                    (begin
+                      ;; nothing back, free memory and return.
+                      (XFree (foreign-ref 'void* pr 0))
+                      (foreign-free pr)
+                      #f)))
               ;; failure: return false.
               #f)))))
 

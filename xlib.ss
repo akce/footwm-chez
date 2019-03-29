@@ -280,7 +280,7 @@
      [border-width	int]
      [above		window]
      [detail		int]
-     [value-mask	unsigned-32]))	; the components specified in the ConfigureWindow request.
+     [value-mask	unsigned-long]))	; the components specified in the ConfigureWindow request.
 
   (define-xevent XCreateWindowEvent
     (xcreatewindowevent	CreateNotify 	16)
@@ -370,15 +370,15 @@
      [bit-gravity	int]
      [win-gravity	int]
      [backing-store	int]
-     [backing-planes	unsigned]
-     [backing-pixel	unsigned]
+     [backing-planes	unsigned-long]
+     [backing-pixel	unsigned-long]
      [save-under	boolean]
      [colormap		Colormap]
      [map-installed	boolean]
      [map-state		int]
-     [all-event-masks	unsigned]
-     [your-event-mask	unsigned]
-     [do-not-propagate-mask	unsigned]
+     [all-event-masks	long]
+     [your-event-mask	long]
+     [do-not-propagate-mask	long]
      [override-redirect	boolean]
      [screen		void*]))
 
@@ -390,7 +390,7 @@
      [height		int]
      [border-width	int]
      [sibling		window]
-     [stack-mode	unsigned]))
+     [stack-mode	int]))
 
   ;; X atoms from Xatom.h
   (enum XA
@@ -457,7 +457,7 @@
 
   (define-x
    ;; data should be a u8* but using a void* instead.
-   (XChangeProperty (dpy* window atom atom int int (* unsigned) int) int)
+   (XChangeProperty (dpy* window atom atom int int void* int) int)
    (XCloseDisplay (dpy*) int)
    (XConfigureWindow (dpy* window unsigned (* XWindowChanges)) int)
    (XDefaultRootWindow (dpy*) window)

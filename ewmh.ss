@@ -69,7 +69,7 @@
 
   (define client-list-set!
     (lambda (wids)
-      (xutil.u32*-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
 
   (define client-list-stacking
     (lambda ()
@@ -77,7 +77,7 @@
 
   (define client-list-stacking-set!
     (lambda (wids)
-      (xutil.u32*-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) wids XA-WINDOW)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) wids XA-WINDOW)))
 
   ;; wm: the current active desktop number.
   (define current-desktop

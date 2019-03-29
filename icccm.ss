@@ -299,7 +299,7 @@
         (fmem ([ws &ws wm-state])
           (ftype-set! wm-state (state) &ws state)
           (ftype-set! wm-state (icon) &ws 0)
-          (XChangeProperty (current-display) wid at at 32 0 &ws (* 4 (ftype-sizeof wm-state)))))))
+          (XChangeProperty (current-display) wid at at 32 0 ws (ftype-sizeof wm-state))))))
 
   ;;;; ICCCM 4.1.3.2 WM_ICON_SIZE
   ;; N/A
