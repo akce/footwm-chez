@@ -1,3 +1,7 @@
+;; Extended Window Manager Hints (EWMH)
+;; As at version 1.5.
+;; See:
+;;    https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html
 (library (ewmh)
   (export
    active-window

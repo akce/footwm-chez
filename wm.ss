@@ -49,7 +49,7 @@
       (init-windows)
       (arrange-windows)))
 
-  ;; Install ourselves as *the* window manager.
+  ;; Install as *the* window manager.
   ;; raises an error condition on failure.
   (define install-as-wm
     (lambda ()
@@ -60,10 +60,22 @@
                  (when (fx=? (ftype-ref XErrorEvent (error-code) xerrorev) BadAccess)
                    (set! installed #f))
                  0) (dpy* (* XErrorEvent)) int)])
-        ;; Set as window manager.
+        ;; Set as the window manager client.
+        ;; Structure = geometry, border, stacking info for a window.
+        ;; Sub = child.
+        ;; Redirect = server routes changes as events to the wm client.
+        ;; The window manager client (wm) is the only client that can select SubstructureRedirect on the root window.
+        ;; Any config change requested by child windows will result in CirculateRequest, ConfigureRequest, or MapRequest
+        ;; events being sent to the wm. The wm can then honour, disregard, or modify those requests.
         (lock-object check-bad-access)
-        (let ([orig (XSetErrorHandler (foreign-callable-entry-point check-bad-access))])
-          (XSelectInput (current-display) (root) (logor PropertyChange StructureNotify SubstructureRedirect SubstructureNotify))
+        (let ([orig (XSetErrorHandler (foreign-callable-entry-point check-bad-access))]
+              [mask
+               (bitwise-ior
+                PropertyChange
+                StructureNotify
+                SubstructureRedirect	; Redirect child window change requests to this wm-client.
+                SubstructureNotify)])
+          (XSelectInput (current-display) (root) mask)
           (XSync (current-display) #f)
           (XSetErrorHandler orig)
           (unlock-object check-bad-access)
