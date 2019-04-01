@@ -384,5 +384,5 @@
             (ftype-set! XWindowChanges (height) &changes h)
             (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))
           (XConfigureWindow (current-display) wid change-mask &changes)
-          (display (format "#x~x XConfigureWindow change-mask #b~b~n" wid change-mask))))))
+          #;(display (format "#x~x XConfigureWindow change-mask #b~b~n" wid change-mask))))))
 )

@@ -19,3 +19,5 @@
 (icccm.init-atoms)
 (ewmh.init-atoms)
 (wm.init-atoms)
+
+(wm.main)

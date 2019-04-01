@@ -89,6 +89,7 @@
    PropertyNotify
    make-xpropertyevent
    xpropertyevent?
+   xpropertyevent-xany
    xpropertyevent-propatom
    xpropertyevent-time
    xpropertyevent-state

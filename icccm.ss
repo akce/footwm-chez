@@ -79,6 +79,7 @@
    deiconify-window
    show-window
    on-map-request
+   on-unmap
    on-configure-request
 
    focus-window
@@ -341,8 +342,8 @@
     (lambda (wid)
       (if (eq? (get-wm-state wid) 'NORMAL)
           (begin
-            (XUnmapWindow (current-display) wid)
             (wm-state-set! wid IconicState)
+            (XUnmapWindow (current-display) wid)
             #t)
           #f)))
 
@@ -350,8 +351,8 @@
     (lambda (wid)
       (if (eq? (get-wm-state wid) 'ICONIC)
           (begin
-            (XMapWindow (current-display) wid)
             (wm-state-set! wid NormalState)
+            (XMapWindow (current-display) wid)
             #t)
           #f)))
 
@@ -369,7 +370,18 @@
       ;; Map the window and set the wm-state.
       (let ([wid (xmaprequestevent-wid ev)])
         (wm-state-set! wid NormalState)
+        (watch-window wid)
         (XMapWindow (current-display) wid))))
+
+  (define on-unmap
+    (lambda (ev)
+      (let ([wid (xunmapevent-wid ev)])
+        ;; Need to still manage Unmapped windows that are going ICONIC.
+        ;; This wm will have set the state to ICONIC if we're hiding the window so no need to do anything.
+        ;; However, a NORMAL window being unmapped could mean that the client is shutting down. We'll set
+        ;; to WITHDRAWN and see what happens.
+        (unless (eq? (get-wm-state wid) 'ICONIC)
+            (wm-state-set! wid WithdrawnState)))))
 
   ;;;;;; ICCCM 4.1.5 Configuring the Window.
   (define-syntax bit-case
@@ -438,10 +450,18 @@
                       (= (xutil.window-attributes-map-state wa) IsViewable))))
             #f #| window without attributes, probably one we won't want to manage |#))))
 
+  ;; Subscribe to window notification events.
+  ;; - StructureNotify: for client window destruction notifications.
+  (define watch-window
+    (lambda (wid)
+      (XSelectInput (current-display) wid StructureNotify)))
+
   ;; Initialise a window according to ICCCM requirements.
   (define init-window
     (lambda (wid)
-      ;; Really only involves making sure the window has WM_STATE property.
+      ;; Subscribe to window event changes.
+      (watch-window wid)
+      ;; Set the WM_STATE property.
       ;; Always set new state to NORMAL, do nothing if there's already one.
       ;; Assumes that the layout/arrange function will update to relevant values.
       (unless (get-wm-state wid)

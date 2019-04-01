@@ -26,6 +26,7 @@
    window-desktop-request!
 
    on-map-request
+   remove-window
 
    init-atoms
    atom-ref
@@ -170,5 +171,15 @@
                             stack)
                         (list wid))))
         (unless (memq wid clients)
-          (client-list-set! (list->vector (append clients (list wid)))))
-        (active-window-set! wid)))))
+          (client-list-set! (list->vector (append clients (list wid))))))))
+
+  (define remove-window
+    (lambda (wid)
+      ;; Remove window from client lists *only*.
+      ;; We don't touch active-window here because we're not changing window state. That's up to the wm proper.
+      (let ([clients (vector->list (client-list))]
+            [stacking (vector->list (client-list-stacking))])
+        (if (memq wid clients)
+            (client-list-set! (list->vector (remove wid clients))))
+        (if (memq wid stacking)
+            (client-list-stacking-set! (list->vector (remove wid stacking))))))))
