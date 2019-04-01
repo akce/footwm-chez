@@ -7,7 +7,6 @@
         (globals)
         (prefix (wm) wm.)
         (prefix (icccm) icccm.)
-        (prefix (shell) sh.)
         (xlib)
         (prefix (xutil) xutil.)
         (rnrs base)

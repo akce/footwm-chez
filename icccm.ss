@@ -80,6 +80,7 @@
    show-window
    on-map-request
    on-unmap
+   client-iconify-message
    on-configure-request
 
    focus-window
@@ -99,7 +100,8 @@
    (chezscheme))
 
   (define atom-list
-    '(WM_CLASS
+    '(WM_CHANGE_STATE
+      WM_CLASS
       WM_CLIENT_MACHINE
       WM_COMMAND
       WM_HINTS
@@ -383,6 +385,13 @@
         (unless (eq? (get-wm-state wid) 'ICONIC)
             (wm-state-set! wid WithdrawnState)))))
 
+  ;; Client -> WM message: Iconify window request.
+  ;; Client wishes WM to transition window from NORMAL to ICONIC state.
+  (define client-iconify-message
+    (lambda (wid)
+      ;; Sends client message to the WM as the WM is the only client watching SubstructureRedirect on the root window.
+      (send-client-message (root) wid (atom-ref 'WM_CHANGE_STATE) IconicState SubstructureRedirect)))
+
   ;;;;;; ICCCM 4.1.5 Configuring the Window.
   (define-syntax bit-case
     (syntax-rules ()
@@ -415,7 +424,7 @@
              [take-focus (has-wm-protocol? wid (atom-ref 'WM_TAKE_FOCUS))])
         (if take-focus
             ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
-            (send-client-message wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS))
+            (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
             (if input-hint
                 ;; Passive: manually set input focus.
                 (XSetInputFocus (current-display) wid RevertToNone CurrentTime))))))
@@ -468,13 +477,13 @@
         (wm-state-set! wid NormalState))))
 
   (define send-client-message
-    (lambda (wid type sub-type)
+    (lambda (wid msgwid type sub-type event-mask)
       (fmem ([ev &ev XEvent])
         (ftype-set! XEvent (client-message xany type) &ev ClientMessage)
-        (ftype-set! XEvent (client-message xany wid) &ev wid)
+        (ftype-set! XEvent (client-message xany wid) &ev msgwid)
         (ftype-set! XEvent (client-message xany send-event) &ev #t)
         (ftype-set! XEvent (client-message message-type) &ev type)
         (ftype-set! XEvent (client-message format) &ev 32)
         (ftype-set! XEvent (client-message data l 0) &ev sub-type)
         (ftype-set! XEvent (client-message data l 1) &ev CurrentTime)
-        (XSendEvent (current-display) wid #f NoEvent &ev)))))
+        (XSendEvent (current-display) wid #f event-mask &ev)))))

@@ -31,6 +31,8 @@
         (wm.desktop-rename (string->number (list-ref args 0)) (list-ref args 1))]
        [(string=? "ds" cmd)
         (e.current-desktop-request! (string->number (list-ref args 0)))]
+       [(string=? "wb" cmd)
+        (i.client-iconify-message (string->number (list-ref args 0)))]
        [(string=? "wc" cmd)
         (e.window-close-request! (string->number (list-ref args 0)))]
        [(string=? "wd" cmd)
@@ -43,7 +45,7 @@
         (display "command not understood. showing help.")
         (newline)
         (help binary)])
-      (XFlush (current-display)))))
+      (XSync (current-display) #f))))
 
 (define help
   (lambda (binary)

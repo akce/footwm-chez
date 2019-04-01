@@ -9,7 +9,9 @@
    init-atoms
    init-desktops
    init-windows
-   main)
+   main
+
+   banish-window)
   (import
    (globals)
    (util)
@@ -168,7 +170,15 @@
 
   (define on-client-message
     (lambda (ev)
-      (display (format "#x~x ClientMessage~n" (xanyevent-wid (xclientmessageevent-xany ev))))))
+      (let ([wid (xanyevent-wid (xclientmessageevent-xany ev))]
+            [type (xclientmessageevent-message-type ev)])
+        (display (format "#x~x ClientMessage ~a ~a~n" wid type (xutil.atom-name type)))
+        (cond
+         [(eq? type (icccm.atom-ref 'WM_CHANGE_STATE))
+          (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
+              (banish-window wid))]
+         [else
+          (display (format "#x~x Unknown ClientMessage message type~n" wid))]))))
 
   (define on-configure
     (lambda (ev)
@@ -230,6 +240,22 @@
                   (display (format "#x~x removing window from EWMH client lists~n" wid))
                   (ewmh.remove-window wid)))
             (arrange-windows)))))
+
+  (define top-level-window?
+    (lambda (wid)
+      (memq wid (vector->list (ewmh.client-list)))))
+
+  (define banish-window
+    (lambda (wid)
+      ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list-stacking.
+      (if (top-level-window? wid)
+          (let ([state (icccm.get-wm-state wid)])
+            (ewmh.client-list-stacking-set! (list->vector (append (list wid) (remove wid (vector->list (ewmh.client-list-stacking))))))
+            (if (eq? state 'NORMAL)
+                ;; Normal means the window is visible, hide and re-arrange desktop.
+                (begin
+                  (icccm.iconify-window wid)
+                  (arrange-windows)))))))
 
   (define cleanup
     (lambda ()
