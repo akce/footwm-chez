@@ -28,7 +28,8 @@
              (foreign-free var) ...
              r)))]
       [(_ ((var varptr type num) ...) first rest ...)
-       (let ([var (foreign-alloc (* num (ftype-sizeof type)))] ...)
+       ;; Ensure num is at least 1, that's a requirement of foreign-alloc.
+       (let ([var (foreign-alloc (* (if (= num 0) 1 num) (ftype-sizeof type)))] ...)
          (let ([varptr (make-ftype-pointer type var)] ...)
            (let ((r first))
              ;; TODO should be wrapped via exceptions.

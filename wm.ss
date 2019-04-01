@@ -120,9 +120,9 @@
              (ewmh.window-desktop-set! wid 0)))
          ws)
         ;; set client-list/stacking ewmh hints.
-        (unless (ewmh.client-list)
+        (if (= (vector-length (ewmh.client-list)) 0)
           (ewmh.client-list-set! (list->vector ws)))
-        (unless (ewmh.client-list-stacking)
+        (if (= (vector-length (ewmh.client-list-stacking)) 0)
           (ewmh.client-list-stacking-set! (list->vector ws))))))
 
   (define arrange-window

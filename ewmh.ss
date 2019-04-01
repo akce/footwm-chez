@@ -60,13 +60,6 @@
           #f
           (vector-ref vect 0))))
 
-  ;; Return the property vector, or #f if empty.
-  (define property-or-false
-    (lambda (vect)
-      (if (fx=? 0 (vector-length vect))
-          #f
-          vect)))
-
   (define active-window
     (lambda ()
       (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
@@ -77,7 +70,7 @@
 
   (define client-list
     (lambda ()
-      (property-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
+      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
 
   (define client-list-set!
     (lambda (wids)
@@ -85,7 +78,7 @@
 
   (define client-list-stacking
     (lambda ()
-      (property-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
+      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
 
   (define client-list-stacking-set!
     (lambda (wids)
