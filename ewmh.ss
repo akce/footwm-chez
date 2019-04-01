@@ -5,6 +5,7 @@
 (library (ewmh)
   (export
    active-window
+   active-window-set!
    client-list
    client-list-set!
    client-list-stacking
@@ -23,6 +24,8 @@
    window-active-request!
    window-close-request!
    window-desktop-request!
+
+   on-map-request
 
    init-atoms
    atom-ref
@@ -66,6 +69,10 @@
   (define active-window
     (lambda ()
       (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
+
+  (define active-window-set!
+    (lambda (wid)
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_ACTIVE_WINDOW) (vector wid) XA-WINDOW)))
 
   (define client-list
     (lambda ()
@@ -145,4 +152,23 @@
   (define current-desktop-request!
     (lambda (desktop-number)
       (xutil.send-message-cardinal (root) 0 (atom-ref '_NET_CURRENT_DESKTOP) desktop-number)))
-  )
+
+  (define on-map-request
+    (lambda (ev)
+      ;; EWMH house keeping.
+      ;; Add/move window to top of client window & stacking list etc.
+      ;; Set window desktop and set active window.
+      (let ([wid (xmaprequestevent-wid ev)]
+            [desk (current-desktop)]
+            [clients (vector->list (client-list))]
+            [stack (vector->list (client-list-stacking))])
+        (window-desktop-set! wid desk)
+        (client-list-stacking-set!
+         (list->vector (append
+                        (if (memq wid stack)
+                            (remove wid stack)
+                            stack)
+                        (list wid))))
+        (unless (memq wid clients)
+          (client-list-set! (list->vector (append clients (list wid)))))
+        (active-window-set! wid)))))

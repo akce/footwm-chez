@@ -130,8 +130,7 @@
             (let ([vis (car ws)]		; visible window
                   [hs (cdr ws)])		; hidden windows
               (for-each icccm.iconify-window hs)
-              (icccm.wm-state-set! vis icccm.NormalState)
-              (XMapWindow (current-display) vis)
+              (icccm.show-window vis)
               (arrange-window vis)
               (icccm.focus-window vis)))))))
 
@@ -180,7 +179,10 @@
 
   (define on-map-request
     (lambda (ev)
-      (display "XMapRequestEvent\n")))
+      (display "XMapRequestEvent\n")
+      (icccm.on-map-request ev)
+      (ewmh.on-map-request ev)
+      (arrange-windows)))
 
   (define on-property
     (lambda (ev)

@@ -77,6 +77,8 @@
    on-create-window
    iconify-window
    deiconify-window
+   show-window
+   on-map-request
    on-configure-request
 
    focus-window
@@ -352,6 +354,22 @@
             (wm-state-set! wid NormalState)
             #t)
           #f)))
+
+  (define show-window
+    (lambda (wid)
+      (unless (eq? (get-wm-state wid) 'NORMAL)
+        (wm-state-set! wid NormalState)
+        (XMapWindow (current-display) wid))))
+
+  (define on-map-request
+    (lambda (ev)
+      ;; MapRequest event.
+      ;; Received when SubstructureRedirect set on a window, and a child of that window wants to Map,
+      ;; (and only where child has override-redirect=false).
+      ;; Map the window and set the wm-state.
+      (let ([wid (xmaprequestevent-wid ev)])
+        (wm-state-set! wid NormalState)
+        (XMapWindow (current-display) wid))))
 
   ;;;;;; ICCCM 4.1.5 Configuring the Window.
   (define-syntax bit-case
