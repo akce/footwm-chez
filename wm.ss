@@ -167,6 +167,10 @@
           (activate-window wid)]
          [(eq? type (ewmh.atom-ref '_NET_CLOSE_WINDOW))
           (icccm.delete-window wid)]
+         [(eq? type (ewmh.atom-ref '_NET_CURRENT_DESKTOP))
+          (desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
+         [(eq? type (ewmh.atom-ref '_NET_WM_DESKTOP))
+          (move-window-to-desktop wid (list-ref (xclientmessageevent-data ev) 0))]
          [(eq? type (icccm.atom-ref 'WM_CHANGE_STATE))
           (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
               (banish-window wid))]
@@ -281,6 +285,26 @@
                (ewmh.window-desktop-set! wid (action d)))))
        (ewmh.client-list-stacking))))
 
+  (define desktop-activate
+    (lambda (index)
+      (when (< index (ewmh.desktop-count))
+        (let ([c (ewmh.current-desktop)])
+          (unless (= index c)
+            (vector-for-each
+             (lambda (wid)
+               (let ([wd (ewmh.window-desktop wid)])
+                 (cond
+                  [(= wd index)
+                   (ewmh.window-desktop-set! wid c)]
+                  [(< wd index)
+                   (ewmh.window-desktop-set! wid (add1 wd))])
+                  #| else ignore, only windows at or below index need adjustment.|#))
+             (ewmh.client-list-stacking))
+            (let* ([names (vector->list (ewmh.desktop-names))]
+                   [name (list-ref names index)])
+              (ewmh.desktop-names-set! (list-insert (remove name names) name c)))
+            (arrange-windows))))))
+
   (define desktop-insert
     (lambda (name index)
       (let ([names (vector->list (ewmh.desktop-names))])
@@ -328,6 +352,14 @@
           (let ([names (vector->list (ewmh.desktop-names))])
             (unless (string=? "Unassigned" (list-ref names index))
               (ewmh.desktop-names-set! (list-replace names index name))))))))
+
+  (define move-window-to-desktop
+    (lambda (wid index)
+      (when (< index (ewmh.desktop-count))
+        (unless (= index (ewmh.window-desktop wid))
+          (ewmh.window-desktop-set! wid index)
+          (if (eq? (icccm.get-wm-state wid) 'NORMAL)
+              (arrange-windows))))))
 
   (define desktop-add-set!
     (lambda (name index)
