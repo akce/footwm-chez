@@ -22,13 +22,13 @@
        [(or (string=? "h" cmd) (string=? "help" cmd))
         (help binary)]
        [(string=? "da" cmd)
-        (wm.desktop-add (list-ref args 0) (string->number (list-ref args 1)))]
+        (wm.desktop-add-set! (list-ref args 0) (string->number (list-ref args 1)))]
        [(string=? "dc" cmd)
-        (wm.desktop-delete (string->number (list-ref args 0)))]
+        (wm.desktop-delete-set! (string->number (list-ref args 0)))]
        [(string=? "dl" cmd)
         (desktops)]
        [(string=? "dr" cmd)
-        (wm.desktop-rename (string->number (list-ref args 0)) (list-ref args 1))]
+        (wm.desktop-rename-set! (string->number (list-ref args 0)) (list-ref args 1))]
        [(string=? "ds" cmd)
         (e.current-desktop-request! (string->number (list-ref args 0)))]
        [(string=? "wb" cmd)

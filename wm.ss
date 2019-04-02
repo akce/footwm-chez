@@ -2,9 +2,9 @@
   (export
    arrange-windows
 
-   desktop-add
-   desktop-delete
-   desktop-rename
+   desktop-add-set!
+   desktop-delete-set!
+   desktop-rename-set!
    atom-ref
    init-atoms
    init-desktops
@@ -24,18 +24,6 @@
 
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager '(FOOT_COMMANDV)))
-
-  (define desktop-add
-    (lambda (name index)
-      (xutil.text-property-set! (root) `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
-
-  (define desktop-delete
-    (lambda (index)
-      (xutil.text-property-set! (root) `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
-
-  (define desktop-rename
-    (lambda (index new-name)
-      (xutil.text-property-set! (root) `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
 
   (define main
     (lambda ()
@@ -224,7 +212,20 @@
 
   (define on-property
     (lambda (ev)
-      (display (format "#x~x PropertyNotify ~a~n" (xanyevent-wid (xpropertyevent-xany ev)) (xutil.atom-name (xpropertyevent-propatom ev))))))
+      (let ([wid (xanyevent-wid (xpropertyevent-xany ev))]
+            [atom (xpropertyevent-propatom ev)])
+        (display (format "#x~x PropertyNotify ~a~n" wid (xutil.atom-name atom)))
+        (cond
+         [(eq? atom (atom-ref 'FOOT_COMMANDV))
+          (let ([cmd (xutil.property->string* wid (atom-ref 'FOOT_COMMANDV))])
+            (if (string=? (vector-ref cmd 0) "desktop")
+              (cond
+               [(string=? (vector-ref cmd 1) "insert")
+                (desktop-insert (vector-ref cmd 2) (string->number (vector-ref cmd 3)))]
+               [(string=? (vector-ref cmd 1) "delete")
+                (desktop-delete (string->number (vector-ref cmd 2)))]
+               [(string=? (vector-ref cmd 1) "rename")
+                (desktop-rename (string->number (vector-ref cmd 2)) (vector-ref cmd 3))])))]))))
 
   (define on-unmap
     (lambda (ev)
@@ -270,6 +271,75 @@
                 (begin
                   (icccm.iconify-window wid)
                   (arrange-windows)))))))
+
+  (define adjust-windows-desktop
+    (lambda (pos action)
+      (vector-for-each
+       (lambda (wid)
+         (let ([d (ewmh.window-desktop wid)])
+           (if (>= d pos)
+               (ewmh.window-desktop-set! wid (action d)))))
+       (ewmh.client-list-stacking))))
+
+  (define desktop-insert
+    (lambda (name index)
+      (let ([names (vector->list (ewmh.desktop-names))])
+        ;; desktop names must be unique.
+        (unless (member name names)
+          (ewmh.desktop-names-set! (list-insert names name index))
+          (adjust-windows-desktop index add1)
+          (ewmh.desktop-count-set! (add1 (length names)))
+          (if (= index (ewmh.current-desktop))
+              (arrange-windows))))))
+
+  (define get-unassigned
+    (lambda (names)
+      (list-find-index
+       (lambda (x)
+         (string=? "Unassigned" x))
+       names)))
+
+  (define desktop-delete
+    (lambda (index)
+      (let ([c (ewmh.desktop-count)])
+        (if (< index c)
+          (let* ([names (vector->list (ewmh.desktop-names))]
+                 [unassigned (get-unassigned names)])
+            (when unassigned
+              ;; Move orphaned windows to the unassigned desktop.
+              (vector-for-each
+               (lambda (wid)
+                 (if (= index (ewmh.window-desktop wid))
+                   (ewmh.window-desktop-set! wid unassigned)))
+               (ewmh.client-list-stacking))
+              ;; Adjust window desktops at index and higher downwards.
+              (adjust-windows-desktop index sub1)
+              ;; Update desktop ewmh hints.
+              (ewmh.desktop-names-set! (remove (list-ref names index) names))
+              (ewmh.desktop-count-set! (sub1 (length names)))
+              ;; Redraw if deleted desktop was the displayed desktop.
+              (if (= index (ewmh.current-desktop))
+                (arrange-windows))))))))
+
+  (define desktop-rename
+    (lambda (index name)
+      (let ([c (ewmh.desktop-count)])
+        (when (< index c)
+          (let ([names (vector->list (ewmh.desktop-names))])
+            (unless (string=? "Unassigned" (list-ref names index))
+              (ewmh.desktop-names-set! (list-replace names index name))))))))
+
+  (define desktop-add-set!
+    (lambda (name index)
+      (xutil.text-property-set! (root) `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+
+  (define desktop-delete-set!
+    (lambda (index)
+      (xutil.text-property-set! (root) `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+
+  (define desktop-rename-set!
+    (lambda (index new-name)
+      (xutil.text-property-set! (root) `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
 
   (define cleanup
     (lambda ()
