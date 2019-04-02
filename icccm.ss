@@ -429,7 +429,7 @@
             (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
             (if input-hint
                 ;; Passive: manually set input focus.
-                (XSetInputFocus (current-display) wid RevertToNone CurrentTime))))))
+                (XSetInputFocus (current-display) wid RevertToPointerRoot CurrentTime))))))
 
   ;;;;;; ICCCM 4.2.1.8 Window Deletion.
   (define delete-window
