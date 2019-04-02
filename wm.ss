@@ -11,6 +11,7 @@
    init-windows
    main
 
+   activate-window
    banish-window)
   (import
    (globals)
@@ -174,6 +175,8 @@
             [type (xclientmessageevent-message-type ev)])
         (display (format "#x~x ClientMessage ~a ~a~n" wid type (xutil.atom-name type)))
         (cond
+         [(eq? type (ewmh.atom-ref '_NET_ACTIVE_WINDOW))
+          (activate-window wid)]
          [(eq? type (icccm.atom-ref 'WM_CHANGE_STATE))
           (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
               (banish-window wid))]
@@ -244,6 +247,15 @@
   (define top-level-window?
     (lambda (wid)
       (memq wid (vector->list (ewmh.client-list)))))
+
+  (define activate-window
+    (lambda (wid)
+      ;; promote window to top of ewmh.client-list-stacking, set as ewmh.active-window.
+      (if (top-level-window? wid)
+          (let ([rstack (reverse (vector->list (ewmh.client-list-stacking)))])
+            (unless (= wid (car rstack))
+              (ewmh.client-list-stacking-set! (list->vector (reverse (cons wid (remove wid rstack)))))
+              (arrange-windows))))))
 
   (define banish-window
     (lambda (wid)
