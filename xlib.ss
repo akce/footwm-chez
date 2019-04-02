@@ -173,6 +173,7 @@
    XCloseDisplay
    XConfigureWindow
    XDefaultRootWindow
+   XDestroyWindow
    XFlush
    XFree
    XFreeStringList
@@ -482,6 +483,7 @@
    (XCloseDisplay (dpy*) int)
    (XConfigureWindow (dpy* window unsigned (* XWindowChanges)) int)
    (XDefaultRootWindow (dpy*) window)
+   (XDestroyWindow (dpy* window) int)
    (XFlush (dpy*) int)
    (XFree (void*) void)
    (XFreeStringList (void*) void)

@@ -177,6 +177,8 @@
         (cond
          [(eq? type (ewmh.atom-ref '_NET_ACTIVE_WINDOW))
           (activate-window wid)]
+         [(eq? type (ewmh.atom-ref '_NET_CLOSE_WINDOW))
+          (icccm.delete-window wid)]
          [(eq? type (icccm.atom-ref 'WM_CHANGE_STATE))
           (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
               (banish-window wid))]

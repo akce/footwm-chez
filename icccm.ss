@@ -84,6 +84,7 @@
    on-configure-request
 
    focus-window
+   delete-window
 
    ;; WM_COMMAND
    command
@@ -104,6 +105,7 @@
       WM_CLASS
       WM_CLIENT_MACHINE
       WM_COMMAND
+      WM_DELETE_WINDOW
       WM_HINTS
       WM_NAME
       WM_NORMAL_HINTS
@@ -428,6 +430,13 @@
             (if input-hint
                 ;; Passive: manually set input focus.
                 (XSetInputFocus (current-display) wid RevertToNone CurrentTime))))))
+
+  ;;;;;; ICCCM 4.2.1.8 Window Deletion.
+  (define delete-window
+    (lambda (wid)
+      (if (has-wm-protocol? wid (atom-ref 'WM_DELETE_WINDOW))
+          (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_DELETE_WINDOW) NoEvent)
+          (XDestroyWindow (current-display) wid))))
 
   ;;;;;; ICCCM Appendix C Obsolete Session management conventions.
 
