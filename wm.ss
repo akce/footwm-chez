@@ -11,6 +11,7 @@
    init-windows
    main
 
+   window-name
    activate-window
    banish-window)
   (import
@@ -250,6 +251,14 @@
                   (display (format "#x~x removing window from EWMH client lists~n" wid))
                   (ewmh.remove-window wid)))
             (arrange-windows)))))
+
+  ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
+  (define window-name
+    (lambda (wid)
+      (let ([ename (ewmh.name wid)])
+        (if ename
+            ename
+            (icccm.name wid)))))
 
   (define top-level-window?
     (lambda (wid)
