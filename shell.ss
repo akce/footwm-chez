@@ -120,5 +120,5 @@ Enters shell mode if no [command] given.
            (e.window-desktop wid)
        	   (vector-ref c 0)
            (vector-ref c 1)
-           (e.name wid)))))
+           (wm.window-name wid)))))
   )
