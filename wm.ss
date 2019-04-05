@@ -142,7 +142,7 @@
       ;; client-list-stacking is bottom to top, reverse so we can easily get to the first window later.
       (let ([aws (reverse (vector->list (ewmh.client-list-stacking)))]
             [d (ewmh.current-desktop)])
-        (let-values ([(ws ows) (partition (lambda (w) (= d (ewmh.window-desktop w))) aws)])
+        (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
           (for-each icccm.iconify-window ows)	; should do this only on wm-init and desktop change..
           (unless (null? ws)
             (let ([vis (car ws)]		; visible window
