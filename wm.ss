@@ -103,19 +103,32 @@
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
-      (let ([ws (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root))))])
+      (let ([ws (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root))))]
+            [defgroup (get-unassigned (vector->list (ewmh.desktop-names)))])
+        (define wid-exists?
+          (lambda (wid)
+            (memq wid ws)))
+        (define set-join
+          (lambda (l1 l2)
+            (append l1 (filter (lambda (x) (not (memq x l1))) l2))))
         ;; set WM_STATE & _NET_WM_DESKTOP for each window.
         (for-each
          (lambda (wid)
            (icccm.init-window wid)
            (unless (ewmh.window-desktop wid)
-             (ewmh.window-desktop-set! wid 0)))
+             (ewmh.window-desktop-set! wid defgroup)))
          ws)
         ;; set client-list/stacking ewmh hints.
-        (if (= (vector-length (ewmh.client-list)) 0)
-          (ewmh.client-list-set! (list->vector ws)))
-        (if (= (vector-length (ewmh.client-list-stacking)) 0)
-          (ewmh.client-list-stacking-set! (list->vector ws))))))
+        (let ([clients (vector->list (ewmh.client-list))])
+          (if (= (length clients) 0)
+              (ewmh.client-list-set! (list->vector ws))
+              ;; client list already exists, need to sanitise it with ws.
+              (ewmh.client-list-set! (list->vector (filter wid-exists? (set-join clients ws))))))
+        (let ([clients (vector->list (ewmh.client-list-stacking))])
+          (if (= (length clients) 0)
+              (ewmh.client-list-stacking-set! (list->vector ws))
+              ;; client list stacking already exists, need to sanitise it with ws.
+              (ewmh.client-list-stacking-set! (list->vector (filter wid-exists? (set-join clients ws)))))))))
 
   (define arrange-window
     (lambda (wid)
