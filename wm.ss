@@ -223,7 +223,8 @@
 
   (define on-map-request
     (lambda (ev)
-      (display (format "#x~x MapRequest~n" (xmaprequestevent-wid ev)))
+      (let ([wid (xmaprequestevent-wid ev)])
+        (display (format "#x~x MapRequest ~a~n" wid (window-name wid))))
       (icccm.on-map-request ev)
       (ewmh.on-map-request ev)
       (arrange-windows)))
