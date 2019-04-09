@@ -104,7 +104,7 @@
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
       (let ([ws (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root))))]
-            [defgroup (get-unassigned (vector->list (ewmh.desktop-names)))])
+            [defgroup (get-unassigned (ewmh.desktop-names))])
         (define wid-exists?
           (lambda (wid)
             (memq wid ws)))
@@ -323,14 +323,14 @@
                    (ewmh.window-desktop-set! wid (add1 wd))])
                   #| else ignore, only windows at or below index need adjustment.|#))
              (ewmh.client-list-stacking))
-            (let* ([names (vector->list (ewmh.desktop-names))]
+            (let* ([names (ewmh.desktop-names)]
                    [name (list-ref names index)])
               (ewmh.desktop-names-set! (list-insert (remove name names) name c)))
             (arrange-windows))))))
 
   (define desktop-insert
     (lambda (name index)
-      (let ([names (vector->list (ewmh.desktop-names))])
+      (let ([names (ewmh.desktop-names)])
         ;; desktop names must be unique.
         (unless (member name names)
           (ewmh.desktop-names-set! (list-insert names name index))
@@ -350,7 +350,7 @@
     (lambda (index)
       (let ([c (ewmh.desktop-count)])
         (if (< index c)
-          (let* ([names (vector->list (ewmh.desktop-names))]
+          (let* ([names (ewmh.desktop-names)]
                  [unassigned (get-unassigned names)])
             (when unassigned
               ;; Move orphaned windows to the unassigned desktop.
@@ -372,7 +372,7 @@
     (lambda (index name)
       (let ([c (ewmh.desktop-count)])
         (when (< index c)
-          (let ([names (vector->list (ewmh.desktop-names))])
+          (let ([names (ewmh.desktop-names)])
             (unless (string=? "Unassigned" (list-ref names index))
               (ewmh.desktop-names-set! (list-replace names index name))))))))
 

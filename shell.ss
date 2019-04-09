@@ -12,7 +12,7 @@
    (xlib)
    (rnrs)
    (util)
-   (only (chezscheme) format))
+   (only (chezscheme) enumerate format))
 
 (define main
   (lambda (argv)
@@ -81,11 +81,11 @@ Enters shell mode if no [command] given.
   (define desktops
     (lambda ()
       (let ([names (e.desktop-names)])
-        (vector-for-each
+        (for-each
          (lambda (desk)
            (display (desktop-display-string desk))
            (newline))
-         (vector-map cons (vector-enumerate names) names)))))
+         (map cons (enumerate names) names)))))
 
   ;; prints out the windows list in most-recently-used order.
   (define windows

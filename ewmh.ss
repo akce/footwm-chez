@@ -115,7 +115,8 @@
 
   (define desktop-names
     (lambda ()
-      (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES))))
+      ;; return as list as lists have more builtin operations.
+      (vector->list (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES)))))
 
   (define desktop-names-set!
     (lambda (names)
