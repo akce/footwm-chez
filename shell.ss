@@ -11,6 +11,7 @@
    (globals)
    (xlib)
    (rnrs)
+   (util)
    (only (chezscheme) format))
 
 (define main
@@ -76,17 +77,6 @@ where [command] is one of:
 Enters shell mode if no [command] given.
 "
       binary))))
-
-  (define vector-enumerate
-    (lambda (v)
-      (let* ([len (vector-length v)]
-             [res (make-vector len)])
-        (let loop ((i 0))
-          (cond
-           [(fx=? i len) res]
-           [else
-             (vector-set! res i i)
-             (loop (fx+ i 1))])))))
 
   (define desktops
     (lambda ()

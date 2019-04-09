@@ -8,7 +8,8 @@
    list-find-index
    list-insert
    list-replace
-   remove*)
+   remove*
+   vector-enumerate)
   (import
    (chezscheme))
 
@@ -101,4 +102,15 @@
         (cond
          [(null? i) ret]
          [else
-          (loop (remove (car i) ret) (cdr i))])))))
+          (loop (remove (car i) ret) (cdr i))]))))
+
+  (define vector-enumerate
+    (lambda (v)
+      (let* ([len (vector-length v)]
+             [res (make-vector len)])
+        (let loop ((i 0))
+          (cond
+           [(fx=? i len) res]
+           [else
+             (vector-set! res i i)
+             (loop (fx+ i 1))]))))))
