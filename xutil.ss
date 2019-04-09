@@ -343,6 +343,10 @@
             (apply make-xdestroywindowevent
              (make-xany cevent)
              (ftype-fields xdestroywindow cevent (wid))))
+           (KeyPressEvent
+            (apply make-xkeyevent
+             (make-xany cevent)
+             (ftype-fields xkey cevent (root subwindow time x y x-root y-root state keycode same-screen))))
            (MapNotify
             (apply make-xmapevent
              (make-xany cevent)

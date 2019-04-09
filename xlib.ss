@@ -70,6 +70,23 @@
    xdestroywindowevent-xany
    xdestroywindowevent-wid
 
+   KeyReleaseEvent
+   XKeyEvent
+   KeyPressEvent	;; TODO this should be KeyPress but there's already one defined. Need to scope these.
+   make-xkeyevent
+   xkeyevent?
+   xkeyevent-xany
+   xkeyevent-root
+   xkeyevent-subwindow
+   xkeyevent-time
+   xkeyevent-x
+   xkeyevent-y
+   xkeyevent-x-root
+   xkeyevent-y-root
+   xkeyevent-state
+   xkeyevent-keycode
+   xkeyevent-same-screen
+
    XMapEvent
    MapNotify
    make-xmapevent
@@ -160,12 +177,28 @@
    TopIf
    BottomIf
 
-   CurrentTime
-
    ;; input focus
    RevertToNone
    RevertToPointerRoot
    RevertToParent
+
+   Shift
+   Lock
+   Control
+   Mod1
+   Mod2
+   Mod3
+   Mod4
+   Mod5
+
+   GrabModeSync
+   GrabModeAsync
+
+   AnyModifier
+
+   AnyKey
+   CurrentTime
+   NoSymbol
 
    UTF8String
 
@@ -181,7 +214,11 @@
    XGetTextProperty
    XGetWindowAttributes
    XGetWindowProperty
+   XGrabKey
    XInternAtom
+   XKeycodeToKeysym
+   XKeysymToKeycode
+   XKeysymToString
    XMapWindow
    XMoveResizeWindow
    XNextEvent
@@ -192,7 +229,9 @@
    XSetErrorHandler
    XSetInputFocus
    XSetTextProperty
+   XStringToKeysym
    XSync
+   XUngrabKey
    XUnmapWindow
    Xutf8TextListToTextProperty
    Xutf8TextPropertyToTextList
@@ -241,6 +280,8 @@
   (define-ftype Colormap xid)
   (define-ftype pixmap xid)
   (define-ftype Time unsigned-long)
+  (define-ftype keycode unsigned-8)
+  (define-ftype keysym xid)
 
   (define-ftype u8 unsigned-8)
   (define-ftype u8* (* u8))
@@ -322,6 +363,21 @@
      [request-code	u8]
      [minor-code	u8]))
 
+  (define KeyReleaseEvent	3)
+  (define-xevent XKeyEvent
+    (xkeyevent	KeyPressEvent	2)	;; TODO xkeyevent can also be KeyRelease..
+    ([xany		XAnyEvent]
+     [root		window]
+     [subwindow		window]
+     [time		Time]
+     [x			int]
+     [y			int]
+     [x-root		int]
+     [y-root		int]
+     [state		unsigned]
+     [keycode		unsigned]
+     [same-screen	boolean]))
+
   (define-xevent XMapEvent
     (xmapevent	MapNotify		19)
     ([xany		XAnyEvent]
@@ -357,6 +413,7 @@
      [xcreatewindow	XCreateWindowEvent]
      [xdestroywindow	XDestroyWindowEvent]
      [xerror		XErrorEvent]
+     [xkey		XKeyEvent]
      [xmap		XMapEvent]
      [xmaprequest	XMapRequestEvent]
      [xproperty		XPropertyEvent]
@@ -467,12 +524,33 @@
    (TopIf     2)
    (BottomIf  3))
 
-  (define CurrentTime 0)
-
   (enum input-focus
     (RevertToNone		 0)
     (RevertToPointerRoot	 1)
     (RevertToParent		 2))
+
+  (bitmap key-modifier-mask
+    (Shift	0)
+    (Lock	1)
+    (Control	2)
+    (Mod1	3)
+    (Mod2	4)
+    (Mod3	5)
+    (Mod4	6)
+    (Mod5	7))
+
+  (enum grab-mode
+    (GrabModeSync	0)
+    (GrabModeAsync	1))
+
+  (enum button-masks
+    ;; skipping unused buttons.
+    (AnyModifier	15))
+
+  ;; X.h reserved resources/constants.
+  (define AnyKey 1)
+  (define CurrentTime 0)
+  (define NoSymbol 0)
 
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
@@ -493,7 +571,11 @@
    ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
    ;; void* points to anything so use that for now.
    (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
+   (XGrabKey (dpy* int unsigned window boolean int int) int)
    (XInternAtom (dpy* string boolean) atom)
+   (XKeycodeToKeysym (dpy* keycode int) keysym)
+   (XKeysymToKeycode (dpy* keysym) keycode)
+   (XKeysymToString (keysym) string)
    (XMapWindow (dpy* window) int)
    (XMoveResizeWindow (dpy* window int int unsigned unsigned) int)
    (XNextEvent (dpy* (* XEvent)) int)
@@ -506,7 +588,9 @@
    (XSetErrorHandler (void*) void*)
    (XSetInputFocus (dpy* window int Time) int)
    (XSetTextProperty (dpy* window (* XTextProperty) atom) void)
+   (XStringToKeysym (string) keysym)
    (XSync (dpy* boolean) int)
+   (XUngrabKey (dpy* int unsigned window) int)
    (XUnmapWindow (dpy* window) int)
    ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
    ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
