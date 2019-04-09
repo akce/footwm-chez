@@ -119,11 +119,11 @@
              (ewmh.window-desktop-set! wid defgroup)))
          ws)
         ;; set client-list/stacking ewmh hints.
-        (let ([clients (vector->list (ewmh.client-list))])
+        (let ([clients (ewmh.client-list)])
           (if (= (length clients) 0)
-              (ewmh.client-list-set! (list->vector ws))
+              (ewmh.client-list-set! ws)
               ;; client list already exists, need to sanitise it with ws.
-              (ewmh.client-list-set! (list->vector (filter wid-exists? (set-join clients ws))))))
+              (ewmh.client-list-set! (filter wid-exists? (set-join clients ws)))))
         (let ([clients (ewmh.client-list-stacking)])
           (if (= (length clients) 0)
               (ewmh.client-list-stacking-set! ws)
@@ -276,7 +276,7 @@
 
   (define top-level-window?
     (lambda (wid)
-      (memq wid (vector->list (ewmh.client-list)))))
+      (memq wid (ewmh.client-list))))
 
   (define activate-window
     (lambda (wid)

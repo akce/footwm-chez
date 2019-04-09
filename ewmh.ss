@@ -70,11 +70,12 @@
 
   (define client-list
     (lambda ()
-      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
+      (vector->list (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
 
   (define client-list-set!
     (lambda (wids)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
+      ;; return as list as lists have more builtin operations.
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) (list->vector wids) XA-WINDOW)))
 
   (define client-list-stacking
     (lambda ()
@@ -155,7 +156,7 @@
       ;; Set window desktop and set active window.
       (let ([wid (xmaprequestevent-wid ev)]
             [desk (current-desktop)]
-            [clients (vector->list (client-list))]
+            [clients (client-list)]
             [stack (client-list-stacking)])
         (window-desktop-set! wid desk)
         (client-list-stacking-set!
@@ -165,15 +166,15 @@
               stack)
           (list wid)))
         (unless (memq wid clients)
-          (client-list-set! (list->vector (append clients (list wid))))))))
+          (client-list-set! (append clients (list wid)))))))
 
   (define remove-window
     (lambda (wid)
       ;; Remove window from client lists *only*.
       ;; We don't touch active-window here because we're not changing window state. That's up to the wm proper.
-      (let ([clients (vector->list (client-list))]
+      (let ([clients (client-list)]
             [stacking (client-list-stacking)])
         (if (memq wid clients)
-            (client-list-set! (list->vector (remove wid clients))))
+            (client-list-set! (remove wid clients)))
         (if (memq wid stacking)
             (client-list-stacking-set! (remove wid stacking)))))))
