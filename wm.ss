@@ -124,11 +124,11 @@
               (ewmh.client-list-set! (list->vector ws))
               ;; client list already exists, need to sanitise it with ws.
               (ewmh.client-list-set! (list->vector (filter wid-exists? (set-join clients ws))))))
-        (let ([clients (vector->list (ewmh.client-list-stacking))])
+        (let ([clients (ewmh.client-list-stacking)])
           (if (= (length clients) 0)
-              (ewmh.client-list-stacking-set! (list->vector ws))
+              (ewmh.client-list-stacking-set! ws)
               ;; client list stacking already exists, need to sanitise it with ws.
-              (ewmh.client-list-stacking-set! (list->vector (filter wid-exists? (set-join clients ws)))))))))
+              (ewmh.client-list-stacking-set! (filter wid-exists? (set-join clients ws))))))))
 
   (define arrange-window
     (lambda (wid)
@@ -140,7 +140,7 @@
   (define arrange-windows
     (lambda ()
       ;; client-list-stacking is bottom to top, reverse so we can easily get to the first window later.
-      (let ([aws (reverse (vector->list (ewmh.client-list-stacking)))]
+      (let ([aws (reverse (ewmh.client-list-stacking))]
             [d (ewmh.current-desktop)])
         (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
           (for-each icccm.iconify-window ows)	; should do this only on wm-init and desktop change..
@@ -282,9 +282,9 @@
     (lambda (wid)
       ;; promote window to top of ewmh.client-list-stacking, set as ewmh.active-window.
       (if (top-level-window? wid)
-          (let ([rstack (reverse (vector->list (ewmh.client-list-stacking)))])
+          (let ([rstack (reverse (ewmh.client-list-stacking))])
             (unless (= wid (car rstack))
-              (ewmh.client-list-stacking-set! (list->vector (reverse (cons wid (remove wid rstack)))))
+              (ewmh.client-list-stacking-set! (reverse (cons wid (remove wid rstack))))
               (arrange-windows))))))
 
   (define banish-window
@@ -292,7 +292,7 @@
       ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list-stacking.
       (if (top-level-window? wid)
           (let ([state (icccm.get-wm-state wid)])
-            (ewmh.client-list-stacking-set! (list->vector (append (list wid) (remove wid (vector->list (ewmh.client-list-stacking))))))
+            (ewmh.client-list-stacking-set! (append (list wid) (remove wid (ewmh.client-list-stacking))))
             (if (eq? state 'NORMAL)
                 ;; Normal means the window is visible, hide and re-arrange desktop.
                 (begin
@@ -301,7 +301,7 @@
 
   (define adjust-windows-desktop
     (lambda (pos action)
-      (vector-for-each
+      (for-each
        (lambda (wid)
          (let ([d (ewmh.window-desktop wid)])
            (if (>= d pos)
@@ -313,7 +313,7 @@
       (when (< index (ewmh.desktop-count))
         (let ([c (ewmh.current-desktop)])
           (unless (= index c)
-            (vector-for-each
+            (for-each
              (lambda (wid)
                (let ([wd (ewmh.window-desktop wid)])
                  (cond
@@ -354,7 +354,7 @@
                  [unassigned (get-unassigned names)])
             (when unassigned
               ;; Move orphaned windows to the unassigned desktop.
-              (vector-for-each
+              (for-each
                (lambda (wid)
                  (if (= index (ewmh.window-desktop wid))
                    (ewmh.window-desktop-set! wid unassigned)))

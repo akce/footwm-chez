@@ -90,7 +90,7 @@ Enters shell mode if no [command] given.
   ;; prints out the windows list in most-recently-used order.
   (define windows
     (lambda ()
-      (vector-for-each
+      (for-each
        (lambda (wid)
          (display (window-display-string wid))
          (newline))

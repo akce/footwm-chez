@@ -78,11 +78,12 @@
 
   (define client-list-stacking
     (lambda ()
-      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
+      ;; return as list as lists have more builtin operations.
+      (vector->list (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
 
   (define client-list-stacking-set!
     (lambda (wids)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) wids XA-WINDOW)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) (list->vector wids) XA-WINDOW)))
 
   ;; wm: the current active desktop number.
   (define current-desktop
@@ -155,14 +156,14 @@
       (let ([wid (xmaprequestevent-wid ev)]
             [desk (current-desktop)]
             [clients (vector->list (client-list))]
-            [stack (vector->list (client-list-stacking))])
+            [stack (client-list-stacking)])
         (window-desktop-set! wid desk)
         (client-list-stacking-set!
-         (list->vector (append
-                        (if (memq wid stack)
-                            (remove wid stack)
-                            stack)
-                        (list wid))))
+         (append
+          (if (memq wid stack)
+              (remove wid stack)
+              stack)
+          (list wid)))
         (unless (memq wid clients)
           (client-list-set! (list->vector (append clients (list wid))))))))
 
@@ -171,8 +172,8 @@
       ;; Remove window from client lists *only*.
       ;; We don't touch active-window here because we're not changing window state. That's up to the wm proper.
       (let ([clients (vector->list (client-list))]
-            [stacking (vector->list (client-list-stacking))])
+            [stacking (client-list-stacking)])
         (if (memq wid clients)
             (client-list-set! (list->vector (remove wid clients))))
         (if (memq wid stacking)
-            (client-list-stacking-set! (list->vector (remove wid stacking))))))))
+            (client-list-stacking-set! (remove wid stacking)))))))
