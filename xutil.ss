@@ -17,6 +17,7 @@
    get-window-attributes
    open
    sync
+   select-input
    install-error-handler
    property->string
    property->string*
@@ -64,6 +65,10 @@
     (case-lambda
      [() (sync #f)]
      [(s) (XSync (current-display) s)]))
+
+  (define select-input
+    (lambda (wid mask)
+      (XSelectInput (current-display) wid mask)))
 
   (define install-error-handler
     ;; Store the previous locked lambda so that it can be unlocked if replaced.

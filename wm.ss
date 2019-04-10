@@ -50,7 +50,7 @@
                 StructureNotify
                 SubstructureRedirect	; Redirect child window change requests to this wm-client.
                 SubstructureNotify)])
-          (XSelectInput (current-display) (root) mask)
+          (xutil.select-input (root) mask)
           (xutil.sync)
           (xutil.install-error-handler orig)
           (unless installed

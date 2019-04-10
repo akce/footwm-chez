@@ -474,7 +474,7 @@
   ;; - StructureNotify: for client window destruction notifications.
   (define watch-window
     (lambda (wid)
-      (XSelectInput (current-display) wid StructureNotify)))
+      (xutil.select-input wid StructureNotify)))
 
   ;; Initialise a window according to ICCCM requirements.
   (define init-window

@@ -100,7 +100,7 @@
 
   (define main
     (lambda (config-file)
-      (XSelectInput (current-display) (root) KeyPress)
+      (xutil.select-input (root) KeyPress)
       (load-config config-file)
       (run)))
 
