@@ -2,7 +2,17 @@
   (export
    XAnyEvent
    XEvent
+
    XErrorEvent
+   make-xerrorevent
+   xerrorevent?
+   xerrorevent-type
+   xerrorevent-d
+   xerrorevent-resourceid
+   xerrorevent-serial
+   xerrorevent-error-code
+   xerrorevent-request-code
+   xerrorevent-minor-code
 
    make-xanyevent
    xanyevent?
@@ -352,6 +362,9 @@
     (xdestroywindowevent	DestroyNotify	17)
     ([xany		XAnyEvent]
      [wid		window]))	; wid is the window that was destroyed.
+
+  (define-record-type xerrorevent
+    (fields type d resourceid serial error-code request-code minor-code))
 
   (define-ftype XErrorEvent
     (struct

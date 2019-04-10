@@ -5,8 +5,7 @@
    main)
   (import
    (rnrs)
-   (only (chezscheme)
-         define-values lock-object unlock-object foreign-callable-entry-point foreign-callable ftype-ref format)
+   (only (chezscheme) format)
    (globals)
    (xlib)
    (prefix (ewmh) ewmh.)
@@ -18,7 +17,11 @@
   (define main
     (lambda ()
       (install-as-wm)
-      (install-error-handler)
+      ;; Replace the default error handler with our own. This ensures that the wm continues to function even
+      ;; after an error. eg, when trying to access a resource from a destroyed window.
+      (xutil.install-error-handler
+       (lambda (dpy ev)
+         (display (format "XError: type=~a wid=#x~x error=~d~n" (xerrorevent-type ev) (xerrorevent-resourceid ev) (xerrorevent-error-code ev)))))
       (init-desktops)
       (init-windows)
       (op.arrange-windows)
@@ -28,13 +31,11 @@
   ;; raises an error condition on failure.
   (define install-as-wm
     (lambda ()
-      (let* ([installed #t]
-             [check-bad-access
-              (foreign-callable
-               (lambda (d xerrorev)
-                 (when (fx=? (ftype-ref XErrorEvent (error-code) xerrorev) BadAccess)
-                   (set! installed #f))
-                 0) (dpy* (* XErrorEvent)) int)])
+      (let ([installed #t])
+        (define check-bad-access
+          (lambda (d ev)
+            (when (eq? (xerrorevent-error-code ev) BadAccess)
+              (set! installed #f))))
         ;; Set as the window manager client.
         ;; Structure = geometry, border, stacking info for a window.
         ;; Sub = child.
@@ -42,8 +43,7 @@
         ;; The window manager client (wm) is the only client that can select SubstructureRedirect on the root window.
         ;; Any config change requested by child windows will result in CirculateRequest, ConfigureRequest, or MapRequest
         ;; events being sent to the wm. The wm can then honour, disregard, or modify those requests.
-        (lock-object check-bad-access)
-        (let ([orig (XSetErrorHandler (foreign-callable-entry-point check-bad-access))]
+        (let ([orig (xutil.install-error-handler check-bad-access)]
               [mask
                (bitwise-ior
                 PropertyChange
@@ -52,25 +52,9 @@
                 SubstructureNotify)])
           (XSelectInput (current-display) (root) mask)
           (XSync (current-display) #f)
-          (XSetErrorHandler orig)
-          (unlock-object check-bad-access)
+          (xutil.install-error-handler orig)
           (unless installed
             (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running."))))))))
-
-  ;; Replace the default error handler with our own. This one ensures that the wm continues to function
-  ;; even after the unmap notify handler tries to get wm-state from non-existant window (as happens when a
-  ;; window is destroyed).
-  (define install-error-handler
-    (let ([efunc (foreign-callable
-                  (lambda (d xerrorev)
-                    (let ([type (ftype-ref XErrorEvent (type) xerrorev)]
-                          [wid (ftype-ref XErrorEvent (resourceid) xerrorev)]
-                          [error-code (ftype-ref XErrorEvent (error-code) xerrorev)])
-                      (display (format "XError: type=~a wid=#x~x error=~d~n" type wid error-code))
-                      0)) (dpy* (* XErrorEvent)) int)])
-      (lambda ()
-        (lock-object efunc)
-        (XSetErrorHandler (foreign-callable-entry-point efunc)))))
 
   (define init-desktops
     (lambda ()

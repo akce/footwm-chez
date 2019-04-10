@@ -16,6 +16,7 @@
    get-next-event
    get-window-attributes
    open
+   install-error-handler
    property->string
    property->string*
    get-property-ptr
@@ -32,6 +33,7 @@
   (import
    (rnrs)
    (only (chezscheme)
+         lock-object unlock-object foreign-callable foreign-callable-entry-point
          foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof fxlogor fx= iota make-ftype-pointer values)
    (globals)
    (only (util) fmem)
@@ -55,6 +57,39 @@
     (case-lambda
      [() (open #f)]
      [(s) (XOpenDisplay s)]))
+
+  (define install-error-handler
+    ;; Store the previous locked lambda so that it can be unlocked if replaced.
+    (let ([previous-lambda #f])
+      (lambda (handler)
+        (when previous-lambda
+          (unlock-object previous-lambda)
+          (set! previous-lambda #f))
+        (XSetErrorHandler
+         (if (procedure? handler)
+             ;; Wrap the lambda for convenience:
+             ;; - converts c event struct to scheme record
+             ;; - returns int 0 so that connection to X server remains.
+             (let ([f/proc
+                    (foreign-callable
+                     (lambda (d c/xerrorevent)
+                       (let ([ev
+                              (make-xerrorevent
+                               (ftype-ref XErrorEvent (type) c/xerrorevent)
+                               (ftype-ref XErrorEvent (d) c/xerrorevent)
+                               (ftype-ref XErrorEvent (resourceid) c/xerrorevent)
+                               (ftype-ref XErrorEvent (serial) c/xerrorevent)
+                               (ftype-ref XErrorEvent (error-code) c/xerrorevent)
+                               (ftype-ref XErrorEvent (request-code) c/xerrorevent)
+                               (ftype-ref XErrorEvent (minor-code) c/xerrorevent))])
+                         (handler d ev)
+                         0))
+                     (dpy* (* XErrorEvent)) int)])
+               (lock-object f/proc)
+               (set! previous-lambda f/proc)
+               (foreign-callable-entry-point f/proc))
+             ;; Else assume handler is a mem addr, eg as would be returned by the first call to XSetErrorHandler.
+             handler)))))
 
   ;;;; basic atom manager.
   ;; Just a very thin wrapper around hash tables.
