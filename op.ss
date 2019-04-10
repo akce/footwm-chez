@@ -7,6 +7,8 @@
    move-window-to-desktop
    window-name
    window-sort
+   activate-window/index
+   close-window/index
    ;; Desktop operations.
    desktop-activate
    desktop-insert
@@ -89,9 +91,35 @@
        [else
         (> (winfo-desktop win-l) (winfo-desktop win-r))])))
 
+  (define sorted-winfo
+    (lambda (wids)
+      (list-sort window>? (make-winfo-list wids))))
+
   (define window-sort
     (lambda (wids)
-      (map winfo-wid (list-sort window>? (make-winfo-list wids)))))
+      ;; return only a list of wids. Less efficient than returning records but it keeps the interface clean.
+      (map winfo-wid (sorted-winfo wids))))
+
+  ;;;; Client window operations.
+
+  (define window-op/index
+    (lambda (op index)
+      (let* ([wlist (sorted-winfo (ewmh.client-list-stacking))]
+             [d (ewmh.current-desktop)]
+             [dlist
+              (filter (lambda (w)
+                        (eq? d (winfo-desktop w))) wlist)])
+        (when (< index (length dlist))
+          (op (winfo-wid (list-ref (reverse dlist) index)))))))
+
+  ;; Select window to activate by position in list.
+  (define activate-window/index
+    (lambda (index)
+      (window-op/index ewmh.window-active-request! index)))
+
+  (define close-window/index
+    (lambda (index)
+      (window-op/index ewmh.window-close-request! index)))
 
   ;;;;;; Desktop operations.
 

@@ -23,7 +23,7 @@
 
 (define default-config
   (lambda ()
-    (string-append (config-path) "/" ".footkeyconfig.ss")))
+    (string-append (config-path) "/" "footkeysconfig.ss")))
 
 (let ([bin (car (command-line))]
       [argv (command-line-arguments)])

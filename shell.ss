@@ -42,7 +42,7 @@
        [(string=? "wl" cmd)
         (windows)]
        [(string=? "ws" cmd)
-        (ewmh.window-active-request! (string->number (list-ref args 0)))]
+        (op.activate-window/index (string->number (list-ref args 0)))]
        [else
         (display "command not understood. showing help.")
         (newline)
@@ -91,23 +91,25 @@ Enters shell mode if no [command] given.
   ;; prints out the windows list in most-recently-used order.
   (define windows
     (lambda ()
-      (for-each
-       (lambda (wid)
-         (display (window-display-string wid))
-         (newline))
-       (op.window-sort (ewmh.client-list-stacking)))))
+      (let ([wids (ewmh.client-list-stacking)])
+        (for-each
+         (lambda (wid i)
+           (display (window-display-string wid i))
+           (newline))
+         (op.window-sort wids) (reverse (enumerate wids))))))
 
   (define desktop-display-string
     (lambda (desk)
       (format "~d ~a" (car desk) (cdr desk))))
 
   (define window-display-string
-    (lambda (wid)
+    (lambda (wid i)
       (let ([c (icccm.class-hint wid)])
         ;; window id desktop resource class title
         (format
-         "#x~x ~a ~a ~a ~a"
+         "#x~x ~a ~a ~a ~a ~a"
          wid
+         i
          (ewmh.window-desktop wid)
          (vector-ref c 0)
          (vector-ref c 1)
