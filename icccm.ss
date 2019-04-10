@@ -94,11 +94,13 @@
    init-window
    send-client-message)
   (import
+   (rnrs)
+   (only (chezscheme)
+         define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof)
    (globals)
-   (util)
+   (prefix (util) util.)
    (xlib)
-   (prefix (xutil) xutil.)
-   (chezscheme))
+   (prefix (xutil) xutil.))
 
   (define atom-list
     '(WM_CHANGE_STATE
@@ -128,7 +130,7 @@
 
   ;;;; ICCCM 4.1.2.3 WM_NORMAL_HINTS
   ;; Constraints on window geometry.
-  (bitmap size-hints-flags
+  (util.bitmap size-hints-flags
         (USPosition	0)
         (USSize		1)
         (PPosition	2)
@@ -195,7 +197,7 @@
 
   ;;;; ICCCM 4.1.2.4 WM_HINTS.
   ;; Other hints that don't fit anywhere else.
-  (bitmap wm-hints-flags
+  (util.bitmap wm-hints-flags
         (InputHint		0)
         (StateHint		1)	; State to transition to from Withdrawn. ie, Normal or Iconic.
         ;IconPixmapHint
@@ -287,7 +289,7 @@
   ;;;; ICCCM 4.1.3.1 WM_STATE
   ;; Window managers place WM_STATE on all non-Withdrawn top-level windows.
 
-  (enum wm-state-state
+  (util.enum wm-state-state
         (WithdrawnState	0)	;; Hidden.
         (NormalState	1)	;; Client should animate its window.
         (IconicState	3))	;; Client should animate its icon window.
@@ -321,7 +323,7 @@
   (define wm-state-set!
     (lambda (wid state)
       (let ([at (atom-ref 'WM_STATE)])
-        (fmem ([ws &ws wm-state])
+        (util.fmem ([ws &ws wm-state])
           (ftype-set! wm-state (state) &ws state)
           (ftype-set! wm-state (icon) &ws 0)
           (XChangeProperty (current-display) wid at at 32 0 ws (ftype-sizeof wm-state))))))
@@ -487,7 +489,7 @@
 
   (define send-client-message
     (lambda (wid msgwid type sub-type event-mask)
-      (fmem ([ev &ev XEvent])
+      (util.fmem ([ev &ev XEvent])
         (ftype-set! XEvent (client-message xany type) &ev ClientMessage)
         (ftype-set! XEvent (client-message xany wid) &ev msgwid)
         (ftype-set! XEvent (client-message xany send-event) &ev #t)

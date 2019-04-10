@@ -30,9 +30,11 @@
 
    void*-cast)
   (import
-   (chezscheme)
+   (rnrs)
+   (only (chezscheme)
+         foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof fxlogor fx= iota make-ftype-pointer values)
    (globals)
-   (util)
+   (only (util) fmem)
    (xlib))
 
   (define-record-type geometry

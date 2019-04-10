@@ -29,12 +29,13 @@
    remove-window
 
    init-atoms
-   atom-ref
-   )
-  (import (chezscheme)
-          (globals)
-          (xlib)
-          (prefix (xutil) xutil.))
+   atom-ref)
+  (import
+   (rnrs)
+   (only (chezscheme) define-values)
+   (prefix (xutil) xutil.)
+   (globals)
+   (xlib))
 
   (define atom-list
     '(_NET_ACTIVE_WINDOW

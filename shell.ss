@@ -4,16 +4,15 @@
    desktops
    windows)
   (import
-   (prefix (ewmh) e.)
-   (prefix (icccm) i.)
+   (rnrs base)
+   (only (chezscheme) enumerate format)
+   (only (rnrs io simple) display newline)
+   (prefix (ewmh) ewmh.)
+   (prefix (icccm) icccm.)
    (prefix (op) op.)
    (prefix (wm) wm.)
-   (prefix (xutil) x.)
    (globals)
-   (xlib)
-   (rnrs)
-   (util)
-   (only (chezscheme) enumerate format))
+   (xlib))
 
 (define main
   (lambda (argv)
@@ -32,17 +31,17 @@
        [(string=? "dr" cmd)
         (wm.desktop-rename-set! (string->number (list-ref args 0)) (list-ref args 1))]
        [(string=? "ds" cmd)
-        (e.current-desktop-request! (string->number (list-ref args 0)))]
+        (ewmh.current-desktop-request! (string->number (list-ref args 0)))]
        [(string=? "wb" cmd)
-        (i.client-iconify-message (string->number (list-ref args 0)))]
+        (icccm.client-iconify-message (string->number (list-ref args 0)))]
        [(string=? "wc" cmd)
-        (e.window-close-request! (string->number (list-ref args 0)))]
+        (ewmh.window-close-request! (string->number (list-ref args 0)))]
        [(string=? "wd" cmd)
-        (e.window-desktop-request! (string->number (list-ref args 0)) (string->number (list-ref args 1)))]
+        (ewmh.window-desktop-request! (string->number (list-ref args 0)) (string->number (list-ref args 1)))]
        [(string=? "wl" cmd)
         (windows)]
        [(string=? "ws" cmd)
-        (e.window-active-request! (string->number (list-ref args 0)))]
+        (ewmh.window-active-request! (string->number (list-ref args 0)))]
        [else
         (display "command not understood. showing help.")
         (newline)
@@ -81,7 +80,7 @@ Enters shell mode if no [command] given.
 
   (define desktops
     (lambda ()
-      (let ([names (e.desktop-names)])
+      (let ([names (ewmh.desktop-names)])
         (for-each
          (lambda (desk)
            (display (desktop-display-string desk))
@@ -95,7 +94,7 @@ Enters shell mode if no [command] given.
        (lambda (wid)
          (display (window-display-string wid))
          (newline))
-       (op.window-sort (e.client-list-stacking)))))
+       (op.window-sort (ewmh.client-list-stacking)))))
 
   (define desktop-display-string
     (lambda (desk)
@@ -103,12 +102,12 @@ Enters shell mode if no [command] given.
 
   (define window-display-string
     (lambda (wid)
-      (let ([c (i.class-hint wid)])
+      (let ([c (icccm.class-hint wid)])
         ;; window id desktop resource class title
         (format
          "#x~x ~a ~a ~a ~a"
          wid
-         (e.window-desktop wid)
+         (ewmh.window-desktop wid)
          (vector-ref c 0)
          (vector-ref c 1)
          (op.window-name wid))))))

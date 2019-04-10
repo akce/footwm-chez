@@ -18,12 +18,12 @@
   (import
    (rnrs)
    (only (chezscheme) add1 enumerate format sub1)
-   (util)
    (globals)
    (prefix (ewmh) ewmh.)
    (prefix (icccm) icccm.)
-   (prefix (xutil) xutil.)
-   (xlib))
+   (prefix (util) util.)
+   (xlib)
+   (prefix (xutil) xutil.))
 
   ;;;;;; Window operations.
 
@@ -121,7 +121,7 @@
              (ewmh.client-list-stacking))
             (let* ([names (ewmh.desktop-names)]
                    [name (list-ref names index)])
-              (ewmh.desktop-names-set! (list-insert (remove name names) name c)))
+              (ewmh.desktop-names-set! (util.list-insert (remove name names) name c)))
             (arrange-windows))))))
 
   (define desktop-insert
@@ -129,7 +129,7 @@
       (let ([names (ewmh.desktop-names)])
         ;; desktop names must be unique.
         (unless (member name names)
-          (ewmh.desktop-names-set! (list-insert names name index))
+          (ewmh.desktop-names-set! (util.list-insert names name index))
           (adjust-windows-desktop index add1)
           (ewmh.desktop-count-set! (add1 (length names)))
           (if (= index (ewmh.current-desktop))
@@ -137,7 +137,7 @@
 
   (define get-unassigned
     (lambda (names)
-      (list-find-index
+      (util.list-find-index
        (lambda (x)
          (string=? "Unassigned" x))
        names)))
@@ -170,7 +170,7 @@
         (when (< index c)
           (let ([names (ewmh.desktop-names)])
             (unless (string=? "Unassigned" (list-ref names index))
-              (ewmh.desktop-names-set! (list-replace names index name))))))))
+              (ewmh.desktop-names-set! (util.list-replace names index name))))))))
 
  ;;;;;; Layout operations.
 

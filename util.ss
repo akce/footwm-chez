@@ -11,7 +11,8 @@
    remove*
    vector-enumerate)
   (import
-   (chezscheme))
+   (rnrs)
+   (only (chezscheme) add1 foreign-alloc foreign-free ftype-sizeof fxsll iota make-ftype-pointer sub1))
 
   (define-syntax bitmap
     (syntax-rules ()

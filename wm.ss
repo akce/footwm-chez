@@ -9,14 +9,15 @@
    init-windows
    main)
   (import
+   (rnrs)
+   (only (chezscheme)
+         define-values lock-object unlock-object foreign-callable-entry-point foreign-callable ftype-ref format)
    (globals)
-   (util)
    (xlib)
    (prefix (ewmh) ewmh.)
    (prefix (icccm) icccm.)
    (prefix (op) op.)
-   (prefix (xutil) xutil.)
-   (chezscheme))
+   (prefix (xutil) xutil.))
 
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager '(FOOT_COMMANDV)))

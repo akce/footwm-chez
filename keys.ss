@@ -10,7 +10,9 @@
    key-config
    main)
   (import
-   (chezscheme)
+   (rnrs)
+   (only (chezscheme)
+         copy-environment eval format load logior make-parameter scheme-environment set-top-level-value!)
    (globals)
    (only (util) list-combinations* remove*)
    (xlib)
