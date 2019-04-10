@@ -8,6 +8,7 @@
    (only (chezscheme) enumerate format)
    (only (rnrs io simple) display newline)
    (prefix (ewmh) ewmh.)
+   (prefix (hints) hints.)
    (prefix (icccm) icccm.)
    (prefix (op) op.)
    (prefix (wm) wm.)
@@ -23,13 +24,13 @@
        [(or (string=? "h" cmd) (string=? "help" cmd))
         (help binary)]
        [(string=? "da" cmd)
-        (wm.desktop-add-set! (list-ref args 0) (string->number (list-ref args 1)))]
+        (hints.desktop-add-set! (list-ref args 0) (string->number (list-ref args 1)))]
        [(string=? "dc" cmd)
-        (wm.desktop-delete-set! (string->number (list-ref args 0)))]
+        (hints.desktop-delete-set! (string->number (list-ref args 0)))]
        [(string=? "dl" cmd)
         (desktops)]
        [(string=? "dr" cmd)
-        (wm.desktop-rename-set! (string->number (list-ref args 0)) (list-ref args 1))]
+        (hints.desktop-rename-set! (string->number (list-ref args 0)) (list-ref args 1))]
        [(string=? "ds" cmd)
         (ewmh.current-desktop-request! (string->number (list-ref args 0)))]
        [(string=? "wb" cmd)

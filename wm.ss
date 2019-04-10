@@ -1,10 +1,5 @@
 (library (wm)
   (export
-   desktop-add-set!
-   desktop-delete-set!
-   desktop-rename-set!
-   atom-ref
-   init-atoms
    init-desktops
    init-windows
    main)
@@ -15,12 +10,10 @@
    (globals)
    (xlib)
    (prefix (ewmh) ewmh.)
+   (prefix (hints) hints.)
    (prefix (icccm) icccm.)
    (prefix (op) op.)
    (prefix (xutil) xutil.))
-
-  (define-values
-      (init-atoms atom-ref) (xutil.make-atom-manager '(FOOT_COMMANDV)))
 
   (define main
     (lambda ()
@@ -207,17 +200,8 @@
       (let ([wid (xanyevent-wid (xpropertyevent-xany ev))]
             [atom (xpropertyevent-propatom ev)])
         (display (format "#x~x PropertyNotify ~a~n" wid (xutil.atom-name atom)))
-        (cond
-         [(eq? atom (atom-ref 'FOOT_COMMANDV))
-          (let ([cmd (xutil.property->string* wid (atom-ref 'FOOT_COMMANDV))])
-            (if (string=? (vector-ref cmd 0) "desktop")
-              (cond
-               [(string=? (vector-ref cmd 1) "insert")
-                (op.desktop-insert (vector-ref cmd 2) (string->number (vector-ref cmd 3)))]
-               [(string=? (vector-ref cmd 1) "delete")
-                (op.desktop-delete (string->number (vector-ref cmd 2)))]
-               [(string=? (vector-ref cmd 1) "rename")
-                (op.desktop-rename (string->number (vector-ref cmd 2)) (vector-ref cmd 3))])))]))))
+        (when (hints.command? atom)
+         (hints.on-command wid)))))
 
   (define on-unmap
     (lambda (ev)
@@ -238,18 +222,6 @@
                   (display (format "#x~x removing window from EWMH client lists~n" wid))
                   (ewmh.remove-window wid)))
             (op.arrange-windows)))))
-
-  (define desktop-add-set!
-    (lambda (name index)
-      (xutil.text-property-set! (root) `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
-
-  (define desktop-delete-set!
-    (lambda (index)
-      (xutil.text-property-set! (root) `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
-
-  (define desktop-rename-set!
-    (lambda (index new-name)
-      (xutil.text-property-set! (root) `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
 
   (define cleanup
     (lambda ()

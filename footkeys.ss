@@ -8,9 +8,9 @@
  (only (chezscheme) new-cafe)
  (prefix (ewmh) ewmh.)
  (globals)
+ (prefix (hints) hints.)
  (prefix (icccm) icccm.)
  (prefix (keys) keys.)
- (prefix (wm) wm.)
  (xlib)
  (prefix (xutil) xutil.))
 
@@ -19,7 +19,7 @@
 
 (icccm.init-atoms)
 (ewmh.init-atoms)
-(wm.init-atoms)
+(hints.init-atoms)
 
 (define default-config
   (lambda ()

@@ -8,7 +8,7 @@
  (only (chezscheme) new-cafe)
  (prefix (ewmh) ewmh.)
  (globals)
- (prefix (wm) wm.)
+ (prefix (hints) hints.)
  (prefix (icccm) icccm.)
  (prefix (shell) sh.)
  (xlib)
@@ -19,7 +19,7 @@
 
 (icccm.init-atoms)
 (ewmh.init-atoms)
-(wm.init-atoms)
+(hints.init-atoms)
 
 (let ([argv (command-line)])
   (cond
