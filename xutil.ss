@@ -16,6 +16,7 @@
    get-next-event
    get-window-attributes
    open
+   sync
    install-error-handler
    property->string
    property->string*
@@ -57,6 +58,12 @@
     (case-lambda
      [() (open #f)]
      [(s) (XOpenDisplay s)]))
+
+  ;; wraps XSync so discard boolean is optional.
+  (define sync
+    (case-lambda
+     [() (sync #f)]
+     [(s) (XSync (current-display) s)]))
 
   (define install-error-handler
     ;; Store the previous locked lambda so that it can be unlocked if replaced.

@@ -51,7 +51,7 @@
                 SubstructureRedirect	; Redirect child window change requests to this wm-client.
                 SubstructureNotify)])
           (XSelectInput (current-display) (root) mask)
-          (XSync (current-display) #f)
+          (xutil.sync)
           (xutil.install-error-handler orig)
           (unless installed
             (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running."))))))))

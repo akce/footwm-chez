@@ -13,7 +13,7 @@
    (prefix (op) op.)
    (prefix (wm) wm.)
    (globals)
-   (xlib))
+   (prefix (only (xutil) sync) xutil.))
 
 (define main
   (lambda (argv)
@@ -47,7 +47,7 @@
         (display "command not understood. showing help.")
         (newline)
         (help binary)])
-      (XSync (current-display) #f))))
+      (xutil.sync))))
 
 (define help
   (lambda (binary)
