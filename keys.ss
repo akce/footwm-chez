@@ -131,7 +131,7 @@
                [(eq? eid KeyPressEvent) (display "Ignore KeyPressEvent\n")]
                [(eq? eid KeyReleaseEvent) (display "Ignore KeyReleaseEvent\n")]
                [else
-                (display (format "Unsupported event ~d~n" ))])))))
+                (display (format "Unsupported event ~d~n" eid))])))))
         (loop))))
 
   (define on-key
