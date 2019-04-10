@@ -18,6 +18,7 @@
    open
    sync
    select-input
+   install-default-error-handler
    install-error-handler
    property->string
    property->string*
@@ -35,8 +36,9 @@
   (import
    (rnrs)
    (only (chezscheme)
+         format fxlogor fx= iota values
          lock-object unlock-object foreign-callable foreign-callable-entry-point
-         foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof fxlogor fx= iota make-ftype-pointer values)
+         foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof make-ftype-pointer)
    (globals)
    (only (util) fmem)
    (xlib))
@@ -69,6 +71,13 @@
   (define select-input
     (lambda (wid mask)
       (XSelectInput (current-display) wid mask)))
+
+  ;; Installs a simple one-line printing error handler.
+  (define install-default-error-handler
+    (lambda ()
+      (install-error-handler
+       (lambda (dpy ev)
+         (display (format "XError: type=~a wid=#x~x error=~d~n" (xerrorevent-type ev) (xerrorevent-resourceid ev) (xerrorevent-error-code ev)))))))
 
   (define install-error-handler
     ;; Store the previous locked lambda so that it can be unlocked if replaced.

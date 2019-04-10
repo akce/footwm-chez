@@ -19,9 +19,7 @@
       (install-as-wm)
       ;; Replace the default error handler with our own. This ensures that the wm continues to function even
       ;; after an error. eg, when trying to access a resource from a destroyed window.
-      (xutil.install-error-handler
-       (lambda (dpy ev)
-         (display (format "XError: type=~a wid=#x~x error=~d~n" (xerrorevent-type ev) (xerrorevent-resourceid ev) (xerrorevent-error-code ev)))))
+      (xutil.install-default-error-handler)
       (init-desktops)
       (init-windows)
       (op.arrange-windows)

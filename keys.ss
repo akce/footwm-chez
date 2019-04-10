@@ -100,6 +100,7 @@
 
   (define main
     (lambda (config-file)
+      (xutil.install-default-error-handler)
       (xutil.select-input (root) KeyPress)
       (load-config config-file)
       (run)))
