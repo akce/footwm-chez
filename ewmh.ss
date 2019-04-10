@@ -54,12 +54,12 @@
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
 
-  ;; Return first (and likely only) item in vector or false if vector is empty.
+  ;; Return first (and likely only) item in list or false if list is empty.
   (define first-or-false
-    (lambda (vect)
-      (if (fx=? 0 (vector-length vect))
+    (lambda (lst)
+      (if (null? lst)
           #f
-          (vector-ref vect 0))))
+          (list-ref lst 0))))
 
   (define active-window
     (lambda ()
@@ -71,7 +71,7 @@
 
   (define client-list
     (lambda ()
-      (vector->list (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW))))
+      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
 
   (define client-list-set!
     (lambda (wids)
@@ -81,7 +81,7 @@
   (define client-list-stacking
     (lambda ()
       ;; return as list as lists have more builtin operations.
-      (vector->list (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW))))
+      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
 
   (define client-list-stacking-set!
     (lambda (wids)
@@ -117,7 +117,7 @@
   (define desktop-names
     (lambda ()
       ;; return as list as lists have more builtin operations.
-      (vector->list (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES)))))
+      (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES))))
 
   (define desktop-names-set!
     (lambda (names)

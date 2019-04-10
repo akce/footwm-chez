@@ -38,11 +38,11 @@
   (define on-command
     (lambda (wid)
       (let ([cmd (xutil.property->string* wid (atom-ref 'FOOT_COMMANDV))])
-        (if (string=? (vector-ref cmd 0) "desktop")
+        (if (string=? (list-ref cmd 0) "desktop")
             (cond
-             [(string=? (vector-ref cmd 1) "insert")
-              (op.desktop-insert (vector-ref cmd 2) (string->number (vector-ref cmd 3)))]
-             [(string=? (vector-ref cmd 1) "delete")
-              (op.desktop-delete (string->number (vector-ref cmd 2)))]
-             [(string=? (vector-ref cmd 1) "rename")
-              (op.desktop-rename (string->number (vector-ref cmd 2)) (vector-ref cmd 3))]))))))
+             [(string=? (list-ref cmd 1) "insert")
+              (op.desktop-insert (list-ref cmd 2) (string->number (list-ref cmd 3)))]
+             [(string=? (list-ref cmd 1) "delete")
+              (op.desktop-delete (string->number (list-ref cmd 2)))]
+             [(string=? (list-ref cmd 1) "rename")
+              (op.desktop-rename (string->number (list-ref cmd 2)) (list-ref cmd 3))]))))))

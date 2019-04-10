@@ -57,15 +57,15 @@
       ;; Make sure they exist or create if necessary.
       (unless (ewmh.current-desktop)
           (ewmh.current-desktop-set! 0))
-      (unless (ewmh.desktop-names)
+      (if (null? (ewmh.desktop-names))
           (ewmh.desktop-names-set! '("Unassigned")))
-      (unless (ewmh.desktop-count)
+      (if (null? (ewmh.desktop-count))
           (ewmh.desktop-count-set! 1))))
 
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
-      (let ([ws (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root))))]
+      (let ([ws (filter icccm.manage-window? (xutil.get-child-windows (root)))]
             [defgroup (op.get-unassigned (ewmh.desktop-names))])
         (define wid-exists?
           (lambda (wid)
@@ -82,12 +82,12 @@
          ws)
         ;; set client-list/stacking ewmh hints.
         (let ([clients (ewmh.client-list)])
-          (if (= (length clients) 0)
+          (if (null? clients)
               (ewmh.client-list-set! ws)
               ;; client list already exists, need to sanitise it with ws.
               (ewmh.client-list-set! (filter wid-exists? (set-join clients ws)))))
         (let ([clients (ewmh.client-list-stacking)])
-          (if (= (length clients) 0)
+          (if (null? clients)
               (ewmh.client-list-stacking-set! ws)
               ;; client list stacking already exists, need to sanitise it with ws.
               (ewmh.client-list-stacking-set! (filter wid-exists? (set-join clients ws))))))))

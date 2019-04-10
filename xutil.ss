@@ -132,7 +132,7 @@
                   (vector-set! v i (ptr->string saddr))
                   v)])
             ;; TODO consider limiting to n-1 since the last string always seems to be "".
-            ((= i n) v)))))
+            ((= i n) (vector->list v))))))
 
   (define cardinal-set!
     (lambda (wid atomprop value)
@@ -180,7 +180,7 @@
                           ;; TODO text-list foreign-ref is also calc'd in text-list->utf8s. Need to re-org.
                           (XFreeStringList (foreign-ref 'void* text-list 0))
                           res))
-                  #f)))))
+                  (list))))))
 
   (define (ptr->string fptr)
       (utf8->string
@@ -199,7 +199,7 @@
            [v (make-vector len) (begin
                                   (vector-set! v i (foreign-ref 'unsigned-long ptr (* i (ftype-sizeof unsigned-long))))
                                   v)])
-          ((= i len) v))))
+          ((= i len) (vector->list v)))))
 
   ;; Return list/pair (address length) of property memory data or #f on failure.
   ;; Caller *Must* foreign-free returned address.
@@ -228,7 +228,7 @@
               ;; failure: return false.
               #f)))))
 
-  ;; window property to vector of unsigned longs.
+  ;; window property to list of unsigned longs.
   (define property->ulongs
     (lambda (wid propatom atomtype)
       (let ([ptrlen (get-property-ptr wid propatom atomtype)])
@@ -242,7 +242,7 @@
               (foreign-free ptr)
               nums)
             ;; failure: return empty.
-            (vector)))))
+            (list)))))
 
   (define send-message-cardinal
     (lambda (root wid atom value)

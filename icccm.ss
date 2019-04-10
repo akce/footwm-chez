@@ -253,14 +253,14 @@
 
   (define class
     (lambda (wid)
-      (vector-ref (class-hint wid) 1)))
+      (list-ref (class-hint wid) 1)))
 
   (define instance
     (lambda (wid)
       ;; ICCCM 4.1.2.5 WM_CLASS refers to this first string as the "instance" even though XClassHint has it as res_name.
       ;; Probably because there are a number of "name" ways to populate this value.
       ;; eg, -name, RESOURCE_NAME, bin name.
-      (vector-ref (class-hint wid) 0)))
+      (list-ref (class-hint wid) 0)))
 
   ;;;; ICCCM 4.1.2.6 WM_TRANSIENT_FOR
   ;; TODO
@@ -268,7 +268,7 @@
   ;;;; ICCCM 4.1.2.7 WM_PROTOCOLS
   (define get-wm-protocols
     (lambda (wid)
-      (vector->list (xutil.property->ulongs wid (atom-ref 'WM_PROTOCOLS) XA-ATOM))))
+      (xutil.property->ulongs wid (atom-ref 'WM_PROTOCOLS) XA-ATOM)))
 
   (define has-wm-protocol?
     (lambda (wid proto-atom)

@@ -111,6 +111,6 @@ Enters shell mode if no [command] given.
          wid
          i
          (ewmh.window-desktop wid)
-         (vector-ref c 0)
-         (vector-ref c 1)
+         (list-ref c 0)
+         (list-ref c 1)
          (op.window-name wid))))))
