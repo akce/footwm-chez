@@ -17,18 +17,12 @@
 
   (define main
     (lambda ()
-      (setup)
-      (run)
-      (cleanup)))
-
-  (define setup
-    (lambda ()
-      #;(load-config)
       (install-as-wm)
       (install-error-handler)
       (init-desktops)
       (init-windows)
-      (op.arrange-windows)))
+      (op.arrange-windows)
+      (run)))
 
   ;; Install as *the* window manager.
   ;; raises an error condition on failure.
@@ -221,8 +215,4 @@
                 (begin
                   (display (format "#x~x removing window from EWMH client lists~n" wid))
                   (ewmh.remove-window wid)))
-            (op.arrange-windows)))))
-
-  (define cleanup
-    (lambda ()
-      #f)))
+            (op.arrange-windows))))))
