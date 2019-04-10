@@ -31,30 +31,25 @@
   ;; raises an error condition on failure.
   (define install-as-wm
     (lambda ()
-      (let ([installed #t])
-        (define check-bad-access
-          (lambda (d ev)
-            (when (eq? (xerrorevent-error-code ev) BadAccess)
-              (set! installed #f))))
-        ;; Set as the window manager client.
-        ;; Structure = geometry, border, stacking info for a window.
-        ;; Sub = child.
-        ;; Redirect = server routes changes as events to the wm client.
-        ;; The window manager client (wm) is the only client that can select SubstructureRedirect on the root window.
-        ;; Any config change requested by child windows will result in CirculateRequest, ConfigureRequest, or MapRequest
-        ;; events being sent to the wm. The wm can then honour, disregard, or modify those requests.
-        (let ([orig (xutil.install-error-handler check-bad-access)]
-              [mask
-               (bitwise-ior
-                PropertyChange
-                StructureNotify
-                SubstructureRedirect	; Redirect child window change requests to this wm-client.
-                SubstructureNotify)])
+      ;; The window manager client (wm) is the only client that can select SubstructureRedirect on the root window.
+      ;; Any config change requested by directo child windows will result in CirculateRequest, ConfigureRequest,
+      ;; or MapRequest events being sent to the wm. The wm can then honour, disregard, or modify those requests.
+      (let* ([installed #t]
+             [orig (xutil.install-error-handler
+                    (lambda (d ev)
+                      (if (eq? (xerrorevent-error-code ev) BadAccess)
+                        (set! installed #f))))]
+             [mask
+              (bitwise-ior
+               PropertyChange
+               StructureNotify		; Structure = geometry, border, stacking info for a window.
+               SubstructureNotify	; Sub = structure nofify for child windows.
+               SubstructureRedirect)])	; Redirect child window change requests to this client.
           (xutil.select-input (root) mask)
           (xutil.sync)
           (xutil.install-error-handler orig)
           (unless installed
-            (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running."))))))))
+            (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running.")))))))
 
   (define init-desktops
     (lambda ()
