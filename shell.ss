@@ -6,6 +6,7 @@
   (import
    (prefix (ewmh) e.)
    (prefix (icccm) i.)
+   (prefix (op) op.)
    (prefix (wm) wm.)
    (prefix (xutil) x.)
    (globals)
@@ -134,5 +135,5 @@ Enters shell mode if no [command] given.
          (winfo-desktop winfo)
          (vector-ref c 0)
          (vector-ref c 1)
-         (wm.window-name wid)))))
+         (op.window-name wid)))))
   )

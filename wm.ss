@@ -1,7 +1,5 @@
 (library (wm)
   (export
-   arrange-windows
-
    desktop-add-set!
    desktop-delete-set!
    desktop-rename-set!
@@ -9,17 +7,14 @@
    init-atoms
    init-desktops
    init-windows
-   main
-
-   window-name
-   activate-window
-   banish-window)
+   main)
   (import
    (globals)
    (util)
    (xlib)
    (prefix (ewmh) ewmh.)
    (prefix (icccm) icccm.)
+   (prefix (op) op.)
    (prefix (xutil) xutil.)
    (chezscheme))
 
@@ -39,7 +34,7 @@
       (install-error-handler)
       (init-desktops)
       (init-windows)
-      (arrange-windows)))
+      (op.arrange-windows)))
 
   ;; Install as *the* window manager.
   ;; raises an error condition on failure.
@@ -104,7 +99,7 @@
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
       (let ([ws (filter icccm.manage-window? (vector->list (xutil.get-child-windows (root))))]
-            [defgroup (get-unassigned (ewmh.desktop-names))])
+            [defgroup (op.get-unassigned (ewmh.desktop-names))])
         (define wid-exists?
           (lambda (wid)
             (memq wid ws)))
@@ -129,29 +124,6 @@
               (ewmh.client-list-stacking-set! ws)
               ;; client list stacking already exists, need to sanitise it with ws.
               (ewmh.client-list-stacking-set! (filter wid-exists? (set-join clients ws))))))))
-
-  (define arrange-window
-    (lambda (wid)
-      ;; give it the same dimensions as the root window.
-      (let ([rgeom (xutil.window-attributes-geom (xutil.get-window-attributes (root)))])
-        (display (format "#x~x arrange active window ~a~n" wid rgeom))
-        (xutil.resize-window wid (xutil.geometry-x rgeom) (xutil.geometry-y rgeom) (xutil.geometry-width rgeom) (xutil.geometry-height rgeom)))))
-
-  (define arrange-windows
-    (lambda ()
-      ;; client-list-stacking is bottom to top, reverse so we can easily get to the first window later.
-      (let ([aws (reverse (ewmh.client-list-stacking))]
-            [d (ewmh.current-desktop)])
-        (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
-          (for-each icccm.iconify-window ows)	; should do this only on wm-init and desktop change..
-          (unless (null? ws)
-            (let ([vis (car ws)]		; visible window
-                  [hs (cdr ws)])		; hidden windows
-              (for-each icccm.iconify-window hs)
-              (icccm.show-window vis)
-              (arrange-window vis)
-              (icccm.focus-window vis)
-              (ewmh.active-window-set! vis)))))))
 
   (define run
     (lambda ()
@@ -178,16 +150,16 @@
         (display (format "#x~x ClientMessage ~a ~a~n" wid type (xutil.atom-name type)))
         (cond
          [(eq? type (ewmh.atom-ref '_NET_ACTIVE_WINDOW))
-          (activate-window wid)]
+          (op.activate-window wid)]
          [(eq? type (ewmh.atom-ref '_NET_CLOSE_WINDOW))
           (icccm.delete-window wid)]
          [(eq? type (ewmh.atom-ref '_NET_CURRENT_DESKTOP))
-          (desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
+          (op.desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
          [(eq? type (ewmh.atom-ref '_NET_WM_DESKTOP))
-          (move-window-to-desktop wid (list-ref (xclientmessageevent-data ev) 0))]
+          (op.move-window-to-desktop wid (list-ref (xclientmessageevent-data ev) 0))]
          [(eq? type (icccm.atom-ref 'WM_CHANGE_STATE))
           (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
-              (banish-window wid))]
+              (op.banish-window wid))]
          [else
           (display (format "#x~x Unknown ClientMessage message type~n" wid))]))))
 
@@ -213,7 +185,7 @@
           (begin
             (display (format "#x~x DestroyNotify~n" (xdestroywindowevent-wid ev)))
             (ewmh.remove-window (xdestroywindowevent-wid ev))
-            (arrange-windows)))))
+            (op.arrange-windows)))))
 
   (define on-map
     (lambda (ev)
@@ -224,10 +196,10 @@
   (define on-map-request
     (lambda (ev)
       (let ([wid (xmaprequestevent-wid ev)])
-        (display (format "#x~x MapRequest ~a~n" wid (window-name wid))))
+        (display (format "#x~x MapRequest ~a~n" wid (op.window-name wid))))
       (icccm.on-map-request ev)
       (ewmh.on-map-request ev)
-      (arrange-windows)))
+      (op.arrange-windows)))
 
   (define on-property
     (lambda (ev)
@@ -240,11 +212,11 @@
             (if (string=? (vector-ref cmd 0) "desktop")
               (cond
                [(string=? (vector-ref cmd 1) "insert")
-                (desktop-insert (vector-ref cmd 2) (string->number (vector-ref cmd 3)))]
+                (op.desktop-insert (vector-ref cmd 2) (string->number (vector-ref cmd 3)))]
                [(string=? (vector-ref cmd 1) "delete")
-                (desktop-delete (string->number (vector-ref cmd 2)))]
+                (op.desktop-delete (string->number (vector-ref cmd 2)))]
                [(string=? (vector-ref cmd 1) "rename")
-                (desktop-rename (string->number (vector-ref cmd 2)) (vector-ref cmd 3))])))]))))
+                (op.desktop-rename (string->number (vector-ref cmd 2)) (vector-ref cmd 3))])))]))))
 
   (define on-unmap
     (lambda (ev)
@@ -264,125 +236,7 @@
                 (begin
                   (display (format "#x~x removing window from EWMH client lists~n" wid))
                   (ewmh.remove-window wid)))
-            (arrange-windows)))))
-
-  ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
-  (define window-name
-    (lambda (wid)
-      (let ([ename (ewmh.name wid)])
-        (if ename
-            ename
-            (icccm.name wid)))))
-
-  (define top-level-window?
-    (lambda (wid)
-      (memq wid (ewmh.client-list))))
-
-  (define activate-window
-    (lambda (wid)
-      ;; promote window to top of ewmh.client-list-stacking, set as ewmh.active-window.
-      (if (top-level-window? wid)
-          (let ([rstack (reverse (ewmh.client-list-stacking))])
-            (unless (= wid (car rstack))
-              (ewmh.client-list-stacking-set! (reverse (cons wid (remove wid rstack))))
-              (arrange-windows))))))
-
-  (define banish-window
-    (lambda (wid)
-      ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list-stacking.
-      (if (top-level-window? wid)
-          (let ([state (icccm.get-wm-state wid)])
-            (ewmh.client-list-stacking-set! (append (list wid) (remove wid (ewmh.client-list-stacking))))
-            (if (eq? state 'NORMAL)
-                ;; Normal means the window is visible, hide and re-arrange desktop.
-                (begin
-                  (icccm.iconify-window wid)
-                  (arrange-windows)))))))
-
-  (define adjust-windows-desktop
-    (lambda (pos action)
-      (for-each
-       (lambda (wid)
-         (let ([d (ewmh.window-desktop wid)])
-           (if (>= d pos)
-               (ewmh.window-desktop-set! wid (action d)))))
-       (ewmh.client-list-stacking))))
-
-  (define desktop-activate
-    (lambda (index)
-      (when (< index (ewmh.desktop-count))
-        (let ([c (ewmh.current-desktop)])
-          (unless (= index c)
-            (for-each
-             (lambda (wid)
-               (let ([wd (ewmh.window-desktop wid)])
-                 (cond
-                  [(= wd index)
-                   (ewmh.window-desktop-set! wid c)]
-                  [(< wd index)
-                   (ewmh.window-desktop-set! wid (add1 wd))])
-                  #| else ignore, only windows at or below index need adjustment.|#))
-             (ewmh.client-list-stacking))
-            (let* ([names (ewmh.desktop-names)]
-                   [name (list-ref names index)])
-              (ewmh.desktop-names-set! (list-insert (remove name names) name c)))
-            (arrange-windows))))))
-
-  (define desktop-insert
-    (lambda (name index)
-      (let ([names (ewmh.desktop-names)])
-        ;; desktop names must be unique.
-        (unless (member name names)
-          (ewmh.desktop-names-set! (list-insert names name index))
-          (adjust-windows-desktop index add1)
-          (ewmh.desktop-count-set! (add1 (length names)))
-          (if (= index (ewmh.current-desktop))
-              (arrange-windows))))))
-
-  (define get-unassigned
-    (lambda (names)
-      (list-find-index
-       (lambda (x)
-         (string=? "Unassigned" x))
-       names)))
-
-  (define desktop-delete
-    (lambda (index)
-      (let ([c (ewmh.desktop-count)])
-        (if (< index c)
-          (let* ([names (ewmh.desktop-names)]
-                 [unassigned (get-unassigned names)])
-            (when unassigned
-              ;; Move orphaned windows to the unassigned desktop.
-              (for-each
-               (lambda (wid)
-                 (if (= index (ewmh.window-desktop wid))
-                   (ewmh.window-desktop-set! wid unassigned)))
-               (ewmh.client-list-stacking))
-              ;; Adjust window desktops at index and higher downwards.
-              (adjust-windows-desktop index sub1)
-              ;; Update desktop ewmh hints.
-              (ewmh.desktop-names-set! (remove (list-ref names index) names))
-              (ewmh.desktop-count-set! (sub1 (length names)))
-              ;; Redraw if deleted desktop was the displayed desktop.
-              (if (= index (ewmh.current-desktop))
-                (arrange-windows))))))))
-
-  (define desktop-rename
-    (lambda (index name)
-      (let ([c (ewmh.desktop-count)])
-        (when (< index c)
-          (let ([names (ewmh.desktop-names)])
-            (unless (string=? "Unassigned" (list-ref names index))
-              (ewmh.desktop-names-set! (list-replace names index name))))))))
-
-  (define move-window-to-desktop
-    (lambda (wid index)
-      (when (< index (ewmh.desktop-count))
-        (unless (= index (ewmh.window-desktop wid))
-          (ewmh.window-desktop-set! wid index)
-          (if (eq? (icccm.get-wm-state wid) 'NORMAL)
-              (arrange-windows))))))
+            (op.arrange-windows)))))
 
   (define desktop-add-set!
     (lambda (name index)
