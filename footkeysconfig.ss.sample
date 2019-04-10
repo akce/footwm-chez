@@ -1,0 +1,44 @@
+;;;;;; Sample footkeys configuration.
+;;;;;; Copy to ~/.foot/footkeysconfig.ss and edit to suit.
+(import
+ (rnrs base)
+ (only (chezscheme) system)
+ (keys)
+ (prefix (ewmh) ewmh.)
+ (prefix (hints) hints.)
+ (prefix (op) op.))
+
+(define terminal
+  (let ([t "urxvtc"])
+    (case-lambda
+     [()	(system t)]
+     [(cmdstr)
+      (system (string-append t " -e " cmdstr))])))
+
+(key-config
+ ;; Window selection.
+ ('F1 '()
+   (op.activate-window/index 1))
+ ('F2 '()
+   (op.activate-window/index 2))
+ ('F3 '()
+   (op.activate-window/index 3))
+ ('F4 '()
+   (op.activate-window/index 4))
+ ;; Desktop selection.
+ ('F5 '()
+   (ewmh.current-desktop-request! 1))
+ ('F6 '()
+   (ewmh.current-desktop-request! 2))
+ ('F7 '()
+   (ewmh.current-desktop-request! 3))
+ ('F8 '()
+   (ewmh.current-desktop-request! 4))
+ ;; Close current window/desktop.
+ ('F9 `(,(alt))
+   (op.close-window/index 0))
+ ('F10 `(,(alt))
+   (hints.desktop-delete-set! 0))
+ ;; Terminal shortcut.
+ ('Return `(,(alt))
+   (terminal)))
