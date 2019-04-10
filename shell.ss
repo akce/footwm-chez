@@ -88,52 +88,27 @@ Enters shell mode if no [command] given.
            (newline))
          (map cons (enumerate names) names)))))
 
-  (define-record-type winfo
-    (fields wid desktop stack))
-
-  (define make-winfo-list
-    (lambda (wids)
-      (map
-       (lambda (wid i)
-         (make-winfo wid (e.window-desktop wid) i))
-       wids (enumerate wids))))
-
-  ;; Order by desktop, followed by order in stack.
-  (define window>?
-    (lambda (win-l win-r)
-      (cond
-       [(eq? (winfo-desktop win-l) (winfo-desktop win-r))
-        (< (winfo-stack win-l) (winfo-stack win-r))]
-       [else
-        (> (winfo-desktop win-l) (winfo-desktop win-r))])))
-
-  (define window-sort
-    (lambda (wids)
-      (list-sort window>? (make-winfo-list wids))))
-
   ;; prints out the windows list in most-recently-used order.
   (define windows
     (lambda ()
       (for-each
-       (lambda (winfo)
-         (display (window-display-string winfo))
+       (lambda (wid)
+         (display (window-display-string wid))
          (newline))
-       (window-sort (e.client-list-stacking)))))
+       (op.window-sort (e.client-list-stacking)))))
 
   (define desktop-display-string
     (lambda (desk)
       (format "~d ~a" (car desk) (cdr desk))))
 
   (define window-display-string
-    (lambda (winfo)
-      (let* ([wid (winfo-wid winfo)]
-             [c (i.class-hint wid)])
+    (lambda (wid)
+      (let ([c (i.class-hint wid)])
         ;; window id desktop resource class title
         (format
          "#x~x ~a ~a ~a ~a"
          wid
-         (winfo-desktop winfo)
+         (e.window-desktop wid)
          (vector-ref c 0)
          (vector-ref c 1)
-         (op.window-name wid)))))
-  )
+         (op.window-name wid))))))

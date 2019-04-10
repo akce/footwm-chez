@@ -6,6 +6,7 @@
    banish-window
    move-window-to-desktop
    window-name
+   window-sort
    ;; Desktop operations.
    desktop-activate
    desktop-insert
@@ -16,7 +17,7 @@
    arrange-windows)
   (import
    (rnrs)
-   (only (chezscheme) add1 format sub1)
+   (only (chezscheme) add1 enumerate format sub1)
    (util)
    (globals)
    (prefix (ewmh) ewmh.)
@@ -66,6 +67,31 @@
         (if ename
             ename
             (icccm.name wid)))))
+
+  ;;;; Window sorting.
+
+  (define-record-type winfo
+    (fields wid desktop stack))
+
+  (define make-winfo-list
+    (lambda (wids)
+      (map
+       (lambda (wid i)
+         (make-winfo wid (ewmh.window-desktop wid) i))
+       wids (enumerate wids))))
+
+  ;; Order by desktop, followed by order in stack.
+  (define window>?
+    (lambda (win-l win-r)
+      (cond
+       [(eq? (winfo-desktop win-l) (winfo-desktop win-r))
+        (< (winfo-stack win-l) (winfo-stack win-r))]
+       [else
+        (> (winfo-desktop win-l) (winfo-desktop win-r))])))
+
+  (define window-sort
+    (lambda (wids)
+      (map winfo-wid (list-sort window>? (make-winfo-list wids)))))
 
   ;;;;;; Desktop operations.
 
