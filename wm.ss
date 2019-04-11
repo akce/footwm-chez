@@ -57,7 +57,7 @@
           (ewmh.current-desktop-set! 0))
       (if (null? (ewmh.desktop-names))
           (ewmh.desktop-names-set! '("Unassigned")))
-      (if (null? (ewmh.desktop-count))
+      (unless (ewmh.desktop-count)
           (ewmh.desktop-count-set! 1))))
 
   (define init-windows
