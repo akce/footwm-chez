@@ -356,8 +356,8 @@
         (else bodye ...))]))
 
   (define get-next-event
-    (fmem ([ev &ev XEvent])
-      (lambda ()
+    (lambda ()
+      (fmem ([ev &ev XEvent])
         (XNextEvent (current-display) &ev)
         (make-event &ev))))
 
