@@ -19,7 +19,8 @@
        (let ([var (foreign-alloc (ftype-sizeof type))] ...)
          (let ([varptr (make-ftype-pointer type var)] ...)
            (let ([r (begin first rest ...)])
-             ;; TODO should be wrapped via exceptions.
+             ;; make-ftype-pointer implicitly locks var, so manually unlock before free.
+             (unlock-object var) ...
              (foreign-free var) ...
              r)))]
       [(_ ((var varptr type num) ...) first rest ...)
@@ -27,7 +28,8 @@
        (let ([var (foreign-alloc (* (if (= num 0) 1 num) (ftype-sizeof type)))] ...)
          (let ([varptr (make-ftype-pointer type var)] ...)
            (let ([r (begin first rest ...)])
-             ;; TODO should be wrapped via exceptions.
+             ;; make-ftype-pointer implicitly locks var, so manually unlock before free.
+             (unlock-object var) ...
              (foreign-free var) ...
              r)))]))
 
