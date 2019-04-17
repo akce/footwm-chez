@@ -30,17 +30,15 @@
 
    make-atom-manager
 
-   resize-window
-
-   void*-cast)
+   resize-window)
   (import
    (rnrs)
    (only (chezscheme)
          format fxlogor fx= iota values
          lock-object unlock-object foreign-callable foreign-callable-entry-point
          foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof make-ftype-pointer)
+   (ftypes-util)
    (globals)
-   (only (util) fmem)
    (xlib))
 
   (define-record-type geometry
@@ -130,19 +128,6 @@
           (hashtable-ref atoms a #f)))
       (values init-atoms atom-ref)))
 
-  (define ptr->utf8s
-    (lambda (text-list nitems)
-      (let ([n (foreign-ref 'int nitems 0)]
-            [strvect (foreign-ref 'void* text-list 0)]	;; strvect = vector of strings (utf8**)
-            [sz (ftype-sizeof void*)])
-        (do ([i 0 (+ i 1)]
-             [v (make-vector n)
-                (let ([saddr (foreign-ref 'void* strvect (* i sz))])
-                  (vector-set! v i (ptr->string saddr))
-                  v)])
-            ;; TODO consider limiting to n-1 since the last string always seems to be "".
-            ((= i n) (vector->list v))))))
-
   (define cardinal-set!
     (lambda (wid atomprop value)
       (fmem ([num &num unsigned-32])
@@ -190,25 +175,6 @@
                           (XFreeStringList (foreign-ref 'void* text-list 0))
                           res))
                   (list))))))
-
-  (define (ptr->string fptr)
-      (utf8->string
-       (let f ([i 0])
-         (let ([c (foreign-ref 'unsigned-8 fptr i)])
-           (if (fx= c 0)
-               (make-bytevector i)
-               (let ([bv (f (fx+ i 1))])
-                 (bytevector-u8-set! bv i c)
-                 bv))))))
-
-  ;; internal: extract numbers from pointer location.
-  (define ptr->ulongs
-    (lambda (ptr len)
-      (do ([i 0 (+ i 1)]
-           [v (make-vector len) (begin
-                                  (vector-set! v i (foreign-ref 'unsigned-long ptr (* i (ftype-sizeof unsigned-long))))
-                                  v)])
-          ((= i len) (vector->list v)))))
 
   ;; Return list/pair (address length) of property memory data or #f on failure.
   ;; Caller *Must* foreign-free returned address.
@@ -265,46 +231,6 @@
               (ftype-set! XEvent (client-message data l 0) &ev value)
               (ftype-set! XEvent (client-message data l 1) &ev 0)	;; zero out.
               (XSendEvent (current-display) root #f event-mask &ev)))))
-
-  (define strdup
-    (lambda (str)
-      ;; foreign-alloc every string and copy in the bytes.
-      (let* ([bv (string->utf8 str)]
-             [len (bytevector-length bv)])
-        (let ([ret
-               (do ([i 0 (fx+ i 1)]
-                    [fv (foreign-alloc (fx+ 1 len))
-                        (begin
-                          (foreign-set! 'unsigned-8 fv i (bytevector-u8-ref bv i))
-                          fv)])
-                   ((= i len) fv))])
-          (foreign-set! 'unsigned-8 ret len 0)	;; null terminate.
-          ret))))
-
-  (define str*->u8**
-    (lambda (str*)
-      (let ([len (length str*)])
-        (do ([i 0 (+ i 1)]
-             [v (foreign-alloc (* len (ftype-sizeof u8*)))
-                (let ([fstr (strdup (list-ref str* i))])
-                  (foreign-set! 'void* v (* i (ftype-sizeof u8*)) fstr)
-                  v)])
-            ((= i len) v)))))
-
-  (define free/u8**
-    (lambda (u8** len)
-      ;; free individual string pointers.
-      (for-each
-       (lambda (i)
-         (foreign-free (foreign-ref 'void* u8** (* i (ftype-sizeof u8*)))))
-       (iota len))
-      ;; free containing block.
-      (foreign-free u8**)))
-
-  ;; return an ftype-pointer of void* type for ftype-pointer fptr.
-  (define void*-cast
-    (lambda (fptr)
-      (make-ftype-pointer void* (ftype-pointer-address fptr))))
 
   (define text-property-set!
     (lambda (wid str* propatom)

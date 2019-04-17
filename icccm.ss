@@ -97,6 +97,7 @@
    (rnrs)
    (only (chezscheme)
          define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof)
+   (only (ftypes-util) fmem)
    (globals)
    (prefix (util) util.)
    (xlib)
@@ -323,7 +324,7 @@
   (define wm-state-set!
     (lambda (wid state)
       (let ([at (atom-ref 'WM_STATE)])
-        (util.fmem ([ws &ws wm-state])
+        (fmem ([ws &ws wm-state])
           (ftype-set! wm-state (state) &ws state)
           (ftype-set! wm-state (icon) &ws 0)
           (XChangeProperty (current-display) wid at at 32 0 ws (ftype-sizeof wm-state))))))
@@ -489,7 +490,7 @@
 
   (define send-client-message
     (lambda (wid msgwid type sub-type event-mask)
-      (util.fmem ([ev &ev XEvent])
+      (fmem ([ev &ev XEvent])
         (ftype-set! XEvent (client-message xany type) &ev ClientMessage)
         (ftype-set! XEvent (client-message xany wid) &ev msgwid)
         (ftype-set! XEvent (client-message xany send-event) &ev #t)
