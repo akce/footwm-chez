@@ -1,6 +1,7 @@
 ;; ftypes (chez-ffi) utility functions.
 (library (ftypes-util)
   (export
+   fill-memory/ulongs
    fmem
    free/u8**
    ptr->string
@@ -11,6 +12,15 @@
    void*-cast)
   (import
    (chezscheme))
+
+  (define fill-memory/ulongs
+    (lambda (memory ulongs)
+      (for-each
+       (lambda (val offset)
+         (foreign-set! 'unsigned-long memory offset val))
+       ulongs (map (lambda (i)
+                     (* i (ftype-sizeof unsigned-long)))
+                   (iota (length ulongs))))))
 
   ;; [syntax] (fmem ((var varptr type)) ...)
   (define-syntax fmem

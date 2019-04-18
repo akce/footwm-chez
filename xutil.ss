@@ -135,16 +135,11 @@
             (XChangeProperty (current-display) wid atomprop XA-CARDINAL 32 0 num 1))))
 
   (define ulongs-property-set!
-    (lambda (wid atomprop vect typeatom)
-      (let ([len (vector-length vect)])
-        (fmem ([v &v unsigned-long len])
-              (vector-for-each
-               (lambda (val offset)
-                 (foreign-set! 'unsigned-long v offset val))
-               vect (list->vector (map (lambda (i)
-                                         (* i (ftype-sizeof unsigned-long)))
-                                       (iota len))))
-              (XChangeProperty (current-display) wid atomprop typeatom 32 0 v len)))))
+    (lambda (wid atomprop ulongs typeatom)
+      (let ([len (length ulongs)])
+        (fmem ([mem &mem unsigned-long len])
+          (fill-memory/ulongs mem ulongs)
+          (XChangeProperty (current-display) wid atomprop typeatom 32 0 mem len)))))
 
   (define property->string
     (lambda (wid propatom)
