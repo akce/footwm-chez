@@ -427,10 +427,10 @@
                   (wm-hints-input h)
                   #f)]
              [take-focus (has-wm-protocol? wid (atom-ref 'WM_TAKE_FOCUS))])
-        (if take-focus
-            ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
-            (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
-            (if input-hint
+        (if input-hint
+            (if take-focus
+                ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
+                (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
                 ;; Passive: manually set input focus.
                 (XSetInputFocus (current-display) wid RevertToPointerRoot CurrentTime))))))
 
