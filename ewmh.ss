@@ -26,13 +26,14 @@
    window-desktop-request!
 
    on-map-request
+   on-client-state
    remove-window
 
    init-atoms
    atom-ref)
   (import
    (rnrs)
-   (only (chezscheme) define-values)
+   (only (chezscheme) define-values format)
    (prefix (xutil) xutil.)
    (globals)
    (xlib))
@@ -169,6 +170,14 @@
           (list wid)))
         (unless (memq wid clients)
           (client-list-set! (append clients (list wid)))))))
+
+  (define on-client-state
+    (lambda (wid ev)
+      (let ([action (list-ref (xclientmessageevent-data ev) 0)]
+            [prop1 (list-ref (xclientmessageevent-data ev) 1)]
+            [prop2 (list-ref (xclientmessageevent-data ev) 2)]
+            #;[source (list-ref (xclientmessageevent-data ev) 3)])
+        (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (xutil.atom-name prop1) prop2 (xutil.atom-name prop2))))))
 
   (define remove-window
     (lambda (wid)

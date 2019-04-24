@@ -49,10 +49,13 @@
 
   (define atom-name
     (lambda (a)
-      (let* ([ptr (XGetAtomName (current-display) a)]
-             [str (ptr->string ptr)])
-        (XFree ptr)
-        str)))
+      ;; Unset atom fields from messages will be zero, so account for that here as a convenience to print functions.
+      (if (> a 0)
+        (let* ([ptr (XGetAtomName (current-display) a)]
+               [str (ptr->string ptr)])
+          (XFree ptr)
+          str)
+        "")))
 
   ;; wraps XOpenDisplay so the connection string is optional.
   (define open
