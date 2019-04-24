@@ -206,9 +206,11 @@
 
    AnyModifier
 
+   None
    AnyKey
    CurrentTime
    NoSymbol
+   PointerRoot
 
    UTF8String
 
@@ -561,9 +563,11 @@
     (AnyModifier	15))
 
   ;; X.h reserved resources/constants.
+  (define None 0)
   (define AnyKey 1)
   (define CurrentTime 0)
   (define NoSymbol 0)
+  (define PointerRoot 1)
 
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)

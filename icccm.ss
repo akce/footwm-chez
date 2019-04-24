@@ -84,6 +84,7 @@
    on-configure-request
 
    focus-window
+   focus-root
    delete-window
 
    ;; WM_COMMAND
@@ -409,7 +410,7 @@
   (define on-configure-request
     (lambda (ev)
       ;; Honour all configure requests as not all clients behave nicely otherwise.
-      ;; We'll resize (if necessary) in the configure notify handler.
+      ;; We'll resize (if necessary) when arranging the windows.
       (let ([x #f] [y #f] [w #f] [h #f])
           (bit-case (xconfigurerequestevent-value-mask ev)
             ((CWX (set! x (xconfigurerequestevent-x ev)))
@@ -432,7 +433,11 @@
                 ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
                 (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
                 ;; Passive: manually set input focus.
-                (XSetInputFocus (current-display) wid RevertToPointerRoot CurrentTime))))))
+                (XSetInputFocus (current-display) wid RevertToNone CurrentTime))))))
+
+  (define focus-root
+    (lambda ()
+      (XSetInputFocus (current-display) PointerRoot None CurrentTime)))
 
   ;;;;;; ICCCM 4.2.1.8 Window Deletion.
   (define delete-window

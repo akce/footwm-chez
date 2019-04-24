@@ -18,6 +18,8 @@
    desktop-names-set!
    window-desktop
    window-desktop-set!
+   show-window
+   iconify-window
    name
    pid
    current-desktop-request!
@@ -49,6 +51,8 @@
       _NET_WM_DESKTOP
       _NET_WM_NAME
       _NET_WM_PID
+      _NET_WM_STATE
+      _NET_WM_STATE_HIDDEN
 
       ;UTF8_STRING
       ))
@@ -106,6 +110,28 @@
   (define window-desktop-set!
     (lambda (wid number)
       (xutil.cardinal-set! wid (atom-ref '_NET_WM_DESKTOP) number)))
+
+  (define get-net-wm-state
+    (lambda (wid)
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_STATE) XA-ATOM)))
+
+  (define net-wm-state-set!
+    (lambda (wid values)
+      (xutil.ulongs-property-set! wid (atom-ref '_NET_WM_STATE) values XA-ATOM)))
+
+  (define show-window
+    (lambda (wid)
+      (let ([a (atom-ref '_NET_WM_STATE_HIDDEN)]
+            [states (get-net-wm-state wid)])
+        (when (memq a states)
+          (net-wm-state-set! wid (remove a states))))))
+
+  (define iconify-window
+    (lambda (wid)
+      (let ([a (atom-ref '_NET_WM_STATE_HIDDEN)]
+            [states (get-net-wm-state wid)])
+        (unless (memq a states)
+          (net-wm-state-set! wid (cons a states))))))
 
   (define desktop-count
     (lambda ()

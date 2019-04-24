@@ -51,7 +51,7 @@
             (if (eq? state 'NORMAL)
                 ;; Normal means the window is visible, hide and re-arrange desktop.
                 (begin
-                  (icccm.iconify-window wid)
+                  (iconify-window wid)
                   (arrange-windows)))))))
 
   (define move-window-to-desktop
@@ -209,18 +209,31 @@
         (display (format "#x~x arrange active window ~a~n" wid rgeom))
         (xutil.resize-window wid (xutil.geometry-x rgeom) (xutil.geometry-y rgeom) (xutil.geometry-width rgeom) (xutil.geometry-height rgeom)))))
 
+  (define show-window
+    (lambda (wid)
+      (icccm.show-window wid)
+      (ewmh.show-window wid)))
+
+  (define iconify-window
+    (lambda (wid)
+      (ewmh.iconify-window wid)
+      (icccm.iconify-window wid)))
+
   (define arrange-windows
     (lambda ()
       ;; client-list-stacking is bottom to top, reverse so we can easily get to the first window later.
       (let ([aws (reverse (ewmh.client-list-stacking))]
             [d (ewmh.current-desktop)])
         (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
-          (for-each icccm.iconify-window ows)	; should do this only on wm-init and desktop change..
-          (unless (null? ws)
+          (for-each iconify-window ows)	; should do this only on wm-init and desktop change..
+          (if (null? ws)
+            (begin	; no window to show: set input focus to root (so keygrabbers still function) and clear ewmh.
+              (icccm.focus-root)
+              (ewmh.active-window-set! None))
             (let ([vis (car ws)]		; visible window
                   [hs (cdr ws)])		; hidden windows
-              (for-each icccm.iconify-window hs)
-              (icccm.show-window vis)
-              (arrange-window vis)
-              (icccm.focus-window vis)
-              (ewmh.active-window-set! vis))))))))
+              (for-each iconify-window hs)
+              (unless (eq? vis (ewmh.active-window))
+                (arrange-window vis)
+                (show-window vis)
+                (ewmh.active-window-set! vis)))))))))
