@@ -420,6 +420,7 @@
           (xutil.resize-window (xconfigurerequestevent-wid ev) x y w h))))
 
   ;;;;;; ICCCM 4.1.7 Input Focus.
+  ;;;; The XGetWMHints manpage also has useful info in its input section.
   (define focus-window
     (lambda (wid)
       (let* ([h (get-wm-hints wid)]
@@ -433,7 +434,9 @@
                 ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
                 (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
                 ;; Passive: manually set input focus.
-                (XSetInputFocus (current-display) wid RevertToNone CurrentTime))))))
+                (XSetInputFocus (current-display) wid RevertToNone CurrentTime))
+            ;; PointerRoot mode.
+            (focus-root)))))
 
   (define focus-root
     (lambda ()
