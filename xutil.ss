@@ -1,10 +1,12 @@
 (library (xutil)
   (export
-   geometry
+   make-geometry
    geometry-x
    geometry-y
    geometry-width
    geometry-height
+   geometry=?
+   xconfigureevent-geometry
    window-attributes
    window-attributes-geom
    window-attributes-override-redirect
@@ -44,6 +46,17 @@
 
   (define-record-type geometry
     (fields x y width height))
+
+  (define geometry=?
+    (lambda (lhs rhs)
+      (and (eq? (geometry-x lhs) (geometry-x rhs))
+           (eq? (geometry-y lhs) (geometry-y rhs))
+           (eq? (geometry-width lhs) (geometry-width rhs))
+           (eq? (geometry-height lhs) (geometry-height rhs)))))
+
+  (define xconfigureevent-geometry
+    (lambda (ev)
+      (make-geometry (xconfigureevent-x ev) (xconfigureevent-y ev) (xconfigureevent-width ev) (xconfigureevent-height ev))))
 
   (define-record-type window-attributes
     (fields geom override-redirect map-state))
@@ -359,20 +372,20 @@
        (ftype-fields xany cevent (type serial send-event d wid)))))
 
   (define resize-window
-    (lambda (wid x y w h)
+    (lambda (wid geo)
       (let ([change-mask 0])
         (fmem ([changes &changes XWindowChanges])
-          (when x
-            (ftype-set! XWindowChanges (x) &changes x)
+          (when (geometry-x geo)
+            (ftype-set! XWindowChanges (x) &changes (geometry-x geo))
             (set! change-mask (bitwise-copy-bit change-mask CWX 1)))
-          (when y
-            (ftype-set! XWindowChanges (y) &changes y)
+          (when (geometry-y geo)
+            (ftype-set! XWindowChanges (y) &changes (geometry-y geo))
             (set! change-mask (bitwise-copy-bit change-mask CWY 1)))
-          (when w
-            (ftype-set! XWindowChanges (width) &changes w)
+          (when (geometry-width geo)
+            (ftype-set! XWindowChanges (width) &changes (geometry-width geo))
             (set! change-mask (bitwise-copy-bit change-mask CWWidth 1)))
-          (when h
-            (ftype-set! XWindowChanges (height) &changes h)
+          (when (geometry-height geo)
+            (ftype-set! XWindowChanges (height) &changes (geometry-height geo))
             (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))
           (XConfigureWindow (current-display) wid change-mask &changes)
           #;(display (format "#x~x XConfigureWindow change-mask #b~b~n" wid change-mask))))))

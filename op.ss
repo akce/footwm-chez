@@ -16,6 +16,7 @@
    desktop-delete
    desktop-rename
    ;; Layout operations.
+   get-active-ideal-geometry
    arrange-windows)
   (import
    (rnrs)
@@ -202,12 +203,10 @@
 
  ;;;;;; Layout operations.
 
-  (define arrange-window
-    (lambda (wid)
-      ;; give it the same dimensions as the root window.
-      (let ([rgeom (xutil.window-attributes-geom (xutil.get-window-attributes (root)))])
-        (display (format "#x~x arrange active window ~a~n" wid rgeom))
-        (xutil.resize-window wid (xutil.geometry-x rgeom) (xutil.geometry-y rgeom) (xutil.geometry-width rgeom) (xutil.geometry-height rgeom)))))
+  (define get-active-ideal-geometry
+    (lambda ()
+      ;; Ideal geom is the same as the root window at the moment.
+      (xutil.window-attributes-geom (xutil.get-window-attributes (root)))))
 
   (define show-window
     (lambda (wid)
@@ -234,6 +233,6 @@
                   [hs (cdr ws)])		; hidden windows
               (for-each iconify-window hs)
               (unless (eq? vis (ewmh.active-window))
-                (arrange-window vis)
+                (xutil.resize-window vis (get-active-ideal-geometry))
                 (show-window vis)
                 (ewmh.active-window-set! vis)))))))))

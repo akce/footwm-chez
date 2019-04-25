@@ -321,14 +321,19 @@
   ;;;;;; ICCCM 4.1.4 Changing window state.
 
   ;; From ICCCM (emphasis mine): Newly created *top-level* windows are in the Withdrawn state.
+  ;; Return: #t if we want to manage the window, #f otherwise.
   (define on-create-window
     (lambda (ev)
-      ;; Always ignore self-managed override-redirect windows.
-      (unless (xcreatewindowevent-override-redirect ev)
-        ;; is it a top-level window?
-        (if (= (xanyevent-wid (xcreatewindowevent-xany ev)) (xcreatewindowevent-wid ev))
+      (if (and
+           ;; Always ignore self-managed override-redirect windows.
+           (not (xcreatewindowevent-override-redirect ev))
+           ;; is it a top-level window? (ie, parent window is root)
+           (= (xanyevent-wid (xcreatewindowevent-xany ev)) (root)))
             ;; yes: add WM_STATE set to WithdrawnState.
-            (wm-state-set! (xcreatewindowevent-wid ev) WithdrawnState)))))
+            (begin
+              (wm-state-set! (xcreatewindowevent-wid ev) WithdrawnState)
+              #t)
+            #f)))
 
   ;;;;;; ICCCM 4.1.4 Changing Window State.
   (define iconify-window
@@ -395,14 +400,16 @@
   (define on-configure-request
     (lambda (ev)
       ;; Honour all configure requests as not all clients behave nicely otherwise.
-      ;; We'll resize (if necessary) when arranging the windows.
+      ;; We'll resize (if necessary) in the configure notify handler.
       (let ([x #f] [y #f] [w #f] [h #f])
           (bit-case (xconfigurerequestevent-value-mask ev)
             ((CWX (set! x (xconfigurerequestevent-x ev)))
              (CWY (set! y (xconfigurerequestevent-y ev)))
              (CWWidth (set! w (xconfigurerequestevent-width ev)))
              (CWHeight (set! h (xconfigurerequestevent-height ev)))))
-          (xutil.resize-window (xconfigurerequestevent-wid ev) x y w h))))
+          (let ([g (xutil.make-geometry x y w h)])
+            (xutil.resize-window (xconfigurerequestevent-wid ev) g)
+            g))))
 
   ;;;;;; ICCCM 4.1.7 Input Focus.
   ;;;; The XGetWMHints manpage also has useful info in its input section.
