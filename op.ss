@@ -48,7 +48,7 @@
       (if (top-level-window? wid)
           (let ([state (icccm.get-wm-state wid)])
             (ewmh.client-list-stacking-set! (append (list wid) (remove wid (ewmh.client-list-stacking))))
-            (if (eq? state 'NORMAL)
+            (if (eq? state icccm.NormalState)
                 ;; Normal means the window is visible, hide and re-arrange desktop.
                 (begin
                   (iconify-window wid)
@@ -59,7 +59,7 @@
       (when (< index (ewmh.desktop-count))
         (unless (= index (ewmh.window-desktop wid))
           (ewmh.window-desktop-set! wid index)
-          (if (eq? (icccm.get-wm-state wid) 'NORMAL)
+          (if (eq? (icccm.get-wm-state wid) icccm.NormalState)
               (arrange-windows))))))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.

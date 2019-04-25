@@ -292,44 +292,28 @@
   ;;;; ICCCM 4.1.3.1 WM_STATE
   ;; Window managers place WM_STATE on all non-Withdrawn top-level windows.
 
+  ;; NOTE: ICCCM defines type WM_STATE as (struct [state card32] [icon window]) but it's not defined in any X header.
+  ;; xprop treats it as 2 longs; long is also consistent with size=32 values as described in XChangeProperty.
+  ;; We'll treat it the same way.
+
   (util.enum wm-state-state
         (WithdrawnState	0)	;; Hidden.
         (NormalState	1)	;; Client should animate its window.
         (IconicState	3))	;; Client should animate its icon window.
 
-  ;; Note that this struct will have padding on a 64bit client (as icon/window is 64bits on a 64bit client).
-  ;; I haven't found a reference in ICCCM as to whether this should be packed.
-  (define-ftype wm-state
-    (struct
-     [state	integer-32]	;; CARD32: one of wm-state-state.
-     [icon	window]))
-
   (define get-wm-state
     (lambda (wid)
       (let ([at (atom-ref 'WM_STATE)])
-        (let ([ptrlen (xutil.get-property-ptr wid at at)])
-          (if ptrlen
-              (let* ([ptr (car ptrlen)]
-                     [*ptr (foreign-ref 'void* ptr 0)]
-                     [wp (make-ftype-pointer wm-state *ptr)]
-                     [state (ftype-ref wm-state (state) wp)])
-                (XFree *ptr)
-                (foreign-free ptr)
-                (case state
-                  [(0)	'WITHDRAWN]
-                  [(1)	'NORMAL]
-                  [(3)	'ICONIC]
-                  [else	#f]))
-              #f)))))
+        (let ([data (xutil.property->ulongs wid at at)])
+          (if (null? data)
+              #f
+              (car data))))))
 
   ;; WM *must* set in top-level windows.
   (define wm-state-set!
     (lambda (wid state)
       (let ([at (atom-ref 'WM_STATE)])
-        (fmem ([ws &ws wm-state])
-          (ftype-set! wm-state (state) &ws state)
-          (ftype-set! wm-state (icon) &ws 0)
-          (XChangeProperty (current-display) wid at at 32 0 ws (ftype-sizeof wm-state))))))
+        (xutil.ulongs-property-set! wid at (list state 0) at))))
 
   ;;;; ICCCM 4.1.3.2 WM_ICON_SIZE
   ;; N/A
@@ -349,7 +333,7 @@
   ;;;;;; ICCCM 4.1.4 Changing Window State.
   (define iconify-window
     (lambda (wid)
-      (if (eq? (get-wm-state wid) 'NORMAL)
+      (if (eq? (get-wm-state wid) NormalState)
           (begin
             (wm-state-set! wid IconicState)
             (XUnmapWindow (current-display) wid)
@@ -358,7 +342,7 @@
 
   (define deiconify-window
     (lambda (wid)
-      (if (eq? (get-wm-state wid) 'ICONIC)
+      (if (eq? (get-wm-state wid) IconicState)
           (begin
             (wm-state-set! wid NormalState)
             (XMapWindow (current-display) wid)
@@ -367,7 +351,7 @@
 
   (define show-window
     (lambda (wid)
-      (unless (eq? (get-wm-state wid) 'NORMAL)
+      (unless (eq? (get-wm-state wid) NormalState)
         (wm-state-set! wid NormalState)
         (XMapWindow (current-display) wid))))
 
@@ -389,7 +373,7 @@
         ;; This wm will have set the state to ICONIC if we're hiding the window so no need to do anything.
         ;; However, a NORMAL window being unmapped could mean that the client is shutting down. We'll set
         ;; to WITHDRAWN and see what happens.
-        (unless (eq? (get-wm-state wid) 'ICONIC)
+        (unless (eq? (get-wm-state wid) IconicState)
             (wm-state-set! wid WithdrawnState)))))
 
   ;; Client -> WM message: Iconify window request.
@@ -476,7 +460,7 @@
                 #f	;; always ignore override-redirect == true
                 (let ([state (get-wm-state wid)])
                   (if state
-                      (or (eq? state 'NORMAL) (eq? state 'ICONIC))
+                      (or (eq? state NormalState) (eq? state IconicState))
                       (= (xutil.window-attributes-map-state wa) IsViewable))))
             #f #| window without attributes, probably one we won't want to manage |#))))
 

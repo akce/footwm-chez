@@ -196,7 +196,7 @@
           (let* ([wid (xunmapevent-wid ev)]
                  [state (icccm.get-wm-state wid)])
             (display (format "#x~x UnmapNotify state=~a\n" wid state))
-            (if (or (not state) (not (eq? state 'ICONIC)))
+            (if (or (not state) (not (eq? state icccm.IconicState)))
                 (begin
                   (display (format "#x~x removing window from EWMH client lists~n" wid))
                   (ewmh.remove-window wid)
