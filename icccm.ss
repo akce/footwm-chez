@@ -39,16 +39,11 @@
 
    get-normal-hints
 
-   InputHint
-   StateHint
-   WindowGroupHint
-   UrgencyHint
-
    wm-hints?
-   wm-hints-flags
    wm-hints-input
    wm-hints-initial-state
    wm-hints-window-group
+   wm-hints-urgency
 
    ;; WM_HINTS
    get-wm-hints
@@ -97,7 +92,7 @@
   (import
    (rnrs)
    (only (chezscheme)
-         define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof)
+     define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
    (only (ftypes-util) fmem)
    (globals)
    (prefix (util) util.)
@@ -199,31 +194,33 @@
 
   ;;;; ICCCM 4.1.2.4 WM_HINTS.
   ;; Other hints that don't fit anywhere else.
-  (util.bitmap wm-hints-flags
+  ;; Only defining the parts potentially useful to this wm.
+  (util.enum wm-hints-flags
         (InputHint		0)
         (StateHint		1)	; State to transition to from Withdrawn. ie, Normal or Iconic.
-        ;IconPixmapHint
-        ;IconWindowHint
-        ;IconPositionHint
-        ;IconMaskHint
         (WindowGroupHint	6)
-        ;; MessageHint is obsolete.
         (UrgencyHint		8))
 
+  ;; NOTE: ICCCM defines this struct in terms of 32bit cardinals etc. However, client Xlib uses local machine types.
   (define-ftype c-wm-hints
     (struct
-     [flags		card32]
-     [input		card32]		; client input model
-     [initial-state	card32]
+     [flags		long]
+     [input		boolean]	; client input model
+     [initial-state	int]
      [icon-pixmap	pixmap]
      [icon-window	window]
-     [icon-x		integer-32]
-     [icon-y		integer-32]
+     [icon-x		int]
+     [icon-y		int]
      [icon-mask		pixmap]
      [window-group	window]))
 
   (define-record-type wm-hints
     (fields flags input initial-state window-group))
+
+  ;; Add a pseudo record accessor for the urgency hint.
+  (define wm-hints-urgency
+    (lambda (wh)
+      (bitwise-bit-set? (wm-hints-flags wh) UrgencyHint)))
 
   (define get-wm-hints
     (lambda (wid)
@@ -234,14 +231,15 @@
             (let* ([ptr (car ptrlen)]
                    [*ptr (foreign-ref 'void* ptr 0)]
                    [wp (make-ftype-pointer c-wm-hints *ptr)]
+                   [fl (ftype-ref c-wm-hints (flags) wp)]
                    ;; Make the record.
                    [ret (make-wm-hints
-                         (ftype-ref c-wm-hints (flags) wp)
-                         (ftype-ref c-wm-hints (input) wp)
-                         (ftype-ref c-wm-hints (initial-state) wp)
-                         ;; skip the icon stuff since this wm doesn't support icons.
-                         (ftype-ref c-wm-hints (window-group) wp))])
+                         fl
+                         (if (bitwise-bit-set? fl InputHint) (ftype-ref c-wm-hints (input) wp) #f)
+                         (if (bitwise-bit-set? fl StateHint) (ftype-ref c-wm-hints (initial-state) wp) #f)
+                         (if (bitwise-bit-set? fl WindowGroupHint) (ftype-ref c-wm-hints (window-group) wp) #f))])
               (XFree *ptr)
+              (unlock-object *ptr)
               (foreign-free ptr)
               ret)
             #f))))
