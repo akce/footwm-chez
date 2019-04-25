@@ -126,8 +126,9 @@
   ;; N/A
 
   ;;;; ICCCM 4.1.2.3 WM_NORMAL_HINTS
+  ;; See also the XGetWMNormalHints manpage for extra info.
   ;; Constraints on window geometry.
-  (util.bitmap size-hints-flags
+  (util.enum size-hints-flags
         (USPosition	0)
         (USSize		1)
         (PPosition	2)
@@ -139,26 +140,27 @@
         (PBaseSize	8)
         (PWinGravity	9))
 
+  ;; NOTE: ICCCM defines this struct in terms of 32bit cardinals etc. However, client Xlib uses local machine types.
   (define-ftype c-size-hints
     (struct
-     [flags		card32]
-     [pad1		card32]
-     [pad2		card32]
-     [pad3		card32]
-     [pad4		card32]
-     [min-width		integer-32]
-     [min-height	integer-32]
-     [max-width		integer-32]
-     [max-height	integer-32]
-     [width-inc		integer-32]
-     [height-inc	integer-32]
-     [min-aspect-x	integer-32]
-     [min-aspect-y	integer-32]
-     [max-aspect-x	integer-32]
-     [max-aspect-y	integer-32]
-     [base-width	integer-32]
-     [base-height	integer-32]
-     [win-gravity	integer-32]))
+     [flags		long]
+     [pad1		int]	; obsolete: x
+     [pad2		int]	; obsolete: y
+     [pad3		int]	; obsolete: width
+     [pad4		int]	; obsolete: height
+     [min-width		int]
+     [min-height	int]
+     [max-width		int]
+     [max-height	int]
+     [width-inc		int]
+     [height-inc	int]
+     [min-aspect-x	int]
+     [min-aspect-y	int]
+     [max-aspect-x	int]
+     [max-aspect-y	int]
+     [base-width	int]
+     [base-height	int]
+     [win-gravity	int]))
 
   (define-record-type size-hints
     (fields flags min-w min-h max-w max-h w-inc h-inc min-aspect-x min-aspect-y max-aspect-x max-aspect-y base-w base-h win-gravity))
@@ -188,6 +190,7 @@
                          (ftype-ref c-size-hints (base-height) wp)
                          (ftype-ref c-size-hints (win-gravity) wp))])
               (XFree *ptr)
+              (unlock-object *ptr)
               (foreign-free ptr)
               ret)
             #f))))
