@@ -35,6 +35,7 @@
    (rnrs)
    (only (chezscheme)
          format fxlogor fx= iota values
+         getenv
          lock-object unlock-object foreign-callable foreign-callable-entry-point
          foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof make-ftype-pointer)
    (ftypes-util)
@@ -60,7 +61,11 @@
   ;; wraps XOpenDisplay so the connection string is optional.
   (define open
     (case-lambda
-     [() (open #f)]
+     [()
+      ;; XOpenDisplay will crash unless it has a valid DISPLAY.
+      (unless (getenv "DISPLAY")
+        (raise (condition (make-error) (make-message-condition "DISPLAY not given. Exiting.."))))
+      (open #f)]
      [(s) (XOpenDisplay s)]))
 
   ;; wraps XSync so discard boolean is optional.
