@@ -21,10 +21,19 @@
   (lambda (num)
     (format "#x~x" num)))
 
+(define remove-active-window
+  (lambda (wids)
+    (cond
+     [(null? wids) wids]
+     ;; Comparing active-window handles the case where the current desktop is empty.
+     [(eq? (car wids) (ewmh.active-window)) (cdr wids)]
+     [else wids])))
+
+;; The current window is not included in this list as there's no point selecting the already selected window.
 (define make-window-rows
   (lambda ()
     (let ([desks (ewmh.desktop-names)]
-          [wids (reverse (op.window-sort (ewmh.client-list-stacking)))])
+          [wids (remove-active-window (reverse (op.window-sort (ewmh.client-list-stacking))))])
       (map
        (lambda (i wid)
          (let ([c (icccm.class-hint wid)]

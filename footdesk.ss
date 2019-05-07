@@ -18,9 +18,11 @@
   (lambda ()
     (make-table
      '("Id" "Desktop")
-     (list g-type-int g-type-string)
-     (let ([ds (ewmh.desktop-names)])
-       (map list (enumerate ds) ds)))))
+     (list g-type-int g-type-string g-type-int)
+     ;; The current desktop is not included in this list as there's no point selecting the already selected desktop.
+     (let* ([ds (cdr (ewmh.desktop-names))]
+            [idxs (enumerate ds)])
+       (map list idxs ds (map add1 idxs))))))
 
 (define parse-args
   (lambda (argv)
@@ -32,7 +34,7 @@
     (parse-args (command-line-arguments))
     (menu "Footdesk" (make-desktop-data)
       (lambda (row)
-        (ewmh.current-desktop-request! (car row))
+        (ewmh.current-desktop-request! (list-ref row 2))
         (xutil.sync)))))
 
 (main)
