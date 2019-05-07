@@ -7,10 +7,12 @@
    table-rows
    menu)
   (import
-   (chezscheme)
+   (rnrs)
+   (only (chezscheme) enumerate)
    (ftypes-util)
    (gobject)
-   (gtk))
+   (gtk)
+   (irregex))
 
   (define-record-type table
     (fields headers types rows))
@@ -21,7 +23,6 @@
       (let* ([store (apply gtk-list-store-new (table-types table))]
              [filter (gtk-tree-model-filter-new store 0)])
         (fill-model! store table)
-        (gtk-tree-model-filter-set-visible-func filter (callback-row-visible-filter? row-visible-filter?) 0 0)
         (gtk-tree-model-filter-refilter filter)
         (let ([grid (gtk-grid-new)]
               [text (gtk-entry-new)]
@@ -34,15 +35,26 @@
           (gtk-container-add w grid)
           (gtk-grid-attach grid text 0 0 1 1)
           (gtk-grid-attach grid tree 0 1 1 1)
-          (g-signal-connect text "changed" (callback-editable-changed on-edit-changed) 0)
+          (let ([filter-text ""])
+            (g-signal-connect text "changed"
+              (callback-editable-changed
+               (lambda (editable user-data)
+                 (set! filter-text (gtk-entry-get-text text))
+                 (gtk-tree-model-filter-refilter filter))) 0)
+            (gtk-tree-model-filter-set-visible-func filter
+              (callback-row-visible-filter?
+               (lambda (model iter user-data)
+                 (row-visible-filter?
+                  table
+                  (gtk-tree-model-get/int model iter 0)
+                  filter-text))) 0 0))
           (gtk-tree-selection-set-mode (gtk-tree-view-get-selection tree) GTK_SELECTION_SINGLE)
           (g-signal-connect tree "row-activated"
             (callback-row-activated
              (lambda (treeview path column user-data)
                ;; Assumes column 0 is the key/table-index.
                (let ([key (gtk-tree-view-get/int treeview 0)])
-                 (activate-callback (list-ref (table-rows table) key)))))
-            0))
+                 (activate-callback (list-ref (table-rows table) key))))) 0))
         (g-object-unref filter)
         (g-object-unref store))))
 
@@ -53,14 +65,18 @@
          (add-column tree header i))
        (enumerate (table-headers table)) (table-headers table))))
 
-  (define on-edit-changed
-    (lambda (editable user-data)
-      (display (gtk-entry-get-text editable))(newline)))
+  (define string-ci-contains?
+    (lambda (needle haystack)
+      (if (irregex-search `(w/nocase ,needle) haystack)
+          #t
+          #f)))
 
   (define row-visible-filter?
-    (lambda (model iter user-data)
-      (let ([vis (gtk-tree-model-get/int model iter 0)])
-        #t)))
+    (lambda (table row-num filter-text)
+      ;; match filter-text against any column containing text.
+      (let* ([row (list-ref (table-rows table) row-num)]
+             [strcells (filter string? row)])
+        (not (null? (filter (lambda (cell) (string-ci-contains? filter-text cell)) strcells))))))
 
   (define add-column
     (lambda (tree header field-id)
