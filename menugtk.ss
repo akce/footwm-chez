@@ -12,7 +12,8 @@
    (ftypes-util)
    (gobject)
    (gtk)
-   (irregex))
+   (irregex)
+   (util))
 
   (define-record-type table
     (fields headers types rows))
@@ -112,15 +113,13 @@
              (gtk-list-store-append store &iter)
              (for-each
               (lambda (i cell)
-                (cond
-                 ;; int
-                 [(eq? (list-ref types i) g-type-int)
-                  (g-value-set-int &gvi cell)
-                  (gtk-list-store-set-value store &iter i &gvi)]
-                 ;; string
-                 [(eq? (list-ref types i) g-type-string)
-                  (g-value-set-string &gvs cell)
-                  (gtk-list-store-set-value store &iter i &gvs)]))
+                (case-equal? (list-ref types i)
+                  [g-type-int
+                   (g-value-set-int &gvi cell)
+                   (gtk-list-store-set-value store &iter i &gvi)]
+                  [g-type-string
+                   (g-value-set-string &gvs cell)
+                   (gtk-list-store-set-value store &iter i &gvs)]))
               (enumerate row) row))
            (table-rows table))))))
 

@@ -42,6 +42,7 @@
          foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof make-ftype-pointer)
    (ftypes-util)
    (globals)
+   (util)
    (xlib))
 
   (define-record-type geometry
@@ -288,15 +289,6 @@
                         [override (ftype-ref XWindowAttributes (override-redirect) &wa)])
 			(make-window-attributes (make-geometry x y w h) override map-state)))))))
 
-  ;; like case but compares a variable containing a number.
-  ;; Note the 'else' is mandatory.
-  (define-syntax case-var
-    (syntax-rules (else)
-      [(_ var ((val body ...) ... (else bodye ...)))
-       (cond
-        ((= var val) body ...) ...
-        (else bodye ...))]))
-
   (define get-next-event
     (lambda ()
       (fmem ([ev &ev XEvent])
@@ -315,8 +307,8 @@
   (define make-event
     (lambda (cevent)
       (let ([evid (ftype-ref XEvent (type) cevent)])
-        (case-var evid
-          ((ClientMessage
+        (case-equal? evid
+          (ClientMessage
             (make-xclientmessageevent
              (make-xany cevent)
              (ftype-ref XEvent (client-message message-type) cevent)
@@ -364,7 +356,7 @@
              (make-xany cevent)
              (ftype-fields xunmap cevent (wid from-configure))))
            (else
-            (make-xany cevent)))))))
+            (make-xany cevent))))))
 
   (define make-xany
     (lambda (cevent)

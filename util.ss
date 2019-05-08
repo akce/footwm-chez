@@ -1,6 +1,7 @@
 (library (util)
   (export
    bitmap
+   case-equal?
    enum
    list-combinations
    list-combinations*
@@ -17,6 +18,19 @@
     (syntax-rules ()
       [(_ name (symbol bit) ...)
        (begin (define symbol (fxsll 1 bit)) ...)]))
+
+  ;; [syntax] case-equal?: like case but compares using equal?.
+  (define-syntax case-equal?
+    (syntax-rules (else)
+      [(_ var (val body ...) ... (else bodye ...))
+       (let ([v var])
+         (cond
+          ((equal? v val) body ...) ...
+          (else bodye ...)))]
+      [(_ var (val body ...) ...)
+       (let ([v var])
+         (cond
+          ((equal? v val) body ...) ...))]))
 
   (define-syntax enum
     (syntax-rules ()
