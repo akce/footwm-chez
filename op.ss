@@ -49,18 +49,17 @@
       (if (top-level-window? wid)
           (let ([state (icccm.get-wm-state wid)])
             (ewmh.client-list-stacking-set! (append (list wid) (remove wid (ewmh.client-list-stacking))))
-            (if (eq? state icccm.NormalState)
-                ;; Normal means the window is visible, hide and re-arrange desktop.
-                (begin
-                  (iconify-window wid)
-                  (arrange-windows)))))))
+            (when (eqv? state icccm.NormalState)
+              ;; Normal means the window is visible, hide and re-arrange desktop.
+              (iconify-window wid)
+              (arrange-windows))))))
 
   (define move-window-to-desktop
     (lambda (wid index)
       (when (< index (ewmh.desktop-count))
         (unless (= index (ewmh.window-desktop wid))
           (ewmh.window-desktop-set! wid index)
-          (if (eq? (icccm.get-wm-state wid) icccm.NormalState)
+          (if (eqv? (icccm.get-wm-state wid) icccm.NormalState)
               (arrange-windows))))))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
@@ -87,7 +86,7 @@
   (define window>?
     (lambda (win-l win-r)
       (cond
-       [(eq? (winfo-desktop win-l) (winfo-desktop win-r))
+       [(eqv? (winfo-desktop win-l) (winfo-desktop win-r))
         (< (winfo-stack win-l) (winfo-stack win-r))]
        [else
         (> (winfo-desktop win-l) (winfo-desktop win-r))])))
@@ -109,7 +108,7 @@
              [d (ewmh.current-desktop)]
              [dlist
               (filter (lambda (w)
-                        (eq? d (winfo-desktop w))) wlist)])
+                        (eqv? d (winfo-desktop w))) wlist)])
         (when (< index (length dlist))
           (op (winfo-wid (list-ref (reverse dlist) index)))))))
 

@@ -14,7 +14,7 @@
    (only (chezscheme)
          copy-environment eval format load logior make-parameter scheme-environment set-top-level-value!)
    (globals)
-   (only (util) list-combinations* remove*)
+   (only (util) case-equal? list-combinations* remove*)
    (xlib)
    (prefix (xutil) xutil.))
 
@@ -128,9 +128,9 @@
            ((xkeyevent? ev)		(on-key ev))
            (else
             (let ([eid (xanyevent-type ev)])
-              (cond
-               [(eq? eid KeyPressEvent) (display "Ignore KeyPressEvent\n")]
-               [(eq? eid KeyReleaseEvent) (display "Ignore KeyReleaseEvent\n")]
+              (case-equal? eid
+               [KeyPressEvent (display "Ignore KeyPressEvent\n")]
+               [KeyReleaseEvent (display "Ignore KeyReleaseEvent\n")]
                [else
                 (display (format "Unsupported event ~d~n" eid))])))))
         (loop))))
