@@ -26,7 +26,7 @@
 
    gtk-entry-new
    gtk-entry-get-text
-   callback-editable-changed
+   callback-widget-data
 
    gtk-list-store-new
    gtk-list-store-append
@@ -113,6 +113,13 @@
   (define gtk-widget-destroy
     (foreign-entry "gtk_widget_destroy"))
 
+  ;; General widget user-data callback.
+  (define callback-widget-data
+    (lambda (callback)
+      (let ([fp (foreign-callable callback (void* gpointer) void)])
+        (lock-object fp)
+        (foreign-callable-entry-point fp))))
+
   ;;;; Window.
   (enum GtkWindowType
     (GTK_WINDOW_TOPLEVEL 0)
@@ -138,13 +145,6 @@
     (foreign-procedure "gtk_entry_new" () gtkwidget*))
   (define gtk-entry-get-text
     (foreign-procedure "gtk_entry_get_text" (void*) string))
-
-  ;; GtkEditable signal: "changed".
-  (define callback-editable-changed
-    (lambda (callback)
-      (let ([fp (foreign-callable callback (void* gpointer) void)])
-        (lock-object fp)
-        (foreign-callable-entry-point fp))))
 
   ;;;; List store.
   (define gtk-list-store-newv

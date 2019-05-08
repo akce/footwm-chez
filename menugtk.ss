@@ -38,7 +38,7 @@
           (gtk-grid-attach grid tree 0 1 1 1)
           (let ([filter-text ""])
             (g-signal-connect text "changed"
-              (callback-editable-changed
+              (callback-widget-data
                (lambda (editable user-data)
                  (set! filter-text (gtk-entry-get-text text))
                  (gtk-tree-model-filter-refilter filter))) 0)
@@ -51,7 +51,7 @@
                   filter-text))) 0 0))
           ;; Watch for ENTER key.
           (g-signal-connect text "activate"
-            (callback-editable-changed
+            (callback-widget-data
              (lambda (widget user-data)
                ;; Get the rows visible in the list view.
                ;; Activate if there's only one.
