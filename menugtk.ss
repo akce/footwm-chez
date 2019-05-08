@@ -48,6 +48,14 @@
                   table
                   (gtk-tree-model-get/int model iter 0)
                   filter-text))) 0 0))
+          ;; Watch for ENTER key.
+          (g-signal-connect text "activate"
+            (callback-editable-changed
+             (lambda (widget user-data)
+               ;; Get the rows visible in the list view.
+               ;; Activate if there's only one.
+               ;; Push filter to stack and await more row selection text.
+               (display "enter\n"))) 0)
           (gtk-tree-selection-set-mode (gtk-tree-view-get-selection tree) GTK_SELECTION_SINGLE)
           (g-signal-connect tree "row-activated"
             (callback-row-activated
