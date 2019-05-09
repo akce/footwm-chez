@@ -56,7 +56,7 @@
 (define main
   (lambda ()
     (parse-args (command-line-arguments))
-    (menu "Footdesk" (make-window-data)
+    (menu "Footwin" (make-window-data)
       (lambda (row)
         (ewmh.window-active-request! (list-ref row 6))
         (xutil.sync)))))
