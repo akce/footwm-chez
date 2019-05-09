@@ -38,10 +38,12 @@
     (lambda (wid)
       ;; promote window to top of ewmh.client-list-stacking, set as ewmh.active-window.
       (if (top-level-window? wid)
-          (let ([rstack (reverse (ewmh.client-list-stacking))])
-            (unless (= wid (car rstack))
+          (unless (= wid (ewmh.active-window))
+            (let ([rstack (reverse (ewmh.client-list-stacking))])
               (ewmh.client-list-stacking-set! (reverse (cons wid (remove wid rstack))))
-              (arrange-windows))))))
+              (if (= (ewmh.window-desktop wid) (ewmh.current-desktop))
+                  (arrange-windows)
+                  (desktop-activate (ewmh.window-desktop wid))))))))
 
   (define banish-window
     (lambda (wid)
