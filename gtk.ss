@@ -26,6 +26,8 @@
 
    gtk-entry-new
    gtk-entry-get-text
+   gtk-entry-get-buffer
+   gtk-entry-buffer-delete-text
    callback-widget-data
 
    gtk-list-store-new
@@ -74,6 +76,7 @@
 
   (define-ftype gtkapplication* void*)
   (define-ftype gtkwidget* void*)
+  (define-ftype gtkentrybuffer* void*)
   (define-ftype gtkliststore* void*)
   (define-ftype gtktreepath* void*)
   (define-ftype gtkcellrenderer* void*)
@@ -145,6 +148,10 @@
     (foreign-procedure "gtk_entry_new" () gtkwidget*))
   (define gtk-entry-get-text
     (foreign-procedure "gtk_entry_get_text" (void*) string))
+  (define gtk-entry-get-buffer
+    (foreign-procedure "gtk_entry_get_buffer" (gtkwidget*) gtkentrybuffer*))
+  (define gtk-entry-buffer-delete-text
+    (foreign-procedure "gtk_entry_buffer_delete_text" (gtkentrybuffer* guint gint) guint))
 
   ;;;; List store.
   (define gtk-list-store-newv

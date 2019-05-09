@@ -22,12 +22,11 @@
     (lambda (w title table activate-callback)
       (gtk-window-set-title w title)
       (let* ([store (apply gtk-list-store-new (table-types table))]
-             [filter (gtk-tree-model-filter-new store 0)])
+             [fstore (gtk-tree-model-filter-new store 0)])
         (fill-model! store table)
-        (gtk-tree-model-filter-refilter filter)
         (let ([grid (gtk-grid-new)]
               [text (gtk-entry-new)]
-              [tree (gtk-tree-view-new-with-model/list filter)])
+              [tree (gtk-tree-view-new-with-model/list fstore)])
           (gtk-widget-set-hexpand text #t)
           (gtk-widget-set-hexpand tree #t)
           (gtk-widget-set-vexpand tree #t)
@@ -36,27 +35,39 @@
           (gtk-container-add w grid)
           (gtk-grid-attach grid text 0 0 1 1)
           (gtk-grid-attach grid tree 0 1 1 1)
-          (let ([current-filter? #f])
+          (let ([current-filter? (make-cell-filter "")]
+                [visible-rows (table-rows table)])
             (g-signal-connect text "changed"
               (callback-widget-data
                (lambda (editable user-data)
                  (set! current-filter? (make-cell-filter (gtk-entry-get-text text)))
-                 (gtk-tree-model-filter-refilter filter))) 0)
-            (gtk-tree-model-filter-set-visible-func filter
+                 (gtk-tree-model-filter-refilter fstore))) 0)
+            (gtk-tree-model-filter-set-visible-func fstore
               (callback-row-visible-filter?
                (lambda (model iter user-data)
-                 (row-visible-filter?
-                  table
-                  (gtk-tree-model-get/int model iter 0)
-                  current-filter?))) 0 0)
+                 (let* ([row-num (gtk-tree-model-get/int model iter 0)]
+                        [row (list-ref (table-rows table) row-num)])
+                   (if (memq row visible-rows)
+                       (row-visible? row current-filter?)
+                       #f)))) 0 0)
             ;; Watch for ENTER key.
             (g-signal-connect text "activate"
               (callback-widget-data
                (lambda (widget user-data)
                  ;; Get the rows visible in the list view.
-                 ;; Activate if there's only one.
-                 ;; Push filter to stack and await more row selection text.
-                 (display "enter\n"))) 0))
+                 (let ([vs (filter (lambda (row) (row-visible? row current-filter?)) visible-rows)])
+                   (cond
+                    [(null? vs)
+                     ;; Nothing to do if there's no matches.
+                     #f]
+                    [(= (length vs) 1)
+                     ;; Activate if there's only one.
+                     (activate-callback (car vs))]
+                    [else
+                     ;; Save off the current visible rows and reset the current text filter.
+                     (set! visible-rows vs)
+                     (set! current-filter? (make-cell-filter ""))
+                     (gtk-entry-buffer-delete-text (gtk-entry-get-buffer text) 0 -1)])))) 0))
           (gtk-tree-selection-set-mode (gtk-tree-view-get-selection tree) GTK_SELECTION_SINGLE)
           (g-signal-connect tree "row-activated"
             (callback-row-activated
@@ -64,7 +75,7 @@
                ;; Assumes column 0 is the key/table-index.
                (let ([key (gtk-tree-view-get/int treeview 0)])
                  (activate-callback (list-ref (table-rows table) key))))) 0))
-        (g-object-unref filter)
+        (g-object-unref fstore)
         (g-object-unref store))))
 
   (define add-table-headers
@@ -76,16 +87,17 @@
 
   (define make-cell-filter
     (lambda (needle)
-      (lambda (haystack)
-        (if (irregex-search `(w/nocase ,needle) haystack)
-            #t
-            #f))))
+      (if (= (string-length needle) 0)
+          (lambda (x) #t)	; show-all
+          (lambda (haystack)
+            (if (irregex-search `(w/nocase ,needle) haystack)
+                #t
+                #f)))))
 
-  (define row-visible-filter?
-    (lambda (table row-num filter?)
-      ;; match filter-text against any column containing text.
-      (let* ([row (list-ref (table-rows table) row-num)]
-             [strcells (filter string? row)])
+  (define row-visible?
+    (lambda (row filter?)
+      ;; match filter? against any column containing text.
+      (let* ([strcells (filter string? row)])
         (not (null? (filter filter? strcells))))))
 
   (define add-column

@@ -6,6 +6,7 @@
    gpointer
    gtype
    gint
+   guint
    gulong
    gvalue
 
@@ -48,6 +49,7 @@
   ;; from gobject/gtype.h: warning may not be a long if sizeof(size_t) != sizeof(long)
   (define-ftype gtype long)
   (define-ftype gint int)
+  (define-ftype guint unsigned)
   (define-ftype gvalue
     (struct
      [g-type	gtype]
