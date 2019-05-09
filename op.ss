@@ -77,10 +77,14 @@
 
   (define make-winfo-list
     (lambda (wids)
-      (map
-       (lambda (wid i)
-         (make-winfo wid (ewmh.window-desktop wid) i))
-       wids (enumerate wids))))
+      ;; Filter winfo-desktop removes stale windows. It's an edge case, but it can happen that a
+      ;; window is closed just as we've been called. Such windows will have desktop = #f.
+      (filter
+        winfo-desktop
+        (map
+         (lambda (wid i)
+           (make-winfo wid (ewmh.window-desktop wid) i))
+         wids (enumerate wids)))))
 
   ;; Order by desktop, followed by order in stack.
   (define window>?
