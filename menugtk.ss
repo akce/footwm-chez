@@ -36,11 +36,11 @@
           (gtk-container-add w grid)
           (gtk-grid-attach grid text 0 0 1 1)
           (gtk-grid-attach grid tree 0 1 1 1)
-          (let ([filter-text ""])
+          (let ([current-filter? #f])
             (g-signal-connect text "changed"
               (callback-widget-data
                (lambda (editable user-data)
-                 (set! filter-text (gtk-entry-get-text text))
+                 (set! current-filter? (make-cell-filter (gtk-entry-get-text text)))
                  (gtk-tree-model-filter-refilter filter))) 0)
             (gtk-tree-model-filter-set-visible-func filter
               (callback-row-visible-filter?
@@ -48,15 +48,15 @@
                  (row-visible-filter?
                   table
                   (gtk-tree-model-get/int model iter 0)
-                  filter-text))) 0 0))
-          ;; Watch for ENTER key.
-          (g-signal-connect text "activate"
-            (callback-widget-data
-             (lambda (widget user-data)
-               ;; Get the rows visible in the list view.
-               ;; Activate if there's only one.
-               ;; Push filter to stack and await more row selection text.
-               (display "enter\n"))) 0)
+                  current-filter?))) 0 0)
+            ;; Watch for ENTER key.
+            (g-signal-connect text "activate"
+              (callback-widget-data
+               (lambda (widget user-data)
+                 ;; Get the rows visible in the list view.
+                 ;; Activate if there's only one.
+                 ;; Push filter to stack and await more row selection text.
+                 (display "enter\n"))) 0))
           (gtk-tree-selection-set-mode (gtk-tree-view-get-selection tree) GTK_SELECTION_SINGLE)
           (g-signal-connect tree "row-activated"
             (callback-row-activated
@@ -74,18 +74,19 @@
          (add-column tree header i))
        (enumerate (table-headers table)) (table-headers table))))
 
-  (define string-ci-contains?
-    (lambda (needle haystack)
-      (if (irregex-search `(w/nocase ,needle) haystack)
-          #t
-          #f)))
+  (define make-cell-filter
+    (lambda (needle)
+      (lambda (haystack)
+        (if (irregex-search `(w/nocase ,needle) haystack)
+            #t
+            #f))))
 
   (define row-visible-filter?
-    (lambda (table row-num filter-text)
+    (lambda (table row-num filter?)
       ;; match filter-text against any column containing text.
       (let* ([row (list-ref (table-rows table) row-num)]
              [strcells (filter string? row)])
-        (not (null? (filter (lambda (cell) (string-ci-contains? filter-text cell)) strcells))))))
+        (not (null? (filter filter? strcells))))))
 
   (define add-column
     (lambda (tree header field-id)
