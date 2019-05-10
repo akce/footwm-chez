@@ -21,6 +21,13 @@
   (define init-window
     (lambda (w title table activate-callback)
       (gtk-window-set-title w title)
+      (gtk-widget-add-events w GDK_KEY_PRESS_MASK)
+      (g-signal-connect w "key-press-event"
+        (keyevent-callback
+          (lambda (widget event user-data)
+            ;; Quit if we see a key not handled by the focused widget.
+            (gtk-main-quit)
+            #t)) 0)
       (let* ([store (apply gtk-list-store-new (table-types table))]
              [fstore (gtk-tree-model-filter-new store 0)])
         (fill-model! store table)
@@ -141,7 +148,7 @@
       (gtk-init 0 0)
       (let ([w (gtk-window-new GTK_WINDOW_TOPLEVEL)])
         (init-window w title table activate-callback)
-        (g-signal-connect w "destroy" gtk-main-quit 0)
-        (g-signal-connect w "focus-out-event" gtk-main-quit 0)
+        (g-signal-connect w "destroy" gtk-main-quit-addr 0)
+        (g-signal-connect w "focus-out-event" gtk-main-quit-addr 0)
         (gtk-widget-show-all w))
       (gtk-main))))

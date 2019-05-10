@@ -1,10 +1,17 @@
 (library (gtk)
   (export
+   gdkeventkey*
+
    gtkwidget*
    gtktreepath*
    gtktreeiter
    gtktreeiter*
    gpointer
+
+   GDK_KEY_PRESS_MASK
+   GDK_KEY_RELEASE_MASK
+
+   keyevent-callback
 
    gtk-application-new
    gtk-application-window-new
@@ -13,6 +20,7 @@
    gtk-widget-show-all
    gtk-widget-set-hexpand
    gtk-widget-set-vexpand
+   gtk-widget-add-events
    gtk-widget-destroy
 
    GTK_WINDOW_TOPLEVEL
@@ -64,15 +72,19 @@
 
    gtk-init
    gtk-main
-   gtk-main-quit)
+   gtk-main-quit
+   gtk-main-quit-addr)
   (import
    (chezscheme)
    (ftypes-util)
    (gobject)
-   (only (util) enum))
+   (only (util) bitmap enum))
 
   (define lib-load
     (load-shared-object "libgtk-3.so"))
+
+  ;; Gdk is an interface between underlying system and gtk+.
+  (define-ftype gdkeventkey* void*)
 
   (define-ftype gtkapplication* void*)
   (define-ftype gtkwidget* void*)
@@ -93,6 +105,17 @@
      [user-data3	gpointer]))
   (define-ftype gtktreeiter* (* gtktreeiter))
 
+  ;; Gdk.
+  (bitmap GdkEventMask
+    (GDK_KEY_PRESS_MASK		10)
+    (GDK_KEY_RELEASE_MASK	11))
+
+  (define keyevent-callback
+    (lambda (callback)
+      (let ([fp (foreign-callable callback (gtkwidget* gdkeventkey* gpointer) boolean)])
+        (lock-object fp)
+        (foreign-callable-entry-point fp))))
+
   ;;;; Application.
   (define gtk-application-new
     (foreign-procedure "gtk_application_new" (string int) gtkapplication*))
@@ -112,7 +135,8 @@
     (foreign-procedure "gtk_widget_set_hexpand" (gtkwidget* boolean) void))
   (define gtk-widget-set-vexpand
     (foreign-procedure "gtk_widget_set_vexpand" (gtkwidget* boolean) void))
-
+  (define gtk-widget-add-events
+    (foreign-procedure "gtk_widget_add_events" (gtkwidget* gint) void))
   (define gtk-widget-destroy
     (foreign-entry "gtk_widget_destroy"))
 
@@ -250,4 +274,6 @@
   (define gtk-main
     (foreign-procedure "gtk_main" () void))
   (define gtk-main-quit
+    (foreign-procedure "gtk_main_quit" () void))
+  (define gtk-main-quit-addr
     (foreign-entry "gtk_main_quit")))
