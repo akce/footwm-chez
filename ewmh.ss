@@ -4,35 +4,33 @@
 ;;    https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html
 (library (ewmh)
   (export
-   active-window
-   active-window-set!
+   init-atoms
+   atom-ref
    client-list
    client-list-set!
    client-list-stacking
    client-list-stacking-set!
-   current-desktop
-   current-desktop-set!
    desktop-count
    desktop-count-set!
+   current-desktop
+   current-desktop-set!
+   current-desktop-request!
    desktop-names
    desktop-names-set!
-   window-desktop
-   window-desktop-set!
-   show-window
-   iconify-window
-   name
-   pid
-   current-desktop-request!
+   active-window
+   active-window-set!
    window-active-request!
    window-close-request!
+   name
+   window-desktop
+   window-desktop-set!
    window-desktop-request!
-
-   on-map-request
    on-client-state
-   remove-window
-
-   init-atoms
-   atom-ref)
+   show-window
+   iconify-window
+   pid
+   on-map-request
+   remove-window)
   (import
    (rnrs)
    (only (chezscheme) define-values format)
@@ -52,10 +50,8 @@
       _NET_WM_NAME
       _NET_WM_PID
       _NET_WM_STATE
-      _NET_WM_STATE_HIDDEN
+      _NET_WM_STATE_HIDDEN))
 
-      ;UTF8_STRING
-      ))
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
 
@@ -66,13 +62,12 @@
           #f
           (list-ref lst 0))))
 
-  (define active-window
-    (lambda ()
-      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
+  ;;;;;; Root window properties (and messages)
 
-  (define active-window-set!
-    (lambda (wid)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_ACTIVE_WINDOW) (list wid) XA-WINDOW)))
+  ;;;; _NET_SUPPORTED ATOM[]/32
+  ;; TODO
+
+  ;;;; _NET_CLIENT_LIST WINDOW[]/32
 
   (define client-list
     (lambda ()
@@ -83,6 +78,8 @@
       ;; return as list as lists have more builtin operations.
       (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
 
+  ;;;; _NET_CLIENT_LIST_STACKING WINDOW[]/32
+
   (define client-list-stacking
     (lambda ()
       ;; return as list as lists have more builtin operations.
@@ -92,7 +89,24 @@
     (lambda (wids)
       (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) wids XA-WINDOW)))
 
-  ;; wm: the current active desktop number.
+  ;;;; _NET_NUMBER_OF_DESKTOPS CARDINAL/32
+
+  (define desktop-count
+    (lambda ()
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) XA-CARDINAL))))
+
+  (define desktop-count-set!
+    (lambda (number)
+      (xutil.cardinal-set! (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) number)))
+
+  ;;;; _NET_DESKTOP_GEOMETRY width, height, CARDINAL[2]/32
+  ;; TODO
+
+  ;;;; _NET_DESKTOP_VIEWPORT x, y, CARDINAL[][2]/32
+  ;; TODO
+
+  ;;;; _NET_CURRENT_DESKTOP desktop, CARDINAL/32
+
   (define current-desktop
     (lambda ()
       (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL))))
@@ -100,6 +114,93 @@
   (define current-desktop-set!
     (lambda (number)
       (xutil.cardinal-set! (root) (atom-ref '_NET_CURRENT_DESKTOP) number)))
+
+  ;; client: request current desktop change.
+  (define current-desktop-request!
+    (lambda (desktop-number)
+      (xutil.send-message-cardinal (root) 0 (atom-ref '_NET_CURRENT_DESKTOP) desktop-number)))
+
+  ;;;; _NET_DESKTOP_NAMES UTF8_STRING[]
+
+  (define desktop-names
+    (lambda ()
+      ;; return as list as lists have more builtin operations.
+      (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES))))
+
+  (define desktop-names-set!
+    (lambda (names)
+      (xutil.text-property-set! (root) names (atom-ref '_NET_DESKTOP_NAMES))))
+
+  ;;;; _NET_ACTIVE_WINDOW WINDOW/32
+
+  (define active-window
+    (lambda ()
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
+
+  (define active-window-set!
+    (lambda (wid)
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_ACTIVE_WINDOW) (list wid) XA-WINDOW)))
+
+  ;; client: Request WM activate window.
+  (define window-active-request!
+    (lambda (wid)
+      (xutil.send-message-cardinal (root) wid (atom-ref '_NET_ACTIVE_WINDOW) 0)))
+
+  ;;;; _NET_WORKAREA x, y, width, height CARDINAL[][4]/32
+  ;; TODO
+
+  ;;;; _NET_SUPPORTING_WM_CHECK WINDOW/32
+  ;; TODO
+
+  ;;;; _NET_VIRTUAL_ROOTS WINDOW[]/32
+  ;; N/A
+
+  ;;;; _NET_DESKTOP_LAYOUT orientation, columns, rows, starting_corner CARDINAL[4]/32
+  ;; N/A
+
+  ;;;; _NET_SHOWING_DESKTOP desktop, CARDINAL/32
+  ;; TODO
+
+  ;;;;;; Other Root window messages.
+
+  ;;;; _NET_CLOSE_WINDOW
+
+  ;; client: Request WM to close the window.
+  (define window-close-request!
+    (lambda (wid)
+      (xutil.send-message-cardinal (root) wid (atom-ref '_NET_CLOSE_WINDOW) 0)))
+
+  ;;;; _NET_MOVERESIZE_WINDOW
+  ;; TODO
+
+  ;;;; _NET_WM_MOVERESIZE
+  ;; TODO
+
+  ;;;; _NET_RESTACK_WINDOW
+  ;; TODO
+
+  ;;;; _NET_REQUEST_FRAME_EXTENTS
+  ;; TODO
+
+  ;;;;;; Application Window properties.
+
+  ;;;; _NET_WM_NAME UTF8_STRING
+
+  ;; Get the name for the window.
+  (define name
+    (lambda (wid)
+      (xutil.property->string wid (atom-ref '_NET_WM_NAME))))
+
+  ;;;; _NET_WM_VISIBLE_NAME UTF8_STRING
+  ;; N/A
+
+  ;;;; _NET_WM_ICON_NAME UTF8_STRING
+  ;; N/A
+
+  ;;;; _NET_WM_VISIBLE_ICON_NAME UTF8_STRING
+  ;; N/A
+
+  ;;;; _NET_WM_DESKTOP desktop, CARDINAL/32
 
   ;; Get the desktop number for the window.
   (define window-desktop
@@ -111,6 +212,16 @@
     (lambda (wid number)
       (xutil.cardinal-set! wid (atom-ref '_NET_WM_DESKTOP) number)))
 
+  ;; Send a message to the WM requesting window wid be moved to desktop-number.
+  (define window-desktop-request!
+    (lambda (wid desktop-number)
+      (xutil.send-message-cardinal (root) wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
+
+  ;;;; _NET_WM_WINDOW_TYPE ATOM[]/32
+  ;; TODO
+
+  ;;;; _NET_WM_STATE ATOM[]/32
+
   (define get-net-wm-state
     (lambda (wid)
       (xutil.property->ulongs wid (atom-ref '_NET_WM_STATE) XA-ATOM)))
@@ -118,6 +229,14 @@
   (define net-wm-state-set!
     (lambda (wid values)
       (xutil.ulongs-property-set! wid (atom-ref '_NET_WM_STATE) values XA-ATOM)))
+
+  (define on-client-state
+    (lambda (wid ev)
+      (let ([action (list-ref (xclientmessageevent-data ev) 0)]
+            [prop1 (list-ref (xclientmessageevent-data ev) 1)]
+            [prop2 (list-ref (xclientmessageevent-data ev) 2)]
+            #;[source (list-ref (xclientmessageevent-data ev) 3)])
+        (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (xutil.atom-name prop1) prop2 (xutil.atom-name prop2))))))
 
   (define show-window
     (lambda (wid)
@@ -133,50 +252,68 @@
         (unless (memq a states)
           (net-wm-state-set! wid (cons a states))))))
 
-  (define desktop-count
-    (lambda ()
-      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) XA-CARDINAL))))
+  ;;;; _NET_WM_ALLOWED_ACTIONS ATOM[]/32
+  ;; TODO
 
-  (define desktop-count-set!
-    (lambda (number)
-      (xutil.cardinal-set! (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) number)))
+  ;;;; _NET_WM_STRUT left, right, top, bottom, CARDINAL[4]/32
+  ;; TODO
 
-  (define desktop-names
-    (lambda ()
-      ;; return as list as lists have more builtin operations.
-      (xutil.property->string* (root) (atom-ref '_NET_DESKTOP_NAMES))))
+  ;;;; _NET_WM_STRUT_PARTIAL left, right, top, bottom, left_start_y, left_end_y,right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,bottom_end_x,CARDINAL[12]/32
+  ;; TODO
 
-  (define desktop-names-set!
-    (lambda (names)
-      (xutil.text-property-set! (root) names (atom-ref '_NET_DESKTOP_NAMES))))
+  ;;;; _NET_WM_ICON_GEOMETRY x, y, width, height, CARDINAL[4]/32
+  ;; N/A
 
-  ;; Get the name for the window.
-  (define name
-    (lambda (wid)
-      (xutil.property->string wid (atom-ref '_NET_WM_NAME))))
+  ;;;; _NET_WM_ICON CARDINAL[][2+n]/32
+  ;; N/A
+
+  ;;;; _NET_WM_PID CARDINAL/32
 
   (define pid
     (lambda (wid)
       (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_PID) XA-CARDINAL))))
 
-  ;; Request WM activate window.
-  (define window-active-request!
-    (lambda (wid)
-      (xutil.send-message-cardinal (root) wid (atom-ref '_NET_ACTIVE_WINDOW) 0)))
+  ;;;; _NET_WM_HANDLED_ICONS
+  ;; N/A
 
-  ;; Request WM to close the window.
-  (define window-close-request!
-    (lambda (wid)
-      (xutil.send-message-cardinal (root) wid (atom-ref '_NET_CLOSE_WINDOW) 0)))
+  ;;;; _NET_WM_USER_TIME CARDINAL/32
+  ;; TODO
 
-  ;; Send a message to the WM requesting window wid be moved to desktop-number.
-  (define window-desktop-request!
-    (lambda (wid desktop-number)
-      (xutil.send-message-cardinal (root) wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
+  ;;;; _NET_WM_USER_TIME_WINDOW WINDOW/32
+  ;; TODO
 
-  (define current-desktop-request!
-    (lambda (desktop-number)
-      (xutil.send-message-cardinal (root) 0 (atom-ref '_NET_CURRENT_DESKTOP) desktop-number)))
+  ;;;; _NET_FRAME_EXTENTS left, right, top, bottom, CARDINAL[4]/32
+  ;; TODO
+
+  ;;;; _NET_WM_OPAQUE_REGION x, y, width, height, CARDINAL[][4]/32
+  ;; N/A
+
+  ;;;; _NET_WM_BYPASS_COMPOSITOR CARDINAL/32
+  ;; N/A
+
+  ;;;;;; Window Manager Protocols
+
+  ;;;; _NET_WM_PING
+  ;; TODO
+
+  ;;;; _NET_WM_SYNC_REQUEST
+  ;; TODO
+
+  ;;;; _NET_WM_FULLSCREEN_MONITORS CARDINAL[4]/32
+  ;; TODO
+
+  ;;;;;; Other Properties
+
+  ;;;; _NET_FULL_PLACEMENT
+  ;; TODO
+
+  ;;;; Compositing Managers.
+  ;; N/A
+
+  ;;;; WM_TRANSIENT_FOR for override-redirect windows
+  ;; TODO
+
+  ;;;;; Other/misc functions.
 
   (define on-map-request
     (lambda (ev)
@@ -196,14 +333,6 @@
           (list wid)))
         (unless (memq wid clients)
           (client-list-set! (append clients (list wid)))))))
-
-  (define on-client-state
-    (lambda (wid ev)
-      (let ([action (list-ref (xclientmessageevent-data ev) 0)]
-            [prop1 (list-ref (xclientmessageevent-data ev) 1)]
-            [prop2 (list-ref (xclientmessageevent-data ev) 2)]
-            #;[source (list-ref (xclientmessageevent-data ev) 3)])
-        (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (xutil.atom-name prop1) prop2 (xutil.atom-name prop2))))))
 
   (define remove-window
     (lambda (wid)
