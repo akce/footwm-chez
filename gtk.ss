@@ -8,9 +8,6 @@
    gtktreeiter*
    gpointer
 
-   GDK_KEY_PRESS_MASK
-   GDK_KEY_RELEASE_MASK
-
    keyevent-callback
 
    gtk-application-new
@@ -20,7 +17,6 @@
    gtk-widget-show-all
    gtk-widget-set-hexpand
    gtk-widget-set-vexpand
-   gtk-widget-add-events
    gtk-widget-destroy
 
    GTK_WINDOW_TOPLEVEL
@@ -78,7 +74,7 @@
    (chezscheme)
    (ftypes-util)
    (gobject)
-   (only (util) bitmap enum))
+   (only (util) enum))
 
   (define lib-load
     (load-shared-object "libgtk-3.so"))
@@ -106,10 +102,6 @@
   (define-ftype gtktreeiter* (* gtktreeiter))
 
   ;; Gdk.
-  (bitmap GdkEventMask
-    (GDK_KEY_PRESS_MASK		10)
-    (GDK_KEY_RELEASE_MASK	11))
-
   (define keyevent-callback
     (lambda (callback)
       (let ([fp (foreign-callable callback (gtkwidget* gdkeventkey* gpointer) boolean)])
@@ -135,8 +127,6 @@
     (foreign-procedure "gtk_widget_set_hexpand" (gtkwidget* boolean) void))
   (define gtk-widget-set-vexpand
     (foreign-procedure "gtk_widget_set_vexpand" (gtkwidget* boolean) void))
-  (define gtk-widget-add-events
-    (foreign-procedure "gtk_widget_add_events" (gtkwidget* gint) void))
   (define gtk-widget-destroy
     (foreign-entry "gtk_widget_destroy"))
 

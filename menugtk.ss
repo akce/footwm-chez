@@ -21,7 +21,6 @@
   (define init-window
     (lambda (w title table activate-callback)
       (gtk-window-set-title w title)
-      (gtk-widget-add-events w GDK_KEY_PRESS_MASK)
       (g-signal-connect w "key-press-event"
         (keyevent-callback
           (lambda (widget event user-data)
