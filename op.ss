@@ -58,11 +58,12 @@
 
   (define move-window-to-desktop
     (lambda (wid index)
-      (when (< index (ewmh.desktop-count))
-        (unless (= index (ewmh.window-desktop wid))
-          (ewmh.window-desktop-set! wid index)
-          (if (eqv? (icccm.get-wm-state wid) icccm.NormalState)
-              (arrange-windows))))))
+      (when (top-level-window? wid)
+        (when (< index (ewmh.desktop-count))
+          (unless (= index (ewmh.window-desktop wid))
+            (ewmh.window-desktop-set! wid index)
+            (if (eqv? (icccm.get-wm-state wid) icccm.NormalState)
+                (arrange-windows)))))))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
   (define window-name
