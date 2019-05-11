@@ -111,6 +111,6 @@ Enters shell mode if no [command] given.
          wid
          i
          (ewmh.window-desktop wid)
-         (list-ref c 0)
-         (list-ref c 1)
+         (icccm.class-hint-instance c)
+         (icccm.class-hint-class c)
          (op.window-name wid))))))

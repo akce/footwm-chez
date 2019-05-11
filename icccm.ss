@@ -50,8 +50,8 @@
 
    ;; WM_CLASS
    class-hint
-   class
-   instance
+   class-hint-instance
+   class-hint-class
 
    ;; WM_PROTOCOLS
    get-wm-protocols
@@ -254,16 +254,20 @@
       ;; Save some hassle and use the text property stuff.
       (xutil.property->string* wid (atom-ref 'WM_CLASS))))
 
-  (define class
-    (lambda (wid)
-      (list-ref (class-hint wid) 1)))
+  ;; ICCCM 4.1.2.5 WM_CLASS refers to this first string as the "instance" even though XClassHint has it as res_name.
+  ;; Probably because there are a number of "name" ways to populate this value.
+  ;; eg, -name, RESOURCE_NAME, bin name.
+  (define class-hint-instance
+    (lambda (ch)
+      (if (null? ch)
+          ""
+          (list-ref ch 0))))
 
-  (define instance
-    (lambda (wid)
-      ;; ICCCM 4.1.2.5 WM_CLASS refers to this first string as the "instance" even though XClassHint has it as res_name.
-      ;; Probably because there are a number of "name" ways to populate this value.
-      ;; eg, -name, RESOURCE_NAME, bin name.
-      (list-ref (class-hint wid) 0)))
+  (define class-hint-class
+    (lambda (ch)
+      (if (null? ch)
+          ""
+          (list-ref ch 1))))
 
   ;;;; ICCCM 4.1.2.6 WM_TRANSIENT_FOR
   ;; TODO

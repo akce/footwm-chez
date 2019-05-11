@@ -42,7 +42,7 @@
        (lambda (i wid)
          (let ([c (icccm.class-hint wid)]
                [dname (list-ref desks (ewmh.window-desktop wid))])
-           (list i (hex wid) dname (list-ref c 0) (list-ref c 1) (op.window-name wid) wid)))
+           (list i (hex wid) dname (icccm.class-hint-instance c) (icccm.class-hint-class c) (op.window-name wid) wid)))
        (enumerate wids) wids))))
 
 (define make-window-data
