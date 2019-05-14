@@ -9,6 +9,7 @@
  (prefix (ewmh) ewmh.)
  (globals)
  (gobject)
+ (prefix (hints) hints.)
  (menugtk)
  (xlib)
  (prefix (xutil) xutil.))
@@ -17,6 +18,7 @@
 (root (XDefaultRootWindow (current-display)))
 
 (ewmh.init-atoms)
+(hints.init-atoms)
 
 (define make-desktop-data
   (lambda ()
@@ -37,8 +39,15 @@
   (lambda ()
     (parse-args (command-line-arguments))
     (menu "Footdesk" (make-desktop-data)
+      ;; activation command
       (lambda (row)
         (ewmh.current-desktop-request! (list-ref row 2))
-        (xutil.sync)))))
+        (xutil.sync))
+      ;; creation command
+      (lambda (name)
+        (when (> (string-length name) 0)
+          ;; Create a new desktop.
+          (hints.desktop-add-set! name 0)
+          (xutil.sync))))))
 
 (main)

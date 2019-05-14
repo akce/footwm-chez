@@ -63,6 +63,9 @@
     (menu "Footwin" (make-window-data)
       (lambda (row)
         (ewmh.window-active-request! (list-ref row 6))
-        (xutil.sync)))))
+        (xutil.sync))
+      ;; Null creation func. Hmmm.. could this be an app launch function?
+      (lambda (text)
+        #t))))
 
 (main)

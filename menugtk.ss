@@ -19,7 +19,7 @@
     (fields headers types rows))
 
   (define init-window
-    (lambda (w title table activate-callback)
+    (lambda (w title table activate-callback create-callback)
       (gtk-window-set-title w title)
       (g-signal-connect w "key-press-event"
         (keyevent-callback
@@ -65,7 +65,7 @@
                    (cond
                     [(null? vs)
                      ;; Nothing to do if there's no matches.
-                     #f]
+                     (create-callback (gtk-entry-get-text text))]
                     [(= (length vs) 1)
                      ;; Activate if there's only one.
                      (activate-callback (car vs))]
@@ -143,10 +143,10 @@
            (table-rows table))))))
 
   (define menu
-    (lambda (title table activate-callback)
+    (lambda (title table activate-callback create-callback)
       (gtk-init 0 0)
       (let ([w (gtk-window-new GTK_WINDOW_TOPLEVEL)])
-        (init-window w title table activate-callback)
+        (init-window w title table activate-callback create-callback)
         (g-signal-connect w "destroy" gtk-main-quit-addr 0)
         (g-signal-connect w "focus-out-event" gtk-main-quit-addr 0)
         (gtk-widget-show-all w))
