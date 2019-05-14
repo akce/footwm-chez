@@ -66,6 +66,13 @@
         (xutil.sync))
       ;; Null creation func. Hmmm.. could this be an app launch function?
       (lambda (text)
-        #t))))
+        #t)
+      ;; Delete command.
+      (lambda (rows)
+        (for-each
+         (lambda (row)
+           (ewmh.window-close-request! (list-ref row 6)))
+         rows)
+        (xutil.sync)))))
 
 (main)

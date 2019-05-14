@@ -19,14 +19,8 @@
     (fields headers types rows))
 
   (define init-window
-    (lambda (w title table activate-callback create-callback)
+    (lambda (w title table activate-callback create-callback delete-callback)
       (gtk-window-set-title w title)
-      (g-signal-connect w "key-press-event"
-        (keyevent-callback
-          (lambda (widget event user-data)
-            ;; Quit if we see a key not handled by the focused widget.
-            (gtk-main-quit)
-            #t)) 0)
       (let* ([store (apply gtk-list-store-new (table-types table))]
              [fstore (gtk-tree-model-filter-new store 0)])
         (fill-model! store table)
@@ -42,7 +36,17 @@
           (gtk-grid-attach grid text 0 0 1 1)
           (gtk-grid-attach grid tree 0 1 1 1)
           (let ([current-filter? (make-cell-filter "")]
-                [visible-rows (table-rows table)])
+                [filtered-rows (table-rows table)])
+            (define visible-rows
+              (lambda ()
+                (filter (lambda (row) (row-visible? row current-filter?)) filtered-rows)))
+            (g-signal-connect w "key-press-event"
+              (keyevent-callback
+               (lambda (widget keyval)
+                 (case-equal? keyval
+                   [GDK_KEY_Delete (delete-callback (visible-rows)) (gtk-main-quit)]
+                   [GDK_KEY_Escape (gtk-main-quit)])
+                 #t)) 0)
             (g-signal-connect text "changed"
               (callback-widget-data
                (lambda (editable user-data)
@@ -53,7 +57,7 @@
                (lambda (model iter user-data)
                  (let* ([row-num (gtk-tree-model-get/int model iter 0)]
                         [row (list-ref (table-rows table) row-num)])
-                   (if (memq row visible-rows)
+                   (if (memq row filtered-rows)
                        (row-visible? row current-filter?)
                        #f)))) 0 0)
             ;; Watch for ENTER key.
@@ -61,17 +65,20 @@
               (callback-widget-data
                (lambda (widget user-data)
                  ;; Get the rows visible in the list view.
-                 (let ([vs (filter (lambda (row) (row-visible? row current-filter?)) visible-rows)])
+                 (let ([vs (visible-rows)])
                    (cond
                     [(null? vs)
-                     ;; Nothing to do if there's no matches.
-                     (create-callback (gtk-entry-get-text text))]
+                     ;; No matches, assume creation if there's some text.
+                     (when create-callback
+                       (let ([name (gtk-entry-get-text text)])
+                         (when (> (string-length name) 0)
+                           (create-callback name))))]
                     [(= (length vs) 1)
                      ;; Activate if there's only one.
                      (activate-callback (car vs))]
                     [else
                      ;; Save off the current visible rows and reset the current text filter.
-                     (set! visible-rows vs)
+                     (set! filtered-rows vs)
                      (set! current-filter? (make-cell-filter ""))
                      (gtk-entry-buffer-delete-text (gtk-entry-get-buffer text) 0 -1)])))) 0))
           (gtk-tree-selection-set-mode (gtk-tree-view-get-selection tree) GTK_SELECTION_SINGLE)
@@ -143,10 +150,10 @@
            (table-rows table))))))
 
   (define menu
-    (lambda (title table activate-callback create-callback)
+    (lambda (title table activate-callback create-callback delete-callback)
       (gtk-init 0 0)
       (let ([w (gtk-window-new GTK_WINDOW_TOPLEVEL)])
-        (init-window w title table activate-callback create-callback)
+        (init-window w title table activate-callback create-callback delete-callback)
         (g-signal-connect w "destroy" gtk-main-quit-addr 0)
         (g-signal-connect w "focus-out-event" gtk-main-quit-addr 0)
         (gtk-widget-show-all w))

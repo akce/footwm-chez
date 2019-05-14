@@ -45,9 +45,15 @@
         (xutil.sync))
       ;; creation command
       (lambda (name)
-        (when (> (string-length name) 0)
-          ;; Create a new desktop.
-          (hints.desktop-add-set! name 0)
-          (xutil.sync))))))
+        ;; Create a new desktop.
+        (hints.desktop-add-set! name 0)
+        (xutil.sync))
+      ;; delete command
+      (lambda (rows)
+        (for-each
+         (lambda (row)
+           (hints.desktop-delete-set! (list-ref row 2)))
+         rows)
+        (xutil.sync)))))
 
 (main)

@@ -8,6 +8,9 @@
    gtktreeiter*
    gpointer
 
+   GDK_KEY_Delete
+   GDK_KEY_Escape
+   gdk-event-get-keyval
    keyevent-callback
 
    gtk-application-new
@@ -102,9 +105,18 @@
   (define-ftype gtktreeiter* (* gtktreeiter))
 
   ;; Gdk.
+  (enum GdkKeySyms
+    (GDK_KEY_Delete #xffff)
+    (GDK_KEY_Escape #xff1b))
+  (define gdk-event-get-keyval
+    (foreign-procedure "gdk_event_get_keyval" (gdkeventkey* (* guint)) boolean))
   (define keyevent-callback
     (lambda (callback)
-      (let ([fp (foreign-callable callback (gtkwidget* gdkeventkey* gpointer) boolean)])
+      (let ([fp (foreign-callable (lambda (widget event ptr)
+                                    (fmem ([k &k guint])
+                                          (gdk-event-get-keyval event &k)
+                                          (callback widget (foreign-ref 'unsigned k 0))))
+                                  (gtkwidget* gdkeventkey* gpointer) boolean)])
         (lock-object fp)
         (foreign-callable-entry-point fp))))
 
