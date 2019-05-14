@@ -6,13 +6,16 @@
 (import
  (rnrs base)
  (only (chezscheme) new-cafe)
- (prefix (ewmh) ewmh.)
  (globals)
+ (xlib)
+ (prefix (xutil) xutil.)
+ ;; Import all local modules so they're accessable from the command line.
+ (prefix (ewmh) ewmh.)
  (prefix (hints) hints.)
  (prefix (icccm) icccm.)
- (prefix (shell) sh.)
- (xlib)
- (prefix (xutil) xutil.))
+ (prefix (op) op.)
+ (prefix (shell) shell.)
+ (prefix (wm) wm.))
 
 (current-display (xutil.open))
 (root (XDefaultRootWindow (current-display)))
@@ -26,4 +29,4 @@
    [(fx=? (length argv) 1)
     (new-cafe)]
    [else
-    (sh.main argv)]))
+    (shell.main argv)]))
