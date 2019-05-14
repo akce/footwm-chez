@@ -239,6 +239,6 @@
                   [hs (cdr ws)])		; hidden windows
               (for-each iconify-window hs)
               (unless (eq? vis (ewmh.active-window))
-                (xutil.resize-window vis (get-active-ideal-geometry))
+                (xutil.resize-window vis (icccm.apply-normal-hints (icccm.get-normal-hints vis) (get-active-ideal-geometry)))
                 (show-window vis)
                 (ewmh.active-window-set! vis)))))))))

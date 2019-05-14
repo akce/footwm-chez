@@ -38,6 +38,8 @@
    size-hints-win-gravity
 
    get-normal-hints
+   normal-hints-flags->string
+   apply-normal-hints
 
    wm-hints?
    wm-hints-input
@@ -92,6 +94,7 @@
   (import
    (rnrs)
    (only (chezscheme)
+     inexact->exact
      define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
    (only (ftypes-util) fmem)
    (globals)
@@ -141,26 +144,27 @@
         (PWinGravity	9))
 
   ;; NOTE: ICCCM defines this struct in terms of 32bit cardinals etc. However, client Xlib uses local machine types.
+  ;; NOTE: Accessing the property directly (rather than through XGetWMNormalHints) returns as a list of longs.
   (define-ftype c-size-hints
     (struct
      [flags		long]
-     [pad1		int]	; obsolete: x
-     [pad2		int]	; obsolete: y
-     [pad3		int]	; obsolete: width
-     [pad4		int]	; obsolete: height
-     [min-width		int]
-     [min-height	int]
-     [max-width		int]
-     [max-height	int]
-     [width-inc		int]
-     [height-inc	int]
-     [min-aspect-x	int]
-     [min-aspect-y	int]
-     [max-aspect-x	int]
-     [max-aspect-y	int]
-     [base-width	int]
-     [base-height	int]
-     [win-gravity	int]))
+     [pad1		long]	; obsolete: x
+     [pad2		long]	; obsolete: y
+     [pad3		long]	; obsolete: width
+     [pad4		long]	; obsolete: height
+     [min-width		long]
+     [min-height	long]
+     [max-width		long]
+     [max-height	long]
+     [width-inc		long]
+     [height-inc	long]
+     [min-aspect-x	long]
+     [min-aspect-y	long]
+     [max-aspect-x	long]
+     [max-aspect-y	long]
+     [base-width	long]
+     [base-height	long]
+     [win-gravity	long]))
 
   (define-record-type size-hints
     (fields flags min-w min-h max-w max-h w-inc h-inc min-aspect-x min-aspect-y max-aspect-x max-aspect-y base-w base-h win-gravity))
@@ -194,6 +198,68 @@
               (foreign-free ptr)
               ret)
             #f))))
+
+  (define normal-hints-flags->string
+    (lambda (nh)
+      (let-values ([(op g) (open-string-output-port)])
+        (put-string op "(flags")
+        (bit-case (size-hints-flags nh)
+          ;; user position.
+          ([USPosition	(put-string op " USPosition")]
+           [USSize	(put-string op " USSize")]
+           [PPosition	(put-string op " PPosition")]
+           [PSize	(put-string op " PSize")]
+           [PMinSize	(put-string op " PMinSize")]
+           [PMaxSize	(put-string op " PMaxSize")]
+           [PResizeInc	(put-string op " PResizeInc")]
+           [PAspect	(put-string op " PAspect")]
+           [PBaseSize	(put-string op " PBaseSize")]
+           [PWinGravity	(put-string op " PWinGravity")]))
+        (put-string op ")")
+        (g))))
+
+  (define nh-get-base
+    (lambda (nh max-geom)
+      (let ([flags (size-hints-flags nh)])
+        (if (bitwise-bit-set? flags PBaseSize)
+            (values (size-hints-base-w nh) (size-hints-base-h nh))
+            (if (bitwise-bit-set? flags PMinSize)
+                (values (size-hints-min-w nh) (size-hints-min-h nh))
+                (values (xutil.geometry-width max-geom) (xutil.geometry-height max-geom)))))))
+
+  (define nh-get-max
+    (lambda (nh max-geom)
+      (if (bitwise-bit-set? (size-hints-flags nh) PMaxSize)
+          (values (min (size-hints-max-w nh) (xutil.geometry-width max-geom))
+                  (min (size-hints-max-h nh) (xutil.geometry-height max-geom)))
+          (values (xutil.geometry-width max-geom)
+                  (xutil.geometry-height max-geom)))))
+
+  (define max-inc-count
+    (lambda (inc base top)
+      (inexact->exact (floor (/ (- top base) inc)))))
+
+  (define calc-max
+    (lambda (inc base top)
+      (if (> inc 0)
+          (let ([i (max-inc-count inc base top)])
+            (+ (* i inc) base))
+          top)))
+
+  (define apply-normal-hints
+    (lambda (nh max-geom)
+      (let-values ([(flags) (size-hints-flags nh)]
+                   [(mw mh) (nh-get-max nh max-geom)])
+        (cond
+         [(bitwise-bit-set? flags PResizeInc)
+          (let-values ([(bw bh) (nh-get-base nh max-geom)])
+            (xutil.make-geometry 0 0
+                                 (calc-max (size-hints-w-inc nh) bw mw)
+                                 (calc-max (size-hints-h-inc nh) bh mh)))]
+         [(bitwise-bit-set? flags PMaxSize)
+          (xutil.make-geometry 0 0 mw mh)]
+         [else
+          max-geom]))))
 
   ;;;; ICCCM 4.1.2.4 WM_HINTS.
   ;; Other hints that don't fit anywhere else.
