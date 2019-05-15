@@ -23,8 +23,9 @@
    (op.activate-window/index 2))
  ('F3 '()
    (op.activate-window/index 3))
+ ;; Window menu.
  ('F4 '()
-   (op.activate-window/index 4))
+   (system "footwin"))
  ;; Desktop selection.
  ('F5 '()
    (ewmh.current-desktop-request! 1))
@@ -32,8 +33,9 @@
    (ewmh.current-desktop-request! 2))
  ('F7 '()
    (ewmh.current-desktop-request! 3))
+ ;; Desktop menu.
  ('F8 '()
-   (ewmh.current-desktop-request! 4))
+   (system "footdesk"))
  ;; Close current window/desktop.
  ('F9 `(,(alt))
    (op.close-window/index 0))
