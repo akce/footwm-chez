@@ -35,10 +35,10 @@
     (make-parameter Mod3))
 
   (define global-required
-    (make-parameter (list (scroll-lock))))
+    (make-parameter (list)))
 
   (define global-ignored
-    (make-parameter (list (caps-lock) (num-lock))))
+    (make-parameter (list (caps-lock) (scroll-lock))))
 
   (define key-actions
     (make-parameter (list)))
