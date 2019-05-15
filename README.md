@@ -76,7 +76,7 @@ Note that you'll need to create a non-background process to stop xinit/startx fr
 
 ```
     # Footwm window manager.
-    tmux new-session -s wm -n footwm footwm.ss
+    tmux new-session -s wm -d -n footwm footwm.ss
     # Footwm keyboard manager.
     tmux new-window -t wm -n footkeys footkeys.ss
     # Hide the mouse.
