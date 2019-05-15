@@ -28,6 +28,7 @@
    on-client-state
    show-window
    iconify-window
+   demands-attention?
    pid
    on-map-request
    remove-window)
@@ -50,6 +51,7 @@
       _NET_WM_NAME
       _NET_WM_PID
       _NET_WM_STATE
+      _NET_WM_STATE_DEMANDS_ATTENTION
       _NET_WM_STATE_HIDDEN))
 
   (define-values
@@ -238,19 +240,36 @@
             #;[source (list-ref (xclientmessageevent-data ev) 3)])
         (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (xutil.atom-name prop1) prop2 (xutil.atom-name prop2))))))
 
-  (define show-window
-    (lambda (wid)
-      (let ([a (atom-ref '_NET_WM_STATE_HIDDEN)]
-            [states (get-net-wm-state wid)])
+  (define add-net-wm-states-state!
+    (lambda (wid a)
+      (let ([states (get-net-wm-state wid)])
+        (unless (memq a states)
+          (net-wm-state-set! wid (cons a states))))))
+
+  (define del-net-wm-states-state!
+    (lambda (wid a)
+      (let ([states (get-net-wm-state wid)])
         (when (memq a states)
           (net-wm-state-set! wid (remove a states))))))
 
+  (define show-window
+    (lambda (wid)
+      (del-net-wm-states-state! wid (atom-ref '_NET_WM_STATE_DEMANDS_ATTENTION))
+      (del-net-wm-states-state! wid (atom-ref '_NET_WM_STATE_HIDDEN))))
+
   (define iconify-window
     (lambda (wid)
-      (let ([a (atom-ref '_NET_WM_STATE_HIDDEN)]
+      (add-net-wm-states-state! wid (atom-ref '_NET_WM_STATE_HIDDEN))))
+
+  ;; _NET_WM_STATE_DEMANDS_ATTENTION
+  ;; Like icccm.UrgencyHint but can be set by both wm & clients. It is usually cleared by the wm on activation.
+  (define demands-attention?
+    (lambda (wid)
+      (let ([a (atom-ref '_NET_WM_STATE_DEMANDS_ATTENTION)]
             [states (get-net-wm-state wid)])
-        (unless (memq a states)
-          (net-wm-state-set! wid (cons a states))))))
+        (if (memq a states)
+            #t
+            #f))))
 
   ;;;; _NET_WM_ALLOWED_ACTIONS ATOM[]/32
   ;; TODO
