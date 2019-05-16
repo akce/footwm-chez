@@ -248,18 +248,20 @@
 
   (define apply-normal-hints
     (lambda (nh max-geom)
-      (let-values ([(flags) (size-hints-flags nh)]
-                   [(mw mh) (nh-get-max nh max-geom)])
-        (cond
-         [(bitwise-bit-set? flags PResizeInc)
-          (let-values ([(bw bh) (nh-get-base nh max-geom)])
-            (xutil.make-geometry 0 0
-                                 (calc-max (size-hints-w-inc nh) bw mw)
-                                 (calc-max (size-hints-h-inc nh) bh mh)))]
-         [(bitwise-bit-set? flags PMaxSize)
-          (xutil.make-geometry 0 0 mw mh)]
-         [else
-          max-geom]))))
+      (if nh
+        (let-values ([(flags) (size-hints-flags nh)]
+                     [(mw mh) (nh-get-max nh max-geom)])
+          (cond
+           [(bitwise-bit-set? flags PResizeInc)
+            (let-values ([(bw bh) (nh-get-base nh max-geom)])
+              (xutil.make-geometry 0 0
+                                   (calc-max (size-hints-w-inc nh) bw mw)
+                                   (calc-max (size-hints-h-inc nh) bh mh)))]
+           [(bitwise-bit-set? flags PMaxSize)
+            (xutil.make-geometry 0 0 mw mh)]
+           [else
+            max-geom]))
+        max-geom)))
 
   ;;;; ICCCM 4.1.2.4 WM_HINTS.
   ;; Other hints that don't fit anywhere else.
