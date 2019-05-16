@@ -20,15 +20,22 @@
    active-window
    active-window-set!
    window-active-request!
+   workarea-geometry
+   calculate-workarea
    window-close-request!
    name
    window-desktop
    window-desktop-set!
    window-desktop-request!
+   get-wm-window-type
+   dock-window?
+   show-in-taskbar?
    on-client-state
    show-window
    iconify-window
    demands-attention?
+   get-wm-strut
+   get-wm-strut-partial
    pid
    on-map-request
    remove-window)
@@ -47,12 +54,18 @@
       _NET_CURRENT_DESKTOP
       _NET_DESKTOP_NAMES
       _NET_NUMBER_OF_DESKTOPS
+      _NET_WORKAREA
       _NET_WM_DESKTOP
       _NET_WM_NAME
       _NET_WM_PID
       _NET_WM_STATE
       _NET_WM_STATE_DEMANDS_ATTENTION
-      _NET_WM_STATE_HIDDEN))
+      _NET_WM_STATE_HIDDEN
+      _NET_WM_STRUT
+      _NET_WM_STRUT_PARTIAL
+      _NET_WM_WINDOW_TYPE
+      _NET_WM_WINDOW_TYPE_DOCK
+      _NET_WM_WINDOW_TYPE_NORMAL))
 
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
@@ -150,6 +163,34 @@
 
   ;;;; _NET_WORKAREA x, y, width, height CARDINAL[][4]/32
   ;; TODO
+  (define workarea-geometry
+    (lambda ()
+      (let ([gl (xutil.property->ulongs (root) (atom-ref '_NET_WORKAREA) XA-CARDINAL)])
+        (xutil.make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3)))))
+
+  (define workarea-set!
+    (lambda (x y w h)
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_WORKAREA) (list x y w h) XA-CARDINAL)))
+
+  (define calculate-workarea
+    (lambda (wids)
+      (let ([rg (xutil.window-attributes-geom (xutil.get-window-attributes (root)))])
+        ;; find the maximal strut.
+        (let loop ([struts (map get-strut (filter dock-window? wids))] [left 0] [right 0] [top 0] [bottom 0])
+          (cond
+           [(null? struts)
+            (let ([x left]
+                  [y top]
+                  [w (- (xutil.geometry-width rg) (+ left right))]
+                  [h (- (xutil.geometry-height rg) (+ top bottom))])
+              (workarea-set! x y w h))]
+           [else
+            (let ([strut (car struts)])
+              (loop (cdr struts)
+                    (max left (list-ref strut 0))
+                    (max right (list-ref strut 1))
+                    (max top (list-ref strut 2))
+                    (max bottom (list-ref strut 3))))])))))
 
   ;;;; _NET_SUPPORTING_WM_CHECK WINDOW/32
   ;; TODO
@@ -220,7 +261,24 @@
       (xutil.send-message-cardinal (root) wid (atom-ref '_NET_WM_DESKTOP) desktop-number)))
 
   ;;;; _NET_WM_WINDOW_TYPE ATOM[]/32
-  ;; TODO
+  (define get-wm-window-type
+    (lambda (wid)
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_WINDOW_TYPE) XA-ATOM)))
+
+  (define dock-window?
+    (lambda (wid)
+      (let ([types (get-wm-window-type wid)])
+        (if (memq (atom-ref '_NET_WM_WINDOW_TYPE_DOCK) types)
+            #t
+            #f))))
+
+  (define show-in-taskbar?
+    (lambda (wid)
+      (let ([types (get-wm-window-type wid)])
+        (cond
+         [(null? types) #t]
+         [(memq (atom-ref '_NET_WM_WINDOW_TYPE_NORMAL) types) #t]
+         [else #f]))))
 
   ;;;; _NET_WM_STATE ATOM[]/32
 
@@ -275,10 +333,21 @@
   ;; TODO
 
   ;;;; _NET_WM_STRUT left, right, top, bottom, CARDINAL[4]/32
-  ;; TODO
+  (define get-wm-strut
+    (lambda (wid)
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_STRUT) XA-CARDINAL)))
 
   ;;;; _NET_WM_STRUT_PARTIAL left, right, top, bottom, left_start_y, left_end_y,right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,bottom_end_x,CARDINAL[12]/32
-  ;; TODO
+  (define get-wm-strut-partial
+    (lambda (wid)
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_STRUT_PARTIAL) XA-CARDINAL)))
+
+  (define get-strut
+    (lambda (wid)
+      (let ([partial (get-wm-strut-partial wid)])
+        (if (null? partial)
+            (get-wm-strut wid)
+            partial))))
 
   ;;;; _NET_WM_ICON_GEOMETRY x, y, width, height, CARDINAL[4]/32
   ;; N/A
@@ -339,19 +408,21 @@
       ;; EWMH house keeping.
       ;; Add/move window to top of client window & stacking list etc.
       ;; Set window desktop and set active window.
-      (let ([wid (xmaprequestevent-wid ev)]
-            [desk (current-desktop)]
-            [clients (client-list)]
-            [stack (client-list-stacking)])
-        (window-desktop-set! wid desk)
-        (client-list-stacking-set!
-         (append
-          (if (memq wid stack)
-              (remove wid stack)
-              stack)
-          (list wid)))
-        (unless (memq wid clients)
-          (client-list-set! (append clients (list wid)))))))
+      ;; Adjust workarea with newly mapped dock apps.
+      (let ([wid (xmaprequestevent-wid ev)])
+        (when (show-in-taskbar? wid)
+          (let ([desk (current-desktop)]
+                [clients (client-list)]
+                [stack (client-list-stacking)])
+            (window-desktop-set! wid desk)
+            (client-list-stacking-set!
+             (append
+              (if (memq wid stack)
+                  (remove wid stack)
+                  stack)
+              (list wid)))
+            (unless (memq wid clients)
+              (client-list-set! (append clients (list wid)))))))))
 
   (define remove-window
     (lambda (wid)

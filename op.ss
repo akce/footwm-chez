@@ -1,6 +1,7 @@
 ;; Window, desktop, and layout operations.
 (library (op)
   (export
+   manage-window?
    ;; Window operations.
    activate-window
    banish-window
@@ -16,7 +17,7 @@
    desktop-delete
    desktop-rename
    ;; Layout operations.
-   get-active-ideal-geometry
+   draw-active-window
    arrange-windows)
   (import
    (rnrs)
@@ -33,6 +34,11 @@
   (define top-level-window?
     (lambda (wid)
       (memq wid (ewmh.client-list))))
+
+  (define manage-window?
+    (lambda (wid)
+      (and (icccm.manage-window? wid)
+          (ewmh.show-in-taskbar? wid))))
 
   (define activate-window
     (lambda (wid)
@@ -209,11 +215,6 @@
 
  ;;;;;; Layout operations.
 
-  (define get-active-ideal-geometry
-    (lambda ()
-      ;; Ideal geom is the same as the root window at the moment.
-      (xutil.window-attributes-geom (xutil.get-window-attributes (root)))))
-
   (define show-window
     (lambda (wid)
       (icccm.show-window wid)
@@ -223,6 +224,11 @@
     (lambda (wid)
       (ewmh.iconify-window wid)
       (icccm.iconify-window wid)))
+
+  (define draw-active-window
+    (lambda (wid)
+      (xutil.resize-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry)))
+      (show-window wid)))
 
   (define arrange-windows
     (lambda ()
@@ -239,6 +245,5 @@
                   [hs (cdr ws)])		; hidden windows
               (for-each iconify-window hs)
               (unless (eq? vis (ewmh.active-window))
-                (xutil.resize-window vis (icccm.apply-normal-hints (icccm.get-normal-hints vis) (get-active-ideal-geometry)))
-                (show-window vis)
+                (draw-active-window vis)
                 (ewmh.active-window-set! vis)))))))))
