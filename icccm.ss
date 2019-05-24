@@ -291,7 +291,9 @@
   ;; Add a pseudo record accessor for the urgency hint.
   (define wm-hints-urgency
     (lambda (wh)
-      (bitwise-bit-set? (wm-hints-flags wh) UrgencyHint)))
+      (if wh
+          (bitwise-bit-set? (wm-hints-flags wh) UrgencyHint)
+          #f)))
 
   (define get-wm-hints
     (lambda (wid)
