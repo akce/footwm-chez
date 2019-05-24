@@ -47,7 +47,7 @@
 (define make-window-rows
   (lambda ()
     (let ([desks (ewmh.desktop-names)]
-          [wids (remove-active-window (reverse (op.window-sort (ewmh.client-list-stacking))))])
+          [wids (remove-active-window (op.window-sort (ewmh.client-list)))])
       (map
        (lambda (i wid)
          (let ([c (icccm.class-hint wid)]

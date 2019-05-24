@@ -81,17 +81,12 @@
            (unless (ewmh.window-desktop wid)
              (ewmh.window-desktop-set! wid defgroup)))
          ws)
-        ;; set client-list/stacking ewmh hints.
+        ;; set client-list ewmh hints.
         (let ([clients (ewmh.client-list)])
           (if (null? clients)
               (ewmh.client-list-set! ws)
               ;; client list already exists, need to sanitise it with ws.
-              (ewmh.client-list-set! (filter wid-exists? (set-join clients ws)))))
-        (let ([clients (ewmh.client-list-stacking)])
-          (if (null? clients)
-              (ewmh.client-list-stacking-set! ws)
-              ;; client list stacking already exists, need to sanitise it with ws.
-              (ewmh.client-list-stacking-set! (filter wid-exists? (set-join clients ws))))))))
+              (ewmh.client-list-set! (filter wid-exists? (set-join clients ws))))))))
 
   (define run
     (lambda ()

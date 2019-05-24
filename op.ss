@@ -42,21 +42,21 @@
 
   (define activate-window
     (lambda (wid)
-      ;; promote window to top of ewmh.client-list-stacking, set as ewmh.active-window.
+      ;; promote window to top of ewmh.client-list, set as ewmh.active-window.
       (if (top-level-window? wid)
           (unless (= wid (ewmh.active-window))
-            (let ([rstack (reverse (ewmh.client-list-stacking))])
-              (ewmh.client-list-stacking-set! (reverse (cons wid (remove wid rstack))))
+            (let ([clients (ewmh.client-list)])
+              (ewmh.client-list-set! (cons wid (remove wid clients)))
               (if (= (ewmh.window-desktop wid) (ewmh.current-desktop))
                   (arrange-windows)
                   (desktop-activate (ewmh.window-desktop wid))))))))
 
   (define banish-window
     (lambda (wid)
-      ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list-stacking.
+      ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list.
       (if (top-level-window? wid)
           (let ([state (icccm.get-wm-state wid)])
-            (ewmh.client-list-stacking-set! (append (list wid) (remove wid (ewmh.client-list-stacking))))
+            (ewmh.client-list-set! (append (remove wid (ewmh.client-list)) (list wid)))
             (when (eqv? state icccm.NormalState)
               ;; Normal means the window is visible, hide and re-arrange desktop.
               (iconify-window wid)
@@ -102,7 +102,7 @@
        [(eqv? (winfo-desktop win-l) (winfo-desktop win-r))
         (< (winfo-stack win-l) (winfo-stack win-r))]
        [else
-        (> (winfo-desktop win-l) (winfo-desktop win-r))])))
+        (< (winfo-desktop win-l) (winfo-desktop win-r))])))
 
   (define sorted-winfo
     (lambda (wids)
@@ -117,13 +117,13 @@
 
   (define window-op/index
     (lambda (op index)
-      (let* ([wlist (sorted-winfo (ewmh.client-list-stacking))]
+      (let* ([wlist (sorted-winfo (ewmh.client-list))]
              [d (ewmh.current-desktop)]
              [dlist
               (filter (lambda (w)
                         (eqv? d (winfo-desktop w))) wlist)])
         (when (< index (length dlist))
-          (op (winfo-wid (list-ref (reverse dlist) index)))))))
+          (op (winfo-wid (list-ref dlist index)))))))
 
   ;; Select window to activate by position in list.
   (define activate-window/index
@@ -143,7 +143,7 @@
          (let ([d (ewmh.window-desktop wid)])
            (if (>= d pos)
                (ewmh.window-desktop-set! wid (action d)))))
-       (ewmh.client-list-stacking))))
+       (ewmh.client-list))))
 
   (define desktop-activate
     (lambda (index)
@@ -159,7 +159,7 @@
                   [(< wd index)
                    (ewmh.window-desktop-set! wid (add1 wd))])
                   #| else ignore, only windows at or below index need adjustment.|#))
-             (ewmh.client-list-stacking))
+             (ewmh.client-list))
             (let* ([names (ewmh.desktop-names)]
                    [name (list-ref names index)])
               (ewmh.desktop-names-set! (util.list-insert (remove name names) name c)))
@@ -195,7 +195,7 @@
                (lambda (wid)
                  (if (= index (ewmh.window-desktop wid))
                    (ewmh.window-desktop-set! wid unassigned)))
-               (ewmh.client-list-stacking))
+               (ewmh.client-list))
               ;; Adjust window desktops at index and higher downwards.
               (adjust-windows-desktop index sub1)
               ;; Update desktop ewmh hints.
@@ -232,8 +232,7 @@
 
   (define arrange-windows
     (lambda ()
-      ;; client-list-stacking is bottom to top, reverse so we can easily get to the first window later.
-      (let ([aws (reverse (ewmh.client-list-stacking))]
+      (let ([aws (ewmh.client-list)]
             [d (ewmh.current-desktop)])
         (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
           (for-each iconify-window ows)	; should do this only on wm-init and desktop change..

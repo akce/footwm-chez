@@ -8,8 +8,6 @@
    atom-ref
    client-list
    client-list-set!
-   client-list-stacking
-   client-list-stacking-set!
    desktop-count
    desktop-count-set!
    current-desktop
@@ -49,7 +47,6 @@
   (define atom-list
     '(_NET_ACTIVE_WINDOW
       _NET_CLIENT_LIST
-      _NET_CLIENT_LIST_STACKING
       _NET_CLOSE_WINDOW
       _NET_CURRENT_DESKTOP
       _NET_DESKTOP_NAMES
@@ -94,15 +91,7 @@
       (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
 
   ;;;; _NET_CLIENT_LIST_STACKING WINDOW[]/32
-
-  (define client-list-stacking
-    (lambda ()
-      ;; return as list as lists have more builtin operations.
-      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST_STACKING) XA-WINDOW)))
-
-  (define client-list-stacking-set!
-    (lambda (wids)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST_STACKING) wids XA-WINDOW)))
+  ;; N/A (Does not seem to be used by any taskbar.)
 
   ;;;; _NET_NUMBER_OF_DESKTOPS CARDINAL/32
 
@@ -406,31 +395,25 @@
   (define on-map-request
     (lambda (ev)
       ;; EWMH house keeping.
-      ;; Add/move window to top of client window & stacking list etc.
+      ;; Add/move window to top of client window list etc.
       ;; Set window desktop and set active window.
       ;; Adjust workarea with newly mapped dock apps.
       (let ([wid (xmaprequestevent-wid ev)])
         (when (show-in-taskbar? wid)
           (let ([desk (current-desktop)]
-                [clients (client-list)]
-                [stack (client-list-stacking)])
+                [clients (client-list)])
             (window-desktop-set! wid desk)
-            (client-list-stacking-set!
+            (client-list-set!
              (append
-              (if (memq wid stack)
-                  (remove wid stack)
-                  stack)
-              (list wid)))
-            (unless (memq wid clients)
-              (client-list-set! (append clients (list wid)))))))))
+              (list wid)
+              (if (memq wid clients)
+                  (remove wid clients)
+                  clients))))))))
 
   (define remove-window
     (lambda (wid)
       ;; Remove window from client lists *only*.
       ;; We don't touch active-window here because we're not changing window state. That's up to the wm proper.
-      (let ([clients (client-list)]
-            [stacking (client-list-stacking)])
+      (let ([clients (client-list)])
         (if (memq wid clients)
-            (client-list-set! (remove wid clients)))
-        (if (memq wid stacking)
-            (client-list-stacking-set! (remove wid stacking)))))))
+            (client-list-set! (remove wid clients)))))))

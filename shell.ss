@@ -91,12 +91,12 @@ Enters shell mode if no [command] given.
   ;; prints out the windows list in most-recently-used order.
   (define windows
     (lambda ()
-      (let ([wids (ewmh.client-list-stacking)])
+      (let ([wids (ewmh.client-list)])
         (for-each
          (lambda (wid i)
            (display (window-display-string wid i))
            (newline))
-         (op.window-sort wids) (reverse (enumerate wids))))))
+         (op.window-sort wids) (enumerate wids)))))
 
   (define desktop-display-string
     (lambda (desk)
