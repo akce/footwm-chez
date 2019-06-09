@@ -72,10 +72,12 @@
                      (when create-callback
                        (let ([name (gtk-entry-get-text text)])
                          (when (> (string-length name) 0)
-                           (create-callback name))))]
+                           (create-callback name)
+                           (gtk-main-quit))))]
                     [(= (length vs) 1)
                      ;; Activate if there's only one.
-                     (activate-callback (car vs))]
+                     (activate-callback (car vs))
+                     (gtk-main-quit)]
                     [else
                      ;; Save off the current visible rows and reset the current text filter.
                      (set! filtered-rows vs)
@@ -87,7 +89,8 @@
              (lambda (treeview path column user-data)
                ;; Assumes column 0 is the key/table-index.
                (let ([key (gtk-tree-view-get/int treeview 0)])
-                 (activate-callback (list-ref (table-rows table) key))))) 0))
+                 (activate-callback (list-ref (table-rows table) key))
+                 (gtk-main-quit)))) 0))
         (g-object-unref fstore)
         (g-object-unref store))))
 
@@ -155,6 +158,5 @@
       (let ([w (gtk-window-new GTK_WINDOW_TOPLEVEL)])
         (init-window w title table activate-callback create-callback delete-callback)
         (g-signal-connect w "destroy" gtk-main-quit-addr 0)
-        (g-signal-connect w "focus-out-event" gtk-main-quit-addr 0)
         (gtk-widget-show-all w))
       (gtk-main))))
