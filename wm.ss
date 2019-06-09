@@ -42,7 +42,7 @@
               (bitwise-ior
                PropertyChange
                StructureNotify		; Structure = geometry, border, stacking info for a window.
-               SubstructureNotify	; Sub = structure nofify for child windows.
+               SubstructureNotify	; Sub = structure notify for child windows.
                SubstructureRedirect)])	; Redirect child window change requests to this client.
           (xutil.select-input (root) mask)
           (xutil.sync)
