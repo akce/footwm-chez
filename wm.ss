@@ -187,9 +187,6 @@
       (let ([wid (xmaprequestevent-wid ev)])
         (display (format "#x~x MapRequest ~a~n" wid (op.window-name wid)))
         (icccm.on-map-request ev)
-        ;; All mapped child-of-root windows are watched for events, but docks are
-        ;; not added to the client lists.
-        ;; This is how client windows will be distinguished from dock windows.
         (unless (ewmh.dock-window? wid)
           (ewmh.on-map-request ev)
           (op.arrange-windows)))))
