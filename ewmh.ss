@@ -28,6 +28,8 @@
    get-wm-window-type
    dock-window?
    show-in-taskbar?
+   get-net-wm-state
+   net-wm-state-set!
    on-client-state
    show-window
    iconify-window
