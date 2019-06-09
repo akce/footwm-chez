@@ -410,40 +410,39 @@
             #f)))
 
   ;;;;;; ICCCM 4.1.4 Changing Window State.
+  (define show-window!
+    (lambda (wid)
+      (wm-state-set! wid NormalState)
+      (XMapWindow (current-display) wid)))
+
+  (define iconify-window!
+    (lambda (wid)
+      (wm-state-set! wid IconicState)
+      (XUnmapWindow (current-display) wid)))
+
   (define iconify-window
     (lambda (wid)
       (if (eq? (get-wm-state wid) NormalState)
-          (begin
-            (wm-state-set! wid IconicState)
-            (XUnmapWindow (current-display) wid)
-            #t)
-          #f)))
+        (iconify-window! wid))))
 
   (define deiconify-window
     (lambda (wid)
       (if (eq? (get-wm-state wid) IconicState)
-          (begin
-            (wm-state-set! wid NormalState)
-            (XMapWindow (current-display) wid)
-            #t)
-          #f)))
+        (show-window! wid))))
 
   (define show-window
     (lambda (wid)
       (unless (eq? (get-wm-state wid) NormalState)
-        (wm-state-set! wid NormalState)
-        (XMapWindow (current-display) wid))))
+        (show-window! wid))))
 
   (define on-map-request
     (lambda (ev)
       ;; MapRequest event.
       ;; Received when SubstructureRedirect set on a window, and a child of that window wants to Map,
       ;; (and only where child has override-redirect=false).
-      ;; Map the window and set the wm-state.
       (let ([wid (xmaprequestevent-wid ev)])
-        (wm-state-set! wid NormalState)
         (watch-window wid)
-        (XMapWindow (current-display) wid))))
+        (show-window! wid))))
 
   (define on-unmap
     (lambda (ev)

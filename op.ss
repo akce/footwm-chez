@@ -217,8 +217,10 @@
 
   (define show-window
     (lambda (wid)
-      (icccm.show-window wid)
-      (ewmh.show-window wid)))
+      (ewmh.showing-desktop #f)
+      (ewmh.active-window-set! wid)
+      (ewmh.show-window wid)
+      (icccm.show-window wid)))
 
   (define iconify-window
     (lambda (wid)
@@ -230,6 +232,13 @@
       (xutil.resize-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry)))
       (show-window wid)))
 
+  (define show-desktop
+    (lambda ()
+      ;; set input focus to root (so keygrabbers still function) and clear ewmh.
+      (icccm.focus-root)
+      (ewmh.showing-desktop #t)
+      (ewmh.active-window-set! None)))
+
   (define arrange-windows
     (lambda ()
       (let ([aws (ewmh.client-list)]
@@ -237,12 +246,9 @@
         (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
           (for-each iconify-window ows)	; should do this only on wm-init and desktop change..
           (if (null? ws)
-            (begin	; no window to show: set input focus to root (so keygrabbers still function) and clear ewmh.
-              (icccm.focus-root)
-              (ewmh.active-window-set! None))
+            (show-desktop)	; no window to show:
             (let ([vis (car ws)]		; visible window
                   [hs (cdr ws)])		; hidden windows
               (for-each iconify-window hs)
               (unless (eq? vis (ewmh.active-window))
-                (draw-active-window vis)
-                (ewmh.active-window-set! vis)))))))))
+                (draw-active-window vis)))))))))
