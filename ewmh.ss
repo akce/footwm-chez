@@ -20,6 +20,7 @@
    window-active-request!
    workarea-geometry
    calculate-workarea
+   showing-desktop
    window-close-request!
    name
    window-desktop
@@ -53,6 +54,7 @@
       _NET_CURRENT_DESKTOP
       _NET_DESKTOP_NAMES
       _NET_NUMBER_OF_DESKTOPS
+      _NET_SHOWING_DESKTOP
       _NET_WORKAREA
       _NET_WM_DESKTOP
       _NET_WM_NAME
@@ -193,7 +195,9 @@
   ;; N/A
 
   ;;;; _NET_SHOWING_DESKTOP desktop, CARDINAL/32
-  ;; TODO
+  (define showing-desktop
+    (lambda (bool)
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_SHOWING_DESKTOP) (list (if bool 1 0)) XA-CARDINAL)))
 
   ;;;;;; Other Root window messages.
 
