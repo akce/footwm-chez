@@ -310,19 +310,15 @@
   (define-record-type xanyevent
     (fields type serial send-event d wid))
 
-  (define-ftype b20 (array 20 char))
-  (define-ftype s10 (array 10 short))
-  (define-ftype l5  (array 5 long))
-
   (define-xevent XClientMessageEvent
     (xclientmessageevent	ClientMessage	33)
     ([xany		XAnyEvent]
      [message-type	atom]		;; message type
      [format		int]
      [data		(union
-                         [b b20]
-                         [s s10]
-                         [l l5])]))
+                         [b (array 20 char)]
+                         [s (array 10 short)]
+                         [l (array 5 long)])]))
 
   (define-xevent XConfigureEvent
     (xconfigureevent	ConfigureNotify	22)
