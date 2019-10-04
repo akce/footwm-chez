@@ -141,7 +141,7 @@
       (for-each
        (lambda (wid)
          (let ([d (ewmh.window-desktop wid)])
-           (if (>= d pos)
+           (if (and d (>= d pos))
                (ewmh.window-desktop-set! wid (action d)))))
        (ewmh.client-list))))
 
