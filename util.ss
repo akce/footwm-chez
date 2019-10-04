@@ -12,7 +12,7 @@
    vector-enumerate)
   (import
    (rnrs)
-   (only (chezscheme) add1 foreign-alloc foreign-free ftype-sizeof fxsll iota make-ftype-pointer sub1))
+   (only (chezscheme) add1 fxsll iota sub1))
 
   (define-syntax bitmap
     (syntax-rules ()
