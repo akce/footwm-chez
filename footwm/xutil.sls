@@ -260,12 +260,12 @@
                 (XFree (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
 
   (define get-child-windows
-    (lambda (wid)
+    (lambda ()
       (fmem ([root-return &rr window]
              [parent-return &pr window]
              [children-return &cr window*]
              [num-children &nc unsigned])
-            (let ([rc (XQueryTree (current-display) wid &rr &pr &cr &nc)])
+            (let ([rc (XQueryTree (current-display) (root) &rr &pr &cr &nc)])
               (if (and (> rc 0) (> num-children 0))
                   (let ([ptr (foreign-ref 'void* children-return 0)]
                         [len (foreign-ref 'unsigned num-children 0)])

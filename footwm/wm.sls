@@ -64,7 +64,7 @@
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
-      (let* ([allwids (xutil.get-child-windows (root))]
+      (let* ([allwids (xutil.get-child-windows)]
              [ws (filter op.manage-window? allwids)]
              [defgroup (op.get-unassigned (ewmh.desktop-names))])
         (define wid-exists?
@@ -157,7 +157,7 @@
           ;; ConfigureRequest is for a dock window, recalculate work area.
           ;; I'd prefer to handle this in the ConfigureNotify handler, but i'm not getting
           ;; those events for windows that already exist at wm-startup time.
-          (ewmh.calculate-workarea (xutil.get-child-windows (root)))
+          (ewmh.calculate-workarea (xutil.get-child-windows))
           (op.draw-active-window (ewmh.active-window))))))
 
   (define on-create-window
@@ -226,5 +226,5 @@
               ;; We don't store dockapps in client-list, but watch them so we can update struts.
               ;; Traversing all child windows is a bit brute force. Need to consider a FOOT_DOCKAPP_LIST.
               (begin
-                (ewmh.calculate-workarea (remove wid (xutil.get-child-windows (root))))
+                (ewmh.calculate-workarea (remove wid (xutil.get-child-windows)))
                 (op.draw-active-window (ewmh.active-window)))))))))
