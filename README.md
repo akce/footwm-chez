@@ -54,19 +54,40 @@ footdesk: typing the name of a desktop that does not exist and pressing ENTER wi
 
 [gtk3] (for footdesk & footwin)
 
-## Installing
+## Compiling and installing
 
-Clone the repository to *dir*.
+The library source files may be compiled as library shared object files. To compile, issue the command:
 
-Add *dir* to PATH environment variable.
+    $ make 
 
-Add *dir* to CHEZSCHEMELIBDIRS environment variable.
+The recommended install method is to use the Makefile. It provides targets to compile and install the library files, scripts, and keys config file. The locations are controlled by 4 variables:
+- PREFIX: Base directory where everything is installed. Default: ~ (User home directory).
+- LIBDIR: The base directory where footwm library files go. This is a directory that must be in CHEZSCHEMELIBDIRS. Default: $PREFIX/lib
+- BINDIR: The directory where executable scripts go. This directory should be in PATH. Default: $PREFIX/bin
+- CONFDIR: The directory where configuration files are looked for. Default: ~/.foot
 
-Copy and customise footkeys config.
+To install library source files to LIBDIR:
 
-    $ mkdir ~/.foot
-    $ cp -vi *dir*/footkeysconfig.sls.sample ~/.foot/footkeysconfig.sls
-    $ edit ~/.foot/footkeysconfig.sls
+    $ make install-src
+
+To install (and if necessary, compile) library shared-object files to LIBDIR:
+
+    $ make install-so
+
+To install the executable scripts to BINDIR. Note that the scripts are installed without their '.ss' suffix. eg, footwm.ss becomes footwm.
+
+    $ make install-bin
+
+To install library source, shared objects, and executables:
+
+    $ make install
+
+To install and customise footkeys config:
+
+    $ make install-config
+    $ $EDITOR ~/.foot/footkeysconfig.sls
+
+The *install-config* target is special in that it's not done as part of *make install* as it's a destructive operation and has the potential to overwrite a customised configuration file. It's expected that this command will only be run once ever during the first install.
 
 ### Insert into .xinitrc.
 
@@ -75,14 +96,14 @@ The snippet below creates a new [tmux] session called *wm* and runs footwm and f
 Note that you'll need to create a non-background process to stop xinit/startx from exiting.
 
 ```
-    # Footwm window manager.
-    tmux new-session -s wm -d -n footwm footwm.ss
-    # Footwm keyboard manager.
-    tmux new-window -t wm -n footkeys footkeys.ss
-    # Hide the mouse.
-    tmux new-window -t wm -n unclutter unclutter
+    # Create wm tmux session, and hide the mouse.
+    tmux new-session -s wm -d -n unclutter unclutter
     # Start the rxvt-unicode daemon.
     tmux new-window -t wm -n urxvtd urxvtd -o
+    # Footwm keyboard manager.
+    tmux new-window -t wm -n footkeys footkeys
+    # Footwm window manager.
+    tmux new-window -t wm -n footwm footwm
 
     # Non background process.
     env DISPLAY=:0 urxvt -name wm -e tmux attach-session -t wm

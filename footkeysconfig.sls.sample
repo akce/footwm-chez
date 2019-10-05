@@ -1,5 +1,13 @@
-;;;;;; Sample footkeys configuration.
-;;;;;; Copy to ~/.foot/footkeysconfig.ss and edit to suit.
+;; SPDX-License-Identifier: Unlicense
+;;
+;; Sample footkeys configuration.
+;;
+;; Copy to ~/.foot/footkeysconfig.sls and edit to suit.
+;;
+;; The Makefile provides a target to perform the copy:
+;;
+;;   $ make install-config
+
 (import
  (rnrs base)
  (only (chezscheme) system)

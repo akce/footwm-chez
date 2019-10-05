@@ -1,7 +1,6 @@
 #! /usr/bin/scheme --script
 
 (suppress-greeting #t)
-(compile-imported-libraries #t)
 (debug-on-exception #t)
 
 (import
