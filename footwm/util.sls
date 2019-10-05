@@ -1,4 +1,4 @@
-(library (util)
+(library (footwm util)
   (export
    bitmap
    case-equal?

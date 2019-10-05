@@ -1,4 +1,4 @@
-(library (shell)
+(library (footwm shell)
   (export
    main
    desktops
@@ -7,13 +7,13 @@
    (rnrs base)
    (only (chezscheme) enumerate format)
    (only (rnrs io simple) display newline)
-   (prefix (ewmh) ewmh.)
-   (prefix (hints) hints.)
-   (prefix (icccm) icccm.)
-   (prefix (op) op.)
-   (prefix (wm) wm.)
-   (globals)
-   (prefix (only (xutil) sync) xutil.))
+   (prefix (footwm ewmh) ewmh.)
+   (prefix (footwm hints) hints.)
+   (prefix (footwm icccm) icccm.)
+   (prefix (footwm op) op.)
+   (prefix (footwm wm) wm.)
+   (footwm globals)
+   (prefix (only (footwm xutil) sync) xutil.))
 
 (define main
   (lambda (argv)

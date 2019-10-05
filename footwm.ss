@@ -6,13 +6,13 @@
 
 (import
  (rnrs base)
- (prefix (ewmh) ewmh.)
- (globals)
- (prefix (hints) hints.)
- (prefix (icccm) icccm.)
- (prefix (wm) wm.)
- (xlib)
- (prefix (xutil) xutil.))
+ (prefix (footwm ewmh) ewmh.)
+ (footwm globals)
+ (prefix (footwm hints) hints.)
+ (prefix (footwm icccm) icccm.)
+ (prefix (footwm wm) wm.)
+ (footwm xlib)
+ (prefix (footwm xutil) xutil.))
 
 (current-display (xutil.open))
 (root (XDefaultRootWindow (current-display)))

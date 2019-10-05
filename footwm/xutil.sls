@@ -1,4 +1,4 @@
-(library (xutil)
+(library (footwm xutil)
   (export
    make-geometry
    geometry-x
@@ -40,10 +40,10 @@
          getenv
          lock-object unlock-object foreign-callable foreign-callable-entry-point
          foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof make-ftype-pointer)
-   (ftypes-util)
-   (globals)
-   (util)
-   (xlib))
+   (footwm ftypes-util)
+   (footwm globals)
+   (footwm util)
+   (footwm xlib))
 
   (define-record-type geometry
     (fields x y width height))

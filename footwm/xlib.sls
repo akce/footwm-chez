@@ -1,4 +1,4 @@
-(library (xlib)
+(library (footwm xlib)
   (export
    XAnyEvent
    XEvent
@@ -259,7 +259,7 @@
    window*)
   (import
    (chezscheme)
-   (util))
+   (footwm util))
 
   (define library-init
     (load-shared-object "libX11.so.6"))

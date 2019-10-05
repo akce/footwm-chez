@@ -1,4 +1,4 @@
-(library (menugtk)
+(library (footwm menugtk)
   (export
    make-table
    table?
@@ -9,11 +9,11 @@
   (import
    (rnrs)
    (only (chezscheme) enumerate)
-   (ftypes-util)
-   (gobject)
-   (gtk)
-   (irregex)
-   (util))
+   (footwm ftypes-util)
+   (footwm gobject)
+   (footwm gtk)
+   (footwm util)
+   (irregex))
 
   (define-record-type table
     (fields headers types rows))

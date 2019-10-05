@@ -1,4 +1,4 @@
-(library (gobject)
+(library (footwm gobject)
   (export
    gcallback
    gchar
@@ -28,7 +28,7 @@
    )
   (import
    (chezscheme)
-   (only (util) bitmap))
+   (only (footwm util) bitmap))
 
   (define lib-load
     (begin

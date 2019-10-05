@@ -3,10 +3,10 @@
 (import
  (rnrs base)
  (only (chezscheme) system)
- (keys)
- (prefix (ewmh) ewmh.)
- (prefix (hints) hints.)
- (prefix (op) op.))
+ (footwm keys)
+ (prefix (footwm ewmh) ewmh.)
+ (prefix (footwm hints) hints.)
+ (prefix (footwm op) op.))
 
 (define terminal
   (let ([t "urxvtc"])

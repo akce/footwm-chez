@@ -1,4 +1,4 @@
-(library (globals)
+(library (footwm globals)
   (export
    current-display
    root

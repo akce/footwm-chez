@@ -1,5 +1,5 @@
 ;; ftypes (chez-ffi) utility functions.
-(library (ftypes-util)
+(library (footwm ftypes-util)
   (export
    fill-memory/ulongs
    fmem

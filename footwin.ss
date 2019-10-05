@@ -6,14 +6,14 @@
 
 (import
  (chezscheme)
- (prefix (ewmh) ewmh.)
- (globals)
- (gobject)
- (prefix (icccm) icccm.)
- (menugtk)
- (prefix (op) op.)
- (xlib)
- (prefix (xutil) xutil.))
+ (prefix (footwm ewmh) ewmh.)
+ (footwm globals)
+ (footwm gobject)
+ (prefix (footwm icccm) icccm.)
+ (footwm menugtk)
+ (prefix (footwm op) op.)
+ (footwm xlib)
+ (prefix (footwm xutil) xutil.))
 
 (current-display (xutil.open))
 (root (XDefaultRootWindow (current-display)))

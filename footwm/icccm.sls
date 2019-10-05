@@ -1,7 +1,7 @@
 ;;;; X - Inter Client Communication Conventions (Manual) support.
 ;;;; Reference:
 ;;;;	https://www.x.org/docs/ICCCM/icccm.pdf
-(library (icccm)
+(library (footwm icccm)
   (export
    init-atoms
    atom-ref
@@ -96,11 +96,11 @@
    (only (chezscheme)
      inexact->exact
      define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
-   (only (ftypes-util) fmem)
-   (globals)
-   (prefix (util) util.)
-   (xlib)
-   (prefix (xutil) xutil.))
+   (only (footwm ftypes-util) fmem)
+   (footwm globals)
+   (prefix (footwm util) util.)
+   (footwm xlib)
+   (prefix (footwm xutil) xutil.))
 
   (define atom-list
     '(WM_CHANGE_STATE

@@ -1,4 +1,4 @@
-(library (wm)
+(library (footwm wm)
   (export
    init-desktops
    init-windows
@@ -6,14 +6,14 @@
   (import
    (rnrs)
    (only (chezscheme) format)
-   (globals)
-   (only (util) case-equal?)
-   (xlib)
-   (prefix (ewmh) ewmh.)
-   (prefix (hints) hints.)
-   (prefix (icccm) icccm.)
-   (prefix (op) op.)
-   (prefix (xutil) xutil.))
+   (footwm globals)
+   (only (footwm util) case-equal?)
+   (footwm xlib)
+   (prefix (footwm ewmh) ewmh.)
+   (prefix (footwm hints) hints.)
+   (prefix (footwm icccm) icccm.)
+   (prefix (footwm op) op.)
+   (prefix (footwm xutil) xutil.))
 
   (define main
     (lambda ()

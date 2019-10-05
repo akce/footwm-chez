@@ -1,4 +1,4 @@
-(library (keys)
+(library (footwm keys)
   (export
    alt
    caps-lock
@@ -13,10 +13,10 @@
    (rnrs)
    (only (chezscheme)
          copy-environment eval format load logior make-parameter scheme-environment set-top-level-value!)
-   (globals)
-   (only (util) case-equal? list-combinations* remove*)
-   (xlib)
-   (prefix (xutil) xutil.))
+   (footwm globals)
+   (only (footwm util) case-equal? list-combinations* remove*)
+   (footwm xlib)
+   (prefix (footwm xutil) xutil.))
 
   ;;; Set default modifier keys.
   (define alt

@@ -1,5 +1,5 @@
 ;; Foot specific wm hints and properties support.
-(library (hints)
+(library (footwm hints)
   (export
    desktop-add-set!
    desktop-delete-set!
@@ -12,9 +12,9 @@
   (import
    (rnrs base)
    (only (chezscheme) define-values)
-   (globals)
-   (prefix (op) op.)
-   (prefix (xutil) xutil.))
+   (footwm globals)
+   (prefix (footwm op) op.)
+   (prefix (footwm xutil) xutil.))
 
   (define-values
       (init-atoms atom-ref) (xutil.make-atom-manager '(FOOT_COMMANDV)))

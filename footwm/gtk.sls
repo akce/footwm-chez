@@ -1,4 +1,4 @@
-(library (gtk)
+(library (footwm gtk)
   (export
    gdkeventkey*
 
@@ -75,9 +75,9 @@
    gtk-main-quit-addr)
   (import
    (chezscheme)
-   (ftypes-util)
-   (gobject)
-   (only (util) enum))
+   (footwm ftypes-util)
+   (footwm gobject)
+   (only (footwm util) enum))
 
   (define lib-load
     (load-shared-object "libgtk-3.so"))

@@ -1,5 +1,5 @@
 ;; Window, desktop, and layout operations.
-(library (op)
+(library (footwm op)
   (export
    manage-window?
    ;; Window operations.
@@ -22,12 +22,12 @@
   (import
    (rnrs)
    (only (chezscheme) add1 enumerate format sub1)
-   (globals)
-   (prefix (ewmh) ewmh.)
-   (prefix (icccm) icccm.)
-   (prefix (util) util.)
-   (xlib)
-   (prefix (xutil) xutil.))
+   (footwm globals)
+   (prefix (footwm ewmh) ewmh.)
+   (prefix (footwm icccm) icccm.)
+   (prefix (footwm util) util.)
+   (footwm xlib)
+   (prefix (footwm xutil) xutil.))
 
   ;;;;;; Window operations.
 

@@ -65,8 +65,8 @@ Add *dir* to CHEZSCHEMELIBDIRS environment variable.
 Copy and customise footkeys config.
 
     $ mkdir ~/.foot
-    $ cp -vi *dir*/footkeysconfig.ss.sample ~/.foot/footkeysconfig.ss
-    $ edit ~/.foot/footkeysconfig.ss
+    $ cp -vi *dir*/footkeysconfig.sls.sample ~/.foot/footkeysconfig.sls
+    $ edit ~/.foot/footkeysconfig.sls
 
 ### Insert into .xinitrc.
 

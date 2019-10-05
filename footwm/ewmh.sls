@@ -2,7 +2,7 @@
 ;; As at version 1.5.
 ;; See:
 ;;    https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html
-(library (ewmh)
+(library (footwm ewmh)
   (export
    init-atoms
    atom-ref
@@ -43,9 +43,9 @@
   (import
    (rnrs)
    (only (chezscheme) define-values format)
-   (prefix (xutil) xutil.)
-   (globals)
-   (xlib))
+   (prefix (footwm xutil) xutil.)
+   (footwm globals)
+   (footwm xlib))
 
   (define atom-list
     '(_NET_ACTIVE_WINDOW
