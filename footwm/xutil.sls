@@ -201,8 +201,9 @@
       (fmem ([atr &atr atom]		;; atr = actual type return
              [afr &afr int]		;; afr = actual format return
              [nir &nir unsigned-long]	;; nir = number of items return
-             [bar &bar unsigned-long]	;; bar = bytes after return
-             [pr  &pr void*])		;; pr  = property return
+             [bar &bar unsigned-long])	;; bar = bytes after return
+        ;; pr  = property return
+        ;; declared outside fmem as ownership is transferred to caller.
         (let* ([pr (foreign-alloc (ftype-sizeof void*))]
                [&pr (make-ftype-pointer void* pr)]
                [rc (XGetWindowProperty (current-display) wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
@@ -215,6 +216,7 @@
                     (begin
                       ;; nothing back, free memory and return.
                       (XFree (foreign-ref 'void* pr 0))
+                      (unlock-object pr)
                       (foreign-free pr)
                       #f)))
               ;; failure: return false.
