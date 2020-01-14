@@ -153,11 +153,12 @@
             (for-each
              (lambda (wid)
                (let ([wd (ewmh.window-desktop wid)])
-                 (cond
-                  [(= wd index)
-                   (ewmh.window-desktop-set! wid c)]
-                  [(< wd index)
-                   (ewmh.window-desktop-set! wid (add1 wd))])
+                 (if wd
+                   (cond
+                    [(= wd index)
+                     (ewmh.window-desktop-set! wid c)]
+                    [(< wd index)
+                     (ewmh.window-desktop-set! wid (add1 wd))]))
                   #| else ignore, only windows at or below index need adjustment.|#))
              (ewmh.client-list))
             (let* ([names (ewmh.desktop-names)]
