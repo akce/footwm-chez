@@ -65,6 +65,7 @@
       _NET_WM_STRUT
       _NET_WM_STRUT_PARTIAL
       _NET_WM_WINDOW_TYPE
+      _NET_WM_WINDOW_TYPE_DIALOG
       _NET_WM_WINDOW_TYPE_DOCK
       _NET_WM_WINDOW_TYPE_NORMAL))
 
@@ -273,6 +274,7 @@
         (cond
          [(null? types) #t]
          [(memq (atom-ref '_NET_WM_WINDOW_TYPE_NORMAL) types) #t]
+         [(memq (atom-ref '_NET_WM_WINDOW_TYPE_DIALOG) types) #t]
          [else #f]))))
 
   ;;;; _NET_WM_STATE ATOM[]/32
