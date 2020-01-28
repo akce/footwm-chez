@@ -115,7 +115,7 @@
       WM_STATE
       WM_TAKE_FOCUS))
   (define-values
-      (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
+      (init-atoms atom-ref) (make-atom-manager atom-list))
 
   ;;;;;; ICCCM 4.1.2 Client properties.
 
@@ -344,7 +344,7 @@
   ;;;; ICCCM 4.1.2.7 WM_PROTOCOLS
   (define get-wm-protocols
     (lambda (wid)
-      (xutil.property->ulongs wid (atom-ref 'WM_PROTOCOLS) XA-ATOM)))
+      (xutil.property->ulongs wid (atom-ref 'WM_PROTOCOLS) (x-atom-ref 'ATOM))))
 
   (define has-wm-protocol?
     (lambda (wid proto-atom)

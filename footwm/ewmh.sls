@@ -69,7 +69,7 @@
       _NET_WM_WINDOW_TYPE_NORMAL))
 
   (define-values
-      (init-atoms atom-ref) (xutil.make-atom-manager atom-list))
+      (init-atoms atom-ref) (make-atom-manager atom-list))
 
   ;; Return first (and likely only) item in list or false if list is empty.
   (define first-or-false
@@ -87,12 +87,12 @@
 
   (define client-list
     (lambda ()
-      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) XA-WINDOW)))
+      (xutil.property->ulongs (root) (atom-ref '_NET_CLIENT_LIST) (x-atom-ref 'WINDOW))))
 
   (define client-list-set!
     (lambda (wids)
       ;; return as list as lists have more builtin operations.
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids XA-WINDOW)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_CLIENT_LIST) wids (x-atom-ref 'WINDOW))))
 
   ;;;; _NET_CLIENT_LIST_STACKING WINDOW[]/32
   ;; N/A (Does not seem to be used by any taskbar.)
@@ -101,7 +101,7 @@
 
   (define desktop-count
     (lambda ()
-      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_NUMBER_OF_DESKTOPS) (x-atom-ref 'CARDINAL)))))
 
   (define desktop-count-set!
     (lambda (number)
@@ -117,7 +117,7 @@
 
   (define current-desktop
     (lambda ()
-      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CURRENT_DESKTOP) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_CURRENT_DESKTOP) (x-atom-ref 'CARDINAL)))))
 
   (define current-desktop-set!
     (lambda (number)
@@ -143,11 +143,11 @@
 
   (define active-window
     (lambda ()
-      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) XA-WINDOW))))
+      (first-or-false (xutil.property->ulongs (root) (atom-ref '_NET_ACTIVE_WINDOW) (x-atom-ref 'WINDOW)))))
 
   (define active-window-set!
     (lambda (wid)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_ACTIVE_WINDOW) (list wid) XA-WINDOW)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_ACTIVE_WINDOW) (list wid) (x-atom-ref 'WINDOW))))
 
   ;; client: Request WM activate window.
   (define window-active-request!
@@ -158,12 +158,12 @@
   ;; TODO
   (define workarea-geometry
     (lambda ()
-      (let ([gl (xutil.property->ulongs (root) (atom-ref '_NET_WORKAREA) XA-CARDINAL)])
+      (let ([gl (xutil.property->ulongs (root) (atom-ref '_NET_WORKAREA) (x-atom-ref 'CARDINAL))])
         (xutil.make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3)))))
 
   (define workarea-set!
     (lambda (x y w h)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_WORKAREA) (list x y w h) XA-CARDINAL)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_WORKAREA) (list x y w h) (x-atom-ref 'CARDINAL))))
 
   (define calculate-workarea
     (lambda (wids)
@@ -197,7 +197,7 @@
   ;;;; _NET_SHOWING_DESKTOP desktop, CARDINAL/32
   (define showing-desktop
     (lambda (bool)
-      (xutil.ulongs-property-set! (root) (atom-ref '_NET_SHOWING_DESKTOP) (list (if bool 1 0)) XA-CARDINAL)))
+      (xutil.ulongs-property-set! (root) (atom-ref '_NET_SHOWING_DESKTOP) (list (if bool 1 0)) (x-atom-ref 'CARDINAL))))
 
   ;;;;;; Other Root window messages.
 
@@ -243,7 +243,7 @@
   ;; Get the desktop number for the window.
   (define window-desktop
     (lambda (wid)
-      (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_DESKTOP) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_DESKTOP) (x-atom-ref 'CARDINAL)))))
 
   ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
   (define window-desktop-set!
@@ -258,7 +258,7 @@
   ;;;; _NET_WM_WINDOW_TYPE ATOM[]/32
   (define get-wm-window-type
     (lambda (wid)
-      (xutil.property->ulongs wid (atom-ref '_NET_WM_WINDOW_TYPE) XA-ATOM)))
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_WINDOW_TYPE) (x-atom-ref 'ATOM))))
 
   (define dock-window?
     (lambda (wid)
@@ -280,11 +280,11 @@
 
   (define get-net-wm-state
     (lambda (wid)
-      (xutil.property->ulongs wid (atom-ref '_NET_WM_STATE) XA-ATOM)))
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_STATE) (x-atom-ref 'ATOM))))
 
   (define net-wm-state-set!
     (lambda (wid values)
-      (xutil.ulongs-property-set! wid (atom-ref '_NET_WM_STATE) values XA-ATOM)))
+      (xutil.ulongs-property-set! wid (atom-ref '_NET_WM_STATE) values (x-atom-ref 'ATOM))))
 
   (define on-client-state
     (lambda (wid ev)
@@ -331,12 +331,12 @@
   ;;;; _NET_WM_STRUT left, right, top, bottom, CARDINAL[4]/32
   (define get-wm-strut
     (lambda (wid)
-      (xutil.property->ulongs wid (atom-ref '_NET_WM_STRUT) XA-CARDINAL)))
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_STRUT) (x-atom-ref 'CARDINAL))))
 
   ;;;; _NET_WM_STRUT_PARTIAL left, right, top, bottom, left_start_y, left_end_y,right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,bottom_end_x,CARDINAL[12]/32
   (define get-wm-strut-partial
     (lambda (wid)
-      (xutil.property->ulongs wid (atom-ref '_NET_WM_STRUT_PARTIAL) XA-CARDINAL)))
+      (xutil.property->ulongs wid (atom-ref '_NET_WM_STRUT_PARTIAL) (x-atom-ref 'CARDINAL))))
 
   (define get-strut
     (lambda (wid)
@@ -355,7 +355,7 @@
 
   (define pid
     (lambda (wid)
-      (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_PID) XA-CARDINAL))))
+      (first-or-false (xutil.property->ulongs wid (atom-ref '_NET_WM_PID) (x-atom-ref 'CARDINAL)))))
 
   ;;;; _NET_WM_HANDLED_ICONS
   ;; N/A

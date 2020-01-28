@@ -23,8 +23,6 @@
    send-message-cardinal
    text-property-set!
 
-   make-atom-manager
-
    resize-window)
   (import
    (rnrs)
@@ -54,29 +52,11 @@
   (define-record-type window-attributes
     (fields geom override-redirect map-state))
 
-  ;;;; basic atom manager.
-  ;; Just a very thin wrapper around hash tables.
-  (define make-atom-manager
-    (lambda (atom-list)
-      (define atoms (make-eq-hashtable))
-      (define init-atoms
-        ;; initialise atoms.
-        ;; For those atoms that require display so can only be initialised after a connection to X is made.
-        (lambda ()
-          (for-each
-           (lambda (a)
-             (hashtable-set! atoms a (x-intern-atom (symbol->string a) #f)))
-           atom-list)))
-      (define atom-ref
-        (lambda (a)
-          (hashtable-ref atoms a #f)))
-      (values init-atoms atom-ref)))
-
   (define cardinal-set!
     (lambda (wid atomprop value)
       (fmem ([num &num unsigned-32])
             (foreign-set! 'unsigned-32 num 0 value)
-            (x-change-property wid atomprop XA-CARDINAL 32 0 num 1))))
+            (x-change-property wid atomprop (x-atom-ref 'CARDINAL) 32 0 num 1))))
 
   (define ulongs-property-set!
     (lambda (wid atomprop ulongs typeatom)

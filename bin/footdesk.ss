@@ -14,6 +14,7 @@
 (current-display (x-open-display))
 (root (x-default-root-window))
 
+(x-init-atoms)
 (ewmh.init-atoms)
 (hints.init-atoms)
 

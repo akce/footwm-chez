@@ -17,7 +17,7 @@
    (prefix (footwm xutil) xutil.))
 
   (define-values
-      (init-atoms atom-ref) (xutil.make-atom-manager '(FOOT_COMMANDV)))
+      (init-atoms atom-ref) (make-atom-manager '(FOOT_COMMANDV)))
 
   (define desktop-add-set!
     (lambda (name index)

@@ -3,6 +3,8 @@
    current-display
    root
 
+   make-atom-manager
+
    XAnyEvent
    XEvent
 
@@ -136,9 +138,7 @@
    XWindowAttributes
    XWindowChanges
 
-   XA-ATOM
-   XA-CARDINAL
-   XA-WINDOW
+   x-init-atoms x-atom-ref
 
    Success
    BadAccess
@@ -273,6 +273,24 @@
 
   (define root
     (make-parameter #f))
+
+  ;;;; basic atom manager.
+  ;; Just a very thin wrapper around hash tables.
+  (define make-atom-manager
+    (lambda (atom-list)
+      (define atoms (make-eq-hashtable))
+      (define init-atoms
+        ;; initialise atoms.
+        ;; For those atoms that require display so can only be initialised after a connection to X is made.
+        (lambda ()
+          (for-each
+           (lambda (a)
+             (hashtable-set! atoms a (x-intern-atom (symbol->string a) #f)))
+           atom-list)))
+      (define atom-ref
+        (lambda (a)
+          (hashtable-ref atoms a #f)))
+      (values init-atoms atom-ref)))
 
   (define-syntax define-xevent
     (syntax-rules ()
@@ -479,10 +497,12 @@
      [stack-mode	int]))
 
   ;; X atoms from Xatom.h
-  (enum XA
-        (XA-ATOM 4)
-        (XA-CARDINAL 6)
-        (XA-WINDOW 33))
+  (define atom-list
+    '(ATOM
+       CARDINAL
+       WINDOW))
+  (define-values
+      (x-init-atoms x-atom-ref) (make-atom-manager atom-list))
 
   ;; Error codes. From X.h
   (enum error-codes
