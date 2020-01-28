@@ -6,15 +6,13 @@
 (import
  (chezscheme)
  (prefix (footwm ewmh) ewmh.)
- (footwm globals)
  (footwm gobject)
  (prefix (footwm hints) hints.)
  (footwm menugtk)
- (footwm xlib)
- (prefix (footwm xutil) xutil.))
+ (footwm xlib))
 
-(current-display (xutil.open))
-(root (XDefaultRootWindow (current-display)))
+(current-display (x-open-display))
+(root (x-default-root-window))
 
 (ewmh.init-atoms)
 (hints.init-atoms)
@@ -41,18 +39,18 @@
       ;; activation command
       (lambda (row)
         (ewmh.current-desktop-request! (list-ref row 2))
-        (xutil.sync))
+        (x-sync))
       ;; creation command
       (lambda (name)
         ;; Create a new desktop.
         (hints.desktop-add-set! name 0)
-        (xutil.sync))
+        (x-sync))
       ;; delete command
       (lambda (rows)
         (for-each
          (lambda (row)
            (hints.desktop-delete-set! (list-ref row 2)))
          rows)
-        (xutil.sync)))))
+        (x-sync)))))
 
 (main)

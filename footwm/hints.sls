@@ -12,8 +12,8 @@
   (import
    (rnrs base)
    (only (chezscheme) define-values)
-   (footwm globals)
    (prefix (footwm op) op.)
+   (footwm xlib)
    (prefix (footwm xutil) xutil.))
 
   (define-values

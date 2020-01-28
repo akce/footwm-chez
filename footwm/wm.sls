@@ -6,7 +6,6 @@
   (import
    (rnrs)
    (only (chezscheme) format)
-   (footwm globals)
    (only (footwm util) case-equal?)
    (footwm xlib)
    (prefix (footwm ewmh) ewmh.)
@@ -44,8 +43,8 @@
                StructureNotify		; Structure = geometry, border, stacking info for a window.
                SubstructureNotify	; Sub = structure notify for child windows.
                SubstructureRedirect)])	; Redirect child window change requests to this client.
-          (xutil.select-input (root) mask)
-          (xutil.sync)
+          (x-select-input (root) mask)
+          (x-sync)
           (xutil.install-error-handler orig)
           (unless installed
             (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running.")))))))
@@ -64,7 +63,7 @@
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
-      (let* ([allwids (xutil.get-child-windows)]
+      (let* ([allwids (x-query-tree)]
              [ws (filter op.manage-window? allwids)]
              [defgroup (op.get-unassigned (ewmh.desktop-names))])
         (define wid-exists?
@@ -110,7 +109,7 @@
     (lambda (ev)
       (let ([wid (xanyevent-wid (xclientmessageevent-xany ev))]
             [type (xclientmessageevent-message-type ev)])
-        (display (format "#x~x ClientMessage ~a ~a~n" wid type (xutil.atom-name type)))
+        (display (format "#x~x ClientMessage ~a ~a~n" wid type (x-get-atom-name type)))
         (case-equal? type
          [(ewmh.atom-ref '_NET_ACTIVE_WINDOW)
           (op.activate-window wid)]
@@ -127,7 +126,7 @@
               (op.banish-window wid))]
          [(icccm.atom-ref 'WM_PROTOCOLS)
           (let ([a (list-ref (xclientmessageevent-data ev) 0)])
-            (display (format "#x~x WM_PROTOCOLS -> ~a ~a~n" wid a (xutil.atom-name a))))]
+            (display (format "#x~x WM_PROTOCOLS -> ~a ~a~n" wid a (x-get-atom-name a))))]
          [else
           (display (format "#x~x Unknown ClientMessage message type~n" wid))]))))
 
@@ -157,7 +156,7 @@
           ;; ConfigureRequest is for a dock window, recalculate work area.
           ;; I'd prefer to handle this in the ConfigureNotify handler, but i'm not getting
           ;; those events for windows that already exist at wm-startup time.
-          (ewmh.calculate-workarea (xutil.get-child-windows))
+          (ewmh.calculate-workarea (x-query-tree))
           (op.draw-active-window (ewmh.active-window))))))
 
   (define on-create-window
@@ -197,7 +196,7 @@
     (lambda (ev)
       (let ([wid (xanyevent-wid (xpropertyevent-xany ev))]
             [atom (xpropertyevent-propatom ev)])
-        (display (format "#x~x PropertyNotify ~a~n" wid (xutil.atom-name atom)))
+        (display (format "#x~x PropertyNotify ~a~n" wid (x-get-atom-name atom)))
         (when (hints.command? atom)
          (hints.on-command wid)))))
 
@@ -226,5 +225,5 @@
               ;; We don't store dockapps in client-list, but watch them so we can update struts.
               ;; Traversing all child windows is a bit brute force. Need to consider a FOOT_DOCKAPP_LIST.
               (begin
-                (ewmh.calculate-workarea (remove wid (xutil.get-child-windows)))
+                (ewmh.calculate-workarea (remove wid (x-query-tree)))
                 (op.draw-active-window (ewmh.active-window)))))))))

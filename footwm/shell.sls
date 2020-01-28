@@ -12,8 +12,7 @@
    (prefix (footwm icccm) icccm.)
    (prefix (footwm op) op.)
    (prefix (footwm wm) wm.)
-   (footwm globals)
-   (prefix (only (footwm xutil) sync) xutil.))
+   (footwm xlib))
 
 (define main
   (lambda (argv)
@@ -47,7 +46,7 @@
         (display "command not understood. showing help.")
         (newline)
         (help binary)])
-      (xutil.sync))))
+      (x-sync))))
 
 (define help
   (lambda (binary)

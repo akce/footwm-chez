@@ -13,7 +13,6 @@
    (rnrs)
    (only (chezscheme)
          copy-environment eval format load logior make-parameter scheme-environment set-top-level-value!)
-   (footwm globals)
    (only (footwm util) case-equal? list-combinations* remove*)
    (footwm xlib)
    (prefix (footwm xutil) xutil.))
@@ -51,7 +50,7 @@
 
   (define grab-key
     (lambda (keycode modifier-mask)
-      (XGrabKey (current-display) keycode modifier-mask (root) #f GrabModeAsync GrabModeAsync)))
+      (x-grab-key keycode modifier-mask (root) #f GrabModeAsync GrabModeAsync)))
 
   (define make-mod-combos
     (lambda (key-required-mods)
@@ -64,14 +63,14 @@
 
   (define ungrab-keys
     (lambda ()
-      (XUngrabKey (current-display) AnyKey AnyModifier (root))))
+      (x-ungrab-key AnyKey AnyModifier (root))))
 
   (define keystrsym->keycode
     (lambda (keystrsym)
-      (let ([keysym (XStringToKeysym (symbol->string keystrsym))])
+      (let ([keysym (x-string-to-keysym (symbol->string keystrsym))])
         (if (eq? keysym NoSymbol)
             #f
-            (let ([keycode (XKeysymToKeycode (current-display) keysym)])
+            (let ([keycode (x-keysym-to-keycode keysym)])
               (if (eq? keycode 0)
                   #f
                   keycode))))))
@@ -101,7 +100,7 @@
   (define main
     (lambda (config-file)
       (xutil.install-default-error-handler)
-      (xutil.select-input (root) KeyPress)
+      (x-select-input (root) KeyPress)
       (load-config config-file)
       (run)))
 

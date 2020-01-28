@@ -44,7 +44,6 @@
    (rnrs)
    (only (chezscheme) define-values format)
    (prefix (footwm xutil) xutil.)
-   (footwm globals)
    (footwm xlib))
 
   (define atom-list
@@ -293,7 +292,7 @@
             [prop1 (list-ref (xclientmessageevent-data ev) 1)]
             [prop2 (list-ref (xclientmessageevent-data ev) 2)]
             #;[source (list-ref (xclientmessageevent-data ev) 3)])
-        (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (xutil.atom-name prop1) prop2 (xutil.atom-name prop2))))))
+        (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (x-get-atom-name prop1) prop2 (x-get-atom-name prop2))))))
 
   (define add-net-wm-states-state!
     (lambda (wid a)

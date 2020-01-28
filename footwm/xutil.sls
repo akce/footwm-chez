@@ -12,14 +12,9 @@
    window-attributes-override-redirect
    window-attributes-map-state
 
-   atom-name
    cardinal-set!
-   get-child-windows
    get-next-event
    get-window-attributes
-   open
-   sync
-   select-input
    install-default-error-handler
    install-error-handler
    property->string
@@ -41,7 +36,6 @@
          lock-object unlock-object foreign-callable foreign-callable-entry-point
          foreign-alloc foreign-free foreign-ref foreign-set! ftype-pointer-address ftype-ref ftype-set! ftype-sizeof make-ftype-pointer)
    (footwm ftypes-util)
-   (footwm globals)
    (footwm util)
    (footwm xlib))
 
@@ -62,36 +56,6 @@
   (define-record-type window-attributes
     (fields geom override-redirect map-state))
 
-  (define atom-name
-    (lambda (a)
-      ;; Unset atom fields from messages will be zero, so account for that here as a convenience to print functions.
-      (if (> a 0)
-        (let* ([ptr (XGetAtomName (current-display) a)]
-               [str (ptr->string ptr)])
-          (XFree ptr)
-          str)
-        "")))
-
-  ;; wraps XOpenDisplay so the connection string is optional.
-  (define open
-    (case-lambda
-     [()
-      ;; XOpenDisplay will crash unless it has a valid DISPLAY.
-      (unless (getenv "DISPLAY")
-        (raise (condition (make-error) (make-message-condition "DISPLAY not given. Exiting.."))))
-      (open #f)]
-     [(s) (XOpenDisplay s)]))
-
-  ;; wraps XSync so discard boolean is optional.
-  (define sync
-    (case-lambda
-     [() (sync #f)]
-     [(s) (XSync (current-display) s)]))
-
-  (define select-input
-    (lambda (wid mask)
-      (XSelectInput (current-display) wid mask)))
-
   ;; Installs a simple one-line printing error handler.
   (define install-default-error-handler
     (lambda ()
@@ -106,7 +70,7 @@
         (when previous-lambda
           (unlock-object previous-lambda)
           (set! previous-lambda #f))
-        (XSetErrorHandler
+        (x-set-error-handler
          (if (procedure? handler)
              ;; Wrap the lambda for convenience:
              ;; - converts c event struct to scheme record
@@ -143,7 +107,7 @@
         (lambda ()
           (for-each
            (lambda (a)
-             (hashtable-set! atoms a (XInternAtom (current-display) (symbol->string a) #f)))
+             (hashtable-set! atoms a (x-intern-atom (symbol->string a) #f)))
            atom-list)))
       (define atom-ref
         (lambda (a)
@@ -154,42 +118,42 @@
     (lambda (wid atomprop value)
       (fmem ([num &num unsigned-32])
             (foreign-set! 'unsigned-32 num 0 value)
-            (XChangeProperty (current-display) wid atomprop XA-CARDINAL 32 0 num 1))))
+            (x-change-property wid atomprop XA-CARDINAL 32 0 num 1))))
 
   (define ulongs-property-set!
     (lambda (wid atomprop ulongs typeatom)
       (let ([len (length ulongs)])
         (fmem ([mem &mem unsigned-long len])
           (fill-memory/ulongs mem ulongs)
-          (XChangeProperty (current-display) wid atomprop typeatom 32 0 mem len)))))
+          (x-change-property wid atomprop typeatom 32 0 mem len)))))
 
   (define property->string
     (lambda (wid propatom)
       (fmem ([tp &tp XTextProperty])
-            (let ([rc (XGetTextProperty (current-display) wid &tp propatom)])
+            (let ([rc (x-get-text-property wid &tp propatom)])
               (if (> rc 0)
                   ;; success
                   (let* (#;[enc (ftype-ref XTextProperty (encoding) &tp)]
                          #;[num (ftype-ref XTextProperty (nitems) &tp)]
                          [addr (ftype-pointer-address (ftype-ref XTextProperty (value) &tp))]
                          [str (ptr->string addr)])
-                    #;(display (format "encoding ~d:~s nitems ~d ~n" enc (atom-name (current-display) enc) num))
-                    (XFree addr)
+                    #;(display (format "encoding ~d:~s nitems ~d ~n" enc (x-get-atom-name enc) num))
+                    (x-free addr)
                     str)
                   #f)))))
 
   (define property->string*
     (lambda (wid propatom)
       (fmem ([tp &tp XTextProperty])
-            (let ([rc (XGetTextProperty (current-display) wid &tp propatom)])
+            (let ([rc (x-get-text-property wid &tp propatom)])
               (if (> rc 0)
                   ;; success
                   (fmem ([nitems &nitems int]
                          [text-list &text-list u8**])
-                        (let* ([stat (Xutf8TextPropertyToTextList (current-display) &tp &text-list &nitems)]
+                        (let* ([stat (xutf8-text-property-to-text-list &tp &text-list &nitems)]
                                [res (ptr->utf8s text-list nitems)])
                           ;; TODO text-list foreign-ref is also calc'd in text-list->utf8s. Need to re-org.
-                          (XFreeStringList (foreign-ref 'void* text-list 0))
+                          (x-free-string-list (foreign-ref 'void* text-list 0))
                           res))
                   (list))))))
 
@@ -206,7 +170,7 @@
         ;; declared outside fmem as ownership is transferred to caller.
         (let* ([pr (foreign-alloc (ftype-sizeof void*))]
                [&pr (make-ftype-pointer void* pr)]
-               [rc (XGetWindowProperty (current-display) wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
+               [rc (x-get-window-property wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
           (if (= rc 0)
               ;; maybe success: make sure there was something returned.
               (let ([len (foreign-ref 'unsigned-long nir 0)])
@@ -215,7 +179,7 @@
                     (list pr len)
                     (begin
                       ;; nothing back, free memory and return.
-                      (XFree (foreign-ref 'void* pr 0))
+                      (x-free (foreign-ref 'void* pr 0))
                       (unlock-object pr)
                       (foreign-free pr)
                       #f)))
@@ -232,7 +196,7 @@
                    [*ptr (foreign-ref 'void* ptr 0)]
                    [len (list-ref ptrlen 1)]
                    [nums (ptr->ulongs *ptr len)])
-              (XFree *ptr)
+              (x-free *ptr)
               (foreign-free ptr)
               nums)
             ;; failure: return empty.
@@ -249,37 +213,22 @@
               (ftype-set! XEvent (client-message format) &ev 32)
               (ftype-set! XEvent (client-message data l 0) &ev value)
               (ftype-set! XEvent (client-message data l 1) &ev 0)	;; zero out.
-              (XSendEvent (current-display) root #f event-mask &ev)))))
+              (x-send-event root #f event-mask &ev)))))
 
   (define text-property-set!
     (lambda (wid str* propatom)
       (fmem ([tp &tp XTextProperty])
             (let ([u8mem (str*->u8** str*)])
-              (let ([rc (Xutf8TextListToTextProperty (current-display) u8mem (length str*) UTF8String &tp)])
+              (let ([rc (xutf8-text-list-to-text-property u8mem (length str*) UTF8String &tp)])
                 (if (fx= rc 0)
-                    (XSetTextProperty (current-display) wid &tp propatom))
+                    (x-set-text-property wid &tp propatom))
                 (free/u8** u8mem (length str*))
-                (XFree (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
-
-  (define get-child-windows
-    (lambda ()
-      (fmem ([root-return &rr window]
-             [parent-return &pr window]
-             [children-return &cr window*]
-             [num-children &nc unsigned])
-            (let ([rc (XQueryTree (current-display) (root) &rr &pr &cr &nc)])
-              (if (and (> rc 0) (> num-children 0))
-                  (let ([ptr (foreign-ref 'void* children-return 0)]
-                        [len (foreign-ref 'unsigned num-children 0)])
-                    (let ([wids (ptr->ulongs ptr len)])
-                      (XFree ptr)
-                      wids))
-                  '())))))
+                (x-free (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
 
   (define get-window-attributes
     (lambda (wid)
       (fmem ([wa &wa XWindowAttributes])
-            (let ([rc (XGetWindowAttributes (current-display) wid &wa)])
+            (let ([rc (x-get-window-attributes wid &wa)])
               (if (= rc 0)
                   ;; failure.
                   #f
@@ -294,7 +243,7 @@
   (define get-next-event
     (lambda ()
       (fmem ([ev &ev XEvent])
-        (XNextEvent (current-display) &ev)
+        (x-next-event &ev)
         (make-event &ev))))
 
   (define-syntax ftype-fields
@@ -381,6 +330,6 @@
           (when (geometry-height geo)
             (ftype-set! XWindowChanges (height) &changes (geometry-height geo))
             (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))
-          (XConfigureWindow (current-display) wid change-mask &changes)
-          #;(display (format "#x~x XConfigureWindow change-mask #b~b~n" wid change-mask))))))
+          (x-configure-window wid change-mask &changes)
+          #;(display (format "#x~x x-configure-window change-mask #b~b~n" wid change-mask))))))
 )

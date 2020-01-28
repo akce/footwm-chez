@@ -5,9 +5,7 @@
 (import
  (rnrs base)
  (only (chezscheme) new-cafe)
- (footwm globals)
  (footwm xlib)
- (prefix (footwm xutil) xutil.)
  ;; Import all local modules so they're accessable from the command line.
  (prefix (footwm ewmh) ewmh.)
  (prefix (footwm hints) hints.)
@@ -16,8 +14,8 @@
  (prefix (footwm shell) shell.)
  (prefix (footwm wm) wm.))
 
-(current-display (xutil.open))
-(root (XDefaultRootWindow (current-display)))
+(current-display (x-open-display))
+(root (x-default-root-window))
 
 (icccm.init-atoms)
 (ewmh.init-atoms)

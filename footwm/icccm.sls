@@ -97,7 +97,6 @@
      inexact->exact
      define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
    (only (footwm ftypes-util) fmem)
-   (footwm globals)
    (prefix (footwm util) util.)
    (footwm xlib)
    (prefix (footwm xutil) xutil.))
@@ -193,7 +192,7 @@
                          (ftype-ref c-size-hints (base-width) wp)
                          (ftype-ref c-size-hints (base-height) wp)
                          (ftype-ref c-size-hints (win-gravity) wp))])
-              (XFree *ptr)
+              (x-free *ptr)
               (unlock-object *ptr)
               (foreign-free ptr)
               ret)
@@ -311,7 +310,7 @@
                          (if (bitwise-bit-set? fl InputHint) (ftype-ref c-wm-hints (input) wp) #f)
                          (if (bitwise-bit-set? fl StateHint) (ftype-ref c-wm-hints (initial-state) wp) #f)
                          (if (bitwise-bit-set? fl WindowGroupHint) (ftype-ref c-wm-hints (window-group) wp) #f))])
-              (XFree *ptr)
+              (x-free *ptr)
               (unlock-object *ptr)
               (foreign-free ptr)
               ret)
@@ -413,12 +412,12 @@
   (define show-window!
     (lambda (wid)
       (wm-state-set! wid NormalState)
-      (XMapWindow (current-display) wid)))
+      (x-map-window wid)))
 
   (define iconify-window!
     (lambda (wid)
       (wm-state-set! wid IconicState)
-      (XUnmapWindow (current-display) wid)))
+      (x-unmap-window wid)))
 
   (define iconify-window
     (lambda (wid)
@@ -502,20 +501,20 @@
                 ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
                 (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
                 ;; Passive: manually set input focus.
-                (XSetInputFocus (current-display) wid RevertToNone CurrentTime))
+                (x-set-input-focus wid RevertToNone CurrentTime))
             ;; PointerRoot mode.
             (focus-root)))))
 
   (define focus-root
     (lambda ()
-      (XSetInputFocus (current-display) PointerRoot None CurrentTime)))
+      (x-set-input-focus PointerRoot None CurrentTime)))
 
   ;;;;;; ICCCM 4.2.1.8 Window Deletion.
   (define delete-window
     (lambda (wid)
       (if (has-wm-protocol? wid (atom-ref 'WM_DELETE_WINDOW))
           (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_DELETE_WINDOW) NoEvent)
-          (XDestroyWindow (current-display) wid))))
+          (x-destroy-window wid))))
 
   ;;;;;; ICCCM Appendix C Obsolete Session management conventions.
 
@@ -551,7 +550,7 @@
   ;; - StructureNotify: for client window destruction notifications.
   (define watch-window
     (lambda (wid)
-      (xutil.select-input wid StructureNotify)))
+      (x-select-input wid StructureNotify)))
 
   ;; Initialise a window according to ICCCM requirements.
   (define init-window
@@ -574,4 +573,4 @@
         (ftype-set! XEvent (client-message format) &ev 32)
         (ftype-set! XEvent (client-message data l 0) &ev sub-type)
         (ftype-set! XEvent (client-message data l 1) &ev CurrentTime)
-        (XSendEvent (current-display) wid #f event-mask &ev)))))
+        (x-send-event wid #f event-mask &ev)))))

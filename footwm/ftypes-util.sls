@@ -1,6 +1,8 @@
 ;; ftypes (chez-ffi) utility functions.
 (library (footwm ftypes-util)
   (export
+   c-function
+   c-default-function
    fill-memory/ulongs
    fmem
    free/u8**
@@ -11,7 +13,63 @@
    ptr->utf8s
    void*-cast)
   (import
-   (chezscheme))
+   (chezscheme)
+   (footwm util))
+
+  (meta define symbol->function-name-string
+        (lambda (sym)
+          (kebab-case->pascal-case (symbol->string sym))))
+
+  ;; [syntax] c-function: converts scheme-like function names to c-like function names before passing to foreign-procedure.
+  ;; ie, word separating hyphens are converted to underscores for c.
+  ;; eg,
+  ;; (c-function (str-length (string) int) ....)
+  ;; is converted to:
+  ;; (begin
+  ;;   (define str-length (foreign-procedure "str_length" (string) int))
+  ;;   ...)
+  (define-syntax c-function
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ (name args return) ...)
+         (with-syntax ([(function-string ...)
+                        (map (lambda (n)
+                               (datum->syntax n
+                                 (symbol->function-name-string (syntax->datum n))))
+                             #'(name ...))])
+            #'(begin
+                (define name
+                  (foreign-procedure function-string args return)) ...))])))
+
+  ;; [syntax] c-default-function: define c functions that take a default argument.
+  ;; This behaves like c-function, except it first takes a (type, instance) pair.
+  ;; c-default-function is useful for those c modules that define a bunch of functions that take
+  ;; the same struct as the first argument.
+  ;;
+  ;; The expansion of this definition:
+  ;; (c-default-function (type (current-parameter))
+  ;;   (func-name1 (arg1) int)
+  ;;   ...)
+  ;; will look like:
+  ;; (begin
+  ;;   (define func-name1
+  ;;     (let ([ffi-func (foreign-procedure "func_name1" (type arg1) int)])
+  ;;       (lambda args (apply ffi-func (current-parameter) args))))
+  ;;   ...)
+  (define-syntax c-default-function
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ (type instance) (name (arg ...) return) ...)
+         (with-syntax ([(function-string ...)
+                        (map (lambda (n)
+                               (datum->syntax n
+                                 (symbol->function-name-string (syntax->datum n))))
+                             #'(name ...))])
+            #'(begin
+                (define name
+                  (let ([ffi-func (foreign-procedure function-string (type arg ...) return)])
+                    (lambda args
+                      (apply ffi-func instance args)))) ...))])))
 
   (define fill-memory/ulongs
     (lambda (memory ulongs)

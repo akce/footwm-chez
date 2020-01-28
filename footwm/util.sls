@@ -1,6 +1,8 @@
 (library (footwm util)
   (export
    bitmap
+   kebab-case->pascal-case
+   pascal-case->kebab-case
    case-equal?
    enum
    list-combinations
@@ -18,6 +20,36 @@
     (syntax-rules ()
       [(_ name (symbol bit) ...)
        (begin (define symbol (fxsll 1 bit)) ...)]))
+
+  ;; https://en.wikipedia.org/wiki/Letter_case#Special_case_styles
+  ;; https://en.wikipedia.org/wiki/Naming_convention_(programming)#Multiple-word_identifiers
+  (define kebab-case->pascal-case
+    (lambda (kc-str)
+      (let ([sl (string->list kc-str)])
+        (if (null? sl)
+            kc-str
+            (let loop ([next-upper? #f] [acc (list (char-upcase (car sl)))] [lsl (cdr sl)])
+              (cond
+                [(null? lsl)
+                 (list->string (reverse acc))]
+                [(char=? (car lsl) #\-)
+                 (loop #t acc (cdr lsl))]
+                [else
+                  (loop #f (cons (if next-upper? (char-upcase (car lsl)) (car lsl)) acc) (cdr lsl))]))))))
+
+  (define pascal-case->kebab-case
+    (lambda (cc-str)
+      (let ([sl (string->list cc-str)])
+        (if (null? sl)
+            cc-str
+            (let loop ([acc (list (char-downcase (car sl)))] [lsl (cdr sl)])
+              (cond
+                [(null? lsl)
+                 (list->string (reverse acc))]
+                [(char-upper-case? (car lsl))
+                 (loop (cons (char-downcase (car lsl)) (cons #\- acc)) (cdr lsl))]
+                [else
+                  (loop (cons (car lsl) acc) (cdr lsl))]))))))
 
   ;; [syntax] case-equal?: like case but compares using equal?.
   (define-syntax case-equal?

@@ -22,7 +22,6 @@
   (import
    (rnrs)
    (only (chezscheme) add1 enumerate format sub1)
-   (footwm globals)
    (prefix (footwm ewmh) ewmh.)
    (prefix (footwm icccm) icccm.)
    (prefix (footwm util) util.)

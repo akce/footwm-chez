@@ -1,5 +1,8 @@
 (library (footwm xlib)
   (export
+   current-display
+   root
+
    XAnyEvent
    XEvent
 
@@ -214,39 +217,39 @@
 
    UTF8String
 
-   XChangeProperty
-   XCloseDisplay
-   XConfigureWindow
-   XDefaultRootWindow
-   XDestroyWindow
-   XFlush
-   XFree
-   XFreeStringList
-   XGetAtomName
-   XGetTextProperty
-   XGetWindowAttributes
-   XGetWindowProperty
-   XGrabKey
-   XInternAtom
-   XKeycodeToKeysym
-   XKeysymToKeycode
-   XKeysymToString
-   XMapWindow
-   XMoveResizeWindow
-   XNextEvent
-   XOpenDisplay
-   XQueryTree
-   XSelectInput
-   XSendEvent
-   XSetErrorHandler
-   XSetInputFocus
-   XSetTextProperty
-   XStringToKeysym
-   XSync
-   XUngrabKey
-   XUnmapWindow
-   Xutf8TextListToTextProperty
-   Xutf8TextPropertyToTextList
+   x-change-property
+   x-close-display
+   x-configure-window
+   x-default-root-window
+   x-destroy-window
+   x-flush
+   x-free
+   x-free-string-list
+   x-get-atom-name
+   x-get-text-property
+   x-get-window-attributes
+   x-get-window-property
+   x-grab-key
+   x-intern-atom
+   x-keycode-to-keysym
+   x-keysym-to-keycode
+   x-keysym-to-string
+   x-map-window
+   x-move-resize-window
+   x-next-event
+   x-open-display
+   x-query-tree
+   x-select-input
+   x-send-event
+   x-set-error-handler
+   x-set-input-focus
+   x-set-text-property
+   x-string-to-keysym
+   x-sync
+   x-ungrab-key
+   x-unmap-window
+   xutf8-text-list-to-text-property
+   xutf8-text-property-to-text-list
 
    atom
    card32
@@ -259,16 +262,17 @@
    window*)
   (import
    (chezscheme)
+   (footwm ftypes-util)
    (footwm util))
 
   (define library-init
     (load-shared-object "libX11.so.6"))
 
-  (define-syntax define-x
-    (syntax-rules ()
-      [(_ (libsym args return) ...)
-       (begin
-         (define libsym (foreign-procedure (symbol->string 'libsym) args return)) ...)]))
+  (define current-display
+    (make-parameter #f))
+
+  (define root
+    (make-parameter #f))
 
   (define-syntax define-xevent
     (syntax-rules ()
@@ -568,44 +572,89 @@
   ;; Xutil.h  XICCEncodingStyle
   (define UTF8String 4)
 
-  (define-x
-   ;; data should be a u8* but using a void* instead.
-   (XChangeProperty (dpy* window atom atom int int void* int) int)
-   (XCloseDisplay (dpy*) int)
-   (XConfigureWindow (dpy* window unsigned (* XWindowChanges)) int)
-   (XDefaultRootWindow (dpy*) window)
-   (XDestroyWindow (dpy* window) int)
-   (XFlush (dpy*) int)
-   (XFree (void*) void)
-   (XFreeStringList (void*) void)
-   (XGetAtomName (dpy* atom) void*)
-   (XGetTextProperty (dpy* window (* XTextProperty) atom) status)
-   (XGetWindowAttributes (dpy* window (* XWindowAttributes)) status)
-   ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
-   ;; void* points to anything so use that for now.
-   (XGetWindowProperty (dpy* window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
-   (XGrabKey (dpy* int unsigned window boolean int int) int)
-   (XInternAtom (dpy* string boolean) atom)
-   (XKeycodeToKeysym (dpy* keycode int) keysym)
-   (XKeysymToKeycode (dpy* keysym) keycode)
-   (XKeysymToString (keysym) string)
-   (XMapWindow (dpy* window) int)
-   (XMoveResizeWindow (dpy* window int int unsigned unsigned) int)
-   (XNextEvent (dpy* (* XEvent)) int)
-   (XOpenDisplay (string) dpy*)
-   (XQueryTree (dpy* window (* window) (* window) (* window*) (* unsigned)) status)
-   (XSelectInput (dpy* window long) int)
-   (XSendEvent (dpy* window boolean long (* XEvent)) status)
-   ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
-   ;; So deviating and marking it as void* instead.
-   (XSetErrorHandler (void*) void*)
-   (XSetInputFocus (dpy* window int Time) int)
-   (XSetTextProperty (dpy* window (* XTextProperty) atom) void)
-   (XStringToKeysym (string) keysym)
-   (XSync (dpy* boolean) int)
-   (XUngrabKey (dpy* int unsigned window) int)
-   (XUnmapWindow (dpy* window) int)
-   ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
-   ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
-   (Xutf8TextListToTextProperty (dpy* void* int unsigned (* XTextProperty)) int)
-   (Xutf8TextPropertyToTextList (dpy* (* XTextProperty) (* u8**) (* int)) int)))
+  (c-function
+    (x-free (void*) void)
+    ;; The arg to XFreeStringList should be char** but foreign-ref doesn't support that.
+    ;; void* points to anything so use that for now.
+    (x-free-string-list (void*) void)
+    (x-keysym-to-string (keysym) string)
+    (XOpenDisplay (string) dpy*)
+    ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
+    ;; So deviating and marking it as void* instead.
+    (x-set-error-handler (void*) void*)
+    (x-string-to-keysym (string) keysym))
+
+  (c-default-function
+    (dpy* (current-display))
+    (x-change-property (window atom atom int int void* int) int)
+    (x-close-display () int)
+    ;; data should be a u8* but using a void* instead.
+    (x-configure-window (window unsigned (* XWindowChanges)) int)
+    (x-default-root-window () window)
+    (x-destroy-window (window) int)
+    (x-flush () int)
+    (XGetAtomName (atom) void*)
+    (x-get-text-property (window (* XTextProperty) atom) status)
+    (x-get-window-attributes (window (* XWindowAttributes)) status)
+    (x-get-window-property (window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
+    (x-grab-key (int unsigned window boolean int int) int)
+    (x-intern-atom (string boolean) atom)
+    (x-keycode-to-keysym (keycode int) keysym)
+    (x-keysym-to-keycode (keysym) keycode)
+    (x-map-window (window) int)
+    (x-move-resize-window (window int int unsigned unsigned) int)
+    (x-next-event ((* XEvent)) int)
+    (XQueryTree (window (* window) (* window) (* window*) (* unsigned)) status)
+    (x-select-input (window long) int)
+    (x-send-event (window boolean long (* XEvent)) status)
+    (x-set-input-focus (window int Time) int)
+    (x-set-text-property (window (* XTextProperty) atom) void)
+    (XSync (boolean) int)
+    (x-ungrab-key (int unsigned window) int)
+    (x-unmap-window (window) int)
+    ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
+    ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
+    (xutf8-text-list-to-text-property (void* int unsigned (* XTextProperty)) int)
+    (xutf8-text-property-to-text-list ((* XTextProperty) (* u8**) (* int)) int))
+
+  (define x-get-atom-name
+    (lambda (a)
+      ;; Unset atom fields from messages will be zero, so account for that here as a convenience to print functions.
+      (if (> a 0)
+        (let* ([ptr (XGetAtomName a)]
+               [str (ptr->string ptr)])
+          (x-free ptr)
+          str)
+        "")))
+
+  ;; wraps XOpenDisplay so the connection string is optional.
+  (define x-open-display
+    (case-lambda
+     [()
+      ;; XOpenDisplay will crash unless it has a valid DISPLAY.
+      (unless (getenv "DISPLAY")
+        (raise (condition (make-error) (make-message-condition "DISPLAY not given. Exiting.."))))
+      (XOpenDisplay #f)]
+     [(s) (XOpenDisplay s)]))
+
+  (define x-query-tree
+    (lambda ()
+      (fmem ([root-return &rr window]
+             [parent-return &pr window]
+             [children-return &cr window*]
+             [num-children &nc unsigned])
+            (let ([rc (XQueryTree (root) &rr &pr &cr &nc)])
+              (if (and (> rc 0) (> num-children 0))
+                  (let ([ptr (foreign-ref 'void* children-return 0)]
+                        [len (foreign-ref 'unsigned num-children 0)])
+                    (let ([wids (ptr->ulongs ptr len)])
+                      (x-free ptr)
+                      wids))
+                  '())))))
+
+  ;; wraps XSync so discard boolean is optional.
+  (define x-sync
+    (case-lambda
+     [() (XSync #f)]
+     [(s) (XSync s)]))
+  )

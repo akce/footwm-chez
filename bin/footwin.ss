@@ -6,16 +6,14 @@
 (import
  (chezscheme)
  (prefix (footwm ewmh) ewmh.)
- (footwm globals)
  (footwm gobject)
  (prefix (footwm icccm) icccm.)
  (footwm menugtk)
  (prefix (footwm op) op.)
- (footwm xlib)
- (prefix (footwm xutil) xutil.))
+ (footwm xlib))
 
-(current-display (xutil.open))
-(root (XDefaultRootWindow (current-display)))
+(current-display (x-open-display))
+(root (x-default-root-window))
 
 (ewmh.init-atoms)
 (icccm.init-atoms)
@@ -72,7 +70,7 @@
     (menu "Footwin" (make-window-data)
       (lambda (row)
         (ewmh.window-active-request! (list-ref row 7))
-        (xutil.sync))
+        (x-sync))
       ;; Null creation func. Hmmm.. could this be an app launch function?
       (lambda (text)
         #t)
@@ -82,6 +80,6 @@
          (lambda (row)
            (ewmh.window-close-request! (list-ref row 7)))
          rows)
-        (xutil.sync)))))
+        (x-sync)))))
 
 (main)
