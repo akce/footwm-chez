@@ -25,7 +25,6 @@ LIBS =	\
 	footwm/util.sls		\
 	footwm/xlib.sls		\
 	footwm/xutil.sls	\
-	footwm/globals.sls	\
 	footwm/gobject.sls	\
 	footwm/icccm.sls	\
 	footwm/ewmh.sls		\
@@ -42,7 +41,6 @@ LIBSO =	\
 	footwm/util.so		\
 	footwm/xlib.so		\
 	footwm/xutil.so		\
-	footwm/globals.so	\
 	footwm/ewmh.so		\
 	footwm/icccm.so		\
 	footwm/op.so		\

@@ -7,7 +7,6 @@
  (rnrs base)
  (only (chezscheme) new-cafe)
  (prefix (footwm ewmh) ewmh.)
- (footwm globals)
  (prefix (footwm hints) hints.)
  (prefix (footwm icccm) icccm.)
  (prefix (footwm keys) keys.)
@@ -22,7 +21,7 @@
 
 (define default-config
   (lambda ()
-    (string-append (config-path) "/" "footkeysconfig.sls")))
+    (string-append (getenv "HOME") "/" ".foot" "/" "footkeysconfig.sls")))
 
 (let ([bin (car (command-line))]
       [argv (command-line-arguments)])
