@@ -623,7 +623,7 @@
     (x-keysym-to-keycode (keysym) keycode)
     (x-map-window (window) int)
     (x-move-resize-window (window int int unsigned unsigned) int)
-    (x-next-event ((* XEvent)) int)
+    (XNextEvent ((* XEvent)) int)
     (XQueryTree (window (* window) (* window) (* window*) (* unsigned)) status)
     (x-select-input (window long) int)
     (x-send-event (window boolean long (* XEvent)) status)
@@ -718,4 +718,78 @@
                  (foreign-callable-entry-point f/proc))
                ;; Else assume handler is a mem addr, eg as would be returned by the first call to XSetErrorHandler.
                handler))])))
+
+  (define x-next-event
+    (lambda ()
+      (fmem ([ev &ev XEvent])
+        (XNextEvent &ev)
+        (make-event &ev))))
+
+  ;; Convert the cevent struct to a scheme record.
+  ;; TODO this c-struct->scheme-record conversion to be done in xlib as part of define-xevent??
+  (define make-event
+    (lambda (cevent)
+      (let ([evid (ftype-ref XEvent (type) cevent)])
+        (case-equal? evid
+          (ClientMessage
+            (make-xclientmessageevent
+             (make-xany cevent)
+             (ftype-ref XEvent (client-message message-type) cevent)
+             (ftype-ref XEvent (client-message format) cevent)
+             (ftype-fields client-message cevent
+                           ((data l 0)
+                            (data l 1)
+                            (data l 2)
+                            (data l 3)
+                            (data l 4)))))
+           (ConfigureNotify
+            (apply make-xconfigureevent
+             (make-xany cevent)
+             (ftype-fields xconfigure cevent (wid x y width height border-width above override-redirect))))
+           (ConfigureRequest
+            (apply make-xconfigurerequestevent
+             (make-xany cevent)
+             (ftype-fields xconfigurerequest cevent (wid x y width height border-width above detail value-mask))))
+           (CreateNotify
+            (apply make-xcreatewindowevent
+             (make-xany cevent)
+             (ftype-fields xcreatewindow cevent (wid x y width height border-width override-redirect))))
+           (DestroyNotify
+            (apply make-xdestroywindowevent
+             (make-xany cevent)
+             (ftype-fields xdestroywindow cevent (wid))))
+           (KeyPressEvent
+            (apply make-xkeyevent
+             (make-xany cevent)
+             (ftype-fields xkey cevent (root subwindow time x y x-root y-root state keycode same-screen))))
+           (MapNotify
+            (apply make-xmapevent
+             (make-xany cevent)
+             (ftype-fields xmap cevent (wid override-redirect))))
+           (MapRequest
+            (apply make-xmaprequestevent
+             (make-xany cevent)
+             (ftype-fields xmaprequest cevent (wid))))
+           (PropertyNotify
+            (apply make-xpropertyevent
+             (make-xany cevent)
+             (ftype-fields xproperty cevent (propatom time state))))
+           (UnmapNotify
+            (apply make-xunmapevent
+             (make-xany cevent)
+             (ftype-fields xunmap cevent (wid from-configure))))
+           (else
+            (make-xany cevent))))))
+
+  (define-syntax ftype-fields
+    (syntax-rules ()
+      [(_ type obj ((field name offset) ...))
+       (list (ftype-ref XEvent (type field name offset) obj) ...)]
+      [(_ type obj (field ...))
+       (list (ftype-ref XEvent (type field) obj) ...)]))
+
+  (define make-xany
+    (lambda (cevent)
+      (apply make-xanyevent
+       (ftype-fields xany cevent (type serial send-event d wid)))))
   )

@@ -14,8 +14,7 @@
    (only (chezscheme)
          copy-environment eval format load logior make-parameter scheme-environment set-top-level-value!)
    (only (footwm util) case-equal? list-combinations* remove*)
-   (footwm xlib)
-   (prefix (footwm xutil) xutil.))
+   (footwm xlib))
 
   ;;; Set default modifier keys.
   (define alt
@@ -122,7 +121,7 @@
   (define run
     (lambda ()
       (let loop ()
-        (let ([ev (xutil.get-next-event)])
+        (let ([ev (x-next-event)])
           (cond
            ((xkeyevent? ev)		(on-key ev))
            (else

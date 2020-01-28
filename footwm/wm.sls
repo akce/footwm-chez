@@ -90,7 +90,7 @@
   (define run
     (lambda ()
       (let loop ()
-        (let ([ev (xutil.get-next-event)])
+        (let ([ev (x-next-event)])
           (cond
            ((xclientmessageevent? ev)		(on-client-message ev))
            ((xconfigureevent? ev)		(on-configure ev))
