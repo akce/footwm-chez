@@ -1,19 +1,6 @@
 (library (footwm xutil)
   (export
-   make-geometry
-   geometry-x
-   geometry-y
-   geometry-width
-   geometry-height
-   geometry=?
-   xconfigureevent-geometry
-   window-attributes
-   window-attributes-geom
-   window-attributes-override-redirect
-   window-attributes-map-state
-
    cardinal-set!
-   get-window-attributes
    property->string
    property->string*
    get-property-ptr
@@ -33,23 +20,6 @@
    (footwm ftypes-util)
    (footwm util)
    (footwm xlib))
-
-  (define-record-type geometry
-    (fields x y width height))
-
-  (define geometry=?
-    (lambda (lhs rhs)
-      (and (eq? (geometry-x lhs) (geometry-x rhs))
-           (eq? (geometry-y lhs) (geometry-y rhs))
-           (eq? (geometry-width lhs) (geometry-width rhs))
-           (eq? (geometry-height lhs) (geometry-height rhs)))))
-
-  (define xconfigureevent-geometry
-    (lambda (ev)
-      (make-geometry (xconfigureevent-x ev) (xconfigureevent-y ev) (xconfigureevent-width ev) (xconfigureevent-height ev))))
-
-  (define-record-type window-attributes
-    (fields geom override-redirect map-state))
 
   (define cardinal-set!
     (lambda (wid atomprop value)
@@ -161,21 +131,6 @@
                     (x-set-text-property wid &tp propatom))
                 (free/u8** u8mem (length str*))
                 (x-free (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
-
-  (define get-window-attributes
-    (lambda (wid)
-      (fmem ([wa &wa XWindowAttributes])
-            (let ([rc (x-get-window-attributes wid &wa)])
-              (if (= rc 0)
-                  ;; failure.
-                  #f
-                  (let ([x (ftype-ref XWindowAttributes (x) &wa)]
-                        [y (ftype-ref XWindowAttributes (y) &wa)]
-                        [w (ftype-ref XWindowAttributes (width) &wa)]
-                        [h (ftype-ref XWindowAttributes (height) &wa)]
-                        [map-state (ftype-ref XWindowAttributes (map-state) &wa)]
-                        [override (ftype-ref XWindowAttributes (override-redirect) &wa)])
-			(make-window-attributes (make-geometry x y w h) override map-state)))))))
 
   (define resize-window
     (lambda (wid geo)

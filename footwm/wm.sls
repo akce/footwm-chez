@@ -140,7 +140,7 @@
             ;; Some windows ignore the initial geom we set during map-request so we check
             ;; and force the resize if necessary.
             (let ([ideal (ewmh.workarea-geometry)])
-              (if (xutil.geometry=? ideal (xutil.xconfigureevent-geometry ev))
+              (if (geometry=? ideal (xconfigureevent-geometry ev))
                   (display " ideal")
                   (begin
                     (display (format " non-ideal requesting ~a" ideal))

@@ -159,7 +159,7 @@
   (define workarea-geometry
     (lambda ()
       (let ([gl (xutil.property->ulongs (root) (atom-ref '_NET_WORKAREA) (x-atom-ref 'CARDINAL))])
-        (xutil.make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3)))))
+        (make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3)))))
 
   (define workarea-set!
     (lambda (x y w h)
@@ -167,15 +167,15 @@
 
   (define calculate-workarea
     (lambda (wids)
-      (let ([rg (xutil.window-attributes-geom (xutil.get-window-attributes (root)))])
+      (let ([rg (window-attributes-geom (x-get-window-attributes (root)))])
         ;; find the maximal strut.
         (let loop ([struts (map get-strut (filter dock-window? wids))] [left 0] [right 0] [top 0] [bottom 0])
           (cond
            [(null? struts)
             (let ([x left]
                   [y top]
-                  [w (- (xutil.geometry-width rg) (+ left right))]
-                  [h (- (xutil.geometry-height rg) (+ top bottom))])
+                  [w (- (geometry-width rg) (+ left right))]
+                  [h (- (geometry-height rg) (+ top bottom))])
               (workarea-set! x y w h))]
            [else
             (let ([strut (car struts)])

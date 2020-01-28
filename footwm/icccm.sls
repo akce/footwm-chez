@@ -224,15 +224,15 @@
             (values (size-hints-base-w nh) (size-hints-base-h nh))
             (if (bitwise-bit-set? flags PMinSize)
                 (values (size-hints-min-w nh) (size-hints-min-h nh))
-                (values (xutil.geometry-width max-geom) (xutil.geometry-height max-geom)))))))
+                (values (geometry-width max-geom) (geometry-height max-geom)))))))
 
   (define nh-get-max
     (lambda (nh max-geom)
       (if (bitwise-bit-set? (size-hints-flags nh) PMaxSize)
-          (values (min (size-hints-max-w nh) (xutil.geometry-width max-geom))
-                  (min (size-hints-max-h nh) (xutil.geometry-height max-geom)))
-          (values (xutil.geometry-width max-geom)
-                  (xutil.geometry-height max-geom)))))
+          (values (min (size-hints-max-w nh) (geometry-width max-geom))
+                  (min (size-hints-max-h nh) (geometry-height max-geom)))
+          (values (geometry-width max-geom)
+                  (geometry-height max-geom)))))
 
   (define max-inc-count
     (lambda (inc base top)
@@ -253,11 +253,11 @@
           (cond
            [(bitwise-bit-set? flags PResizeInc)
             (let-values ([(bw bh) (nh-get-base nh max-geom)])
-              (xutil.make-geometry 0 0
-                                   (calc-max (size-hints-w-inc nh) bw mw)
-                                   (calc-max (size-hints-h-inc nh) bh mh)))]
+              (make-geometry 0 0
+                             (calc-max (size-hints-w-inc nh) bw mw)
+                             (calc-max (size-hints-h-inc nh) bh mh)))]
            [(bitwise-bit-set? flags PMaxSize)
-            (xutil.make-geometry 0 0 mw mh)]
+            (make-geometry 0 0 mw mh)]
            [else
             max-geom]))
         max-geom)))
@@ -481,7 +481,7 @@
              (CWHeight (set! h (xconfigurerequestevent-height ev)))))
           ;; Request may just be for stack order update, so resize only if there's a geom change.
           (if (or x y w h)
-            (let ([g (xutil.make-geometry x y w h)])
+            (let ([g (make-geometry x y w h)])
               (xutil.resize-window (xconfigurerequestevent-wid ev) g)
               g)
             #f))))
@@ -536,14 +536,14 @@
       ;;   - ignore those in WITHDRAWN state
       ;; - windows without WM_STATE, manage those that could be viewable.
       ;;   ie, map-state = IsViewable. Ignore unmapped and unviewable windows.
-      (let ([wa (xutil.get-window-attributes wid)])
+      (let ([wa (x-get-window-attributes wid)])
         (if wa
-            (if (xutil.window-attributes-override-redirect wa)
+            (if (window-attributes-override-redirect wa)
                 #f	;; always ignore override-redirect == true
                 (let ([state (get-wm-state wid)])
                   (if state
                       (or (eq? state NormalState) (eq? state IconicState))
-                      (= (xutil.window-attributes-map-state wa) IsViewable))))
+                      (= (window-attributes-map-state wa) IsViewable))))
             #f #| window without attributes, probably one we won't want to manage |#))))
 
   ;; Subscribe to window notification events.
