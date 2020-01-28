@@ -581,7 +581,7 @@
     (XOpenDisplay (string) dpy*)
     ;; XSetErrorHandler prototype returns an int, but it's actually a pointer to the previous error handler.
     ;; So deviating and marking it as void* instead.
-    (x-set-error-handler (void*) void*)
+    (XSetErrorHandler (void*) void*)
     (x-string-to-keysym (string) keysym))
 
   (c-default-function
@@ -657,4 +657,45 @@
     (case-lambda
      [() (XSync #f)]
      [(s) (XSync s)]))
+
+  ;; wraps XSetErrorHandler so that the default error handler is installed with no args.
+  ;; Previous error handlers are stored and dealloc when no longer needed.
+  (define x-set-error-handler
+    ;; Store the previous locked lambda so that it can be unlocked if replaced.
+    (let ([previous-lambda #f])
+      (case-lambda
+        [()
+         ;; Installs a simple one-line printing error handler.
+         (x-set-error-handler
+           (lambda (dpy ev)
+             (display (format "XError: type=~a wid=#x~x error=~d~n" (xerrorevent-type ev) (xerrorevent-resourceid ev) (xerrorevent-error-code ev)))))]
+        [(handler)
+         (when previous-lambda
+           (unlock-object previous-lambda)
+           (set! previous-lambda #f))
+         (XSetErrorHandler
+           (if (procedure? handler)
+               ;; Wrap the lambda for convenience:
+               ;; - converts c event struct to scheme record
+               ;; - returns int 0 so that connection to X server remains.
+               (let ([f/proc
+                       (foreign-callable
+                         (lambda (d c/xerrorevent)
+                           (let ([ev
+                                   (make-xerrorevent
+                                     (ftype-ref XErrorEvent (type) c/xerrorevent)
+                                     (ftype-ref XErrorEvent (d) c/xerrorevent)
+                                     (ftype-ref XErrorEvent (resourceid) c/xerrorevent)
+                                     (ftype-ref XErrorEvent (serial) c/xerrorevent)
+                                     (ftype-ref XErrorEvent (error-code) c/xerrorevent)
+                                     (ftype-ref XErrorEvent (request-code) c/xerrorevent)
+                                     (ftype-ref XErrorEvent (minor-code) c/xerrorevent))])
+                             (handler d ev)
+                             0))
+                         (dpy* (* XErrorEvent)) int)])
+                 (lock-object f/proc)
+                 (set! previous-lambda f/proc)
+                 (foreign-callable-entry-point f/proc))
+               ;; Else assume handler is a mem addr, eg as would be returned by the first call to XSetErrorHandler.
+               handler))])))
   )

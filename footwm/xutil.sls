@@ -15,8 +15,6 @@
    cardinal-set!
    get-next-event
    get-window-attributes
-   install-default-error-handler
-   install-error-handler
    property->string
    property->string*
    get-property-ptr
@@ -55,46 +53,6 @@
 
   (define-record-type window-attributes
     (fields geom override-redirect map-state))
-
-  ;; Installs a simple one-line printing error handler.
-  (define install-default-error-handler
-    (lambda ()
-      (install-error-handler
-       (lambda (dpy ev)
-         (display (format "XError: type=~a wid=#x~x error=~d~n" (xerrorevent-type ev) (xerrorevent-resourceid ev) (xerrorevent-error-code ev)))))))
-
-  (define install-error-handler
-    ;; Store the previous locked lambda so that it can be unlocked if replaced.
-    (let ([previous-lambda #f])
-      (lambda (handler)
-        (when previous-lambda
-          (unlock-object previous-lambda)
-          (set! previous-lambda #f))
-        (x-set-error-handler
-         (if (procedure? handler)
-             ;; Wrap the lambda for convenience:
-             ;; - converts c event struct to scheme record
-             ;; - returns int 0 so that connection to X server remains.
-             (let ([f/proc
-                    (foreign-callable
-                     (lambda (d c/xerrorevent)
-                       (let ([ev
-                              (make-xerrorevent
-                               (ftype-ref XErrorEvent (type) c/xerrorevent)
-                               (ftype-ref XErrorEvent (d) c/xerrorevent)
-                               (ftype-ref XErrorEvent (resourceid) c/xerrorevent)
-                               (ftype-ref XErrorEvent (serial) c/xerrorevent)
-                               (ftype-ref XErrorEvent (error-code) c/xerrorevent)
-                               (ftype-ref XErrorEvent (request-code) c/xerrorevent)
-                               (ftype-ref XErrorEvent (minor-code) c/xerrorevent))])
-                         (handler d ev)
-                         0))
-                     (dpy* (* XErrorEvent)) int)])
-               (lock-object f/proc)
-               (set! previous-lambda f/proc)
-               (foreign-callable-entry-point f/proc))
-             ;; Else assume handler is a mem addr, eg as would be returned by the first call to XSetErrorHandler.
-             handler)))))
 
   ;;;; basic atom manager.
   ;; Just a very thin wrapper around hash tables.

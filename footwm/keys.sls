@@ -99,7 +99,7 @@
 
   (define main
     (lambda (config-file)
-      (xutil.install-default-error-handler)
+      (x-set-error-handler)
       (x-select-input (root) KeyPress)
       (load-config config-file)
       (run)))

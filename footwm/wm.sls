@@ -19,7 +19,7 @@
       (install-as-wm)
       ;; Replace the default error handler with our own. This ensures that the wm continues to function even
       ;; after an error. eg, when trying to access a resource from a destroyed window.
-      (xutil.install-default-error-handler)
+      (x-set-error-handler)
       (init-desktops)
       (init-windows)
       (op.arrange-windows)
@@ -33,7 +33,7 @@
       ;; Any config change requested by directo child windows will result in CirculateRequest, ConfigureRequest,
       ;; or MapRequest events being sent to the wm. The wm can then honour, disregard, or modify those requests.
       (let* ([installed #t]
-             [orig (xutil.install-error-handler
+             [orig (x-set-error-handler
                     (lambda (d ev)
                       (if (eq? (xerrorevent-error-code ev) BadAccess)
                         (set! installed #f))))]
@@ -45,7 +45,7 @@
                SubstructureRedirect)])	; Redirect child window change requests to this client.
           (x-select-input (root) mask)
           (x-sync)
-          (xutil.install-error-handler orig)
+          (x-set-error-handler orig)
           (unless installed
             (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running.")))))))
 
