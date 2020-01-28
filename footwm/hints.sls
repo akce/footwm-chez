@@ -13,23 +13,22 @@
    (rnrs base)
    (only (chezscheme) define-values)
    (prefix (footwm op) op.)
-   (footwm xlib)
-   (prefix (footwm xutil) xutil.))
+   (footwm xlib))
 
   (define-values
       (init-atoms atom-ref) (make-atom-manager '(FOOT_COMMANDV)))
 
   (define desktop-add-set!
     (lambda (name index)
-      (xutil.text-property-set! (root) `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+      (text-property-set! (root) `("desktop" "insert" ,name ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
 
   (define desktop-delete-set!
     (lambda (index)
-      (xutil.text-property-set! (root) `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
+      (text-property-set! (root) `("desktop" "delete" ,(number->string index)) (atom-ref 'FOOT_COMMANDV))))
 
   (define desktop-rename-set!
     (lambda (index new-name)
-      (xutil.text-property-set! (root) `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
+      (text-property-set! (root) `("desktop" "rename" ,(number->string index) ,new-name) (atom-ref 'FOOT_COMMANDV))))
 
   (define command?
     (lambda (atom)
@@ -37,7 +36,7 @@
 
   (define on-command
     (lambda (wid)
-      (let ([cmd (xutil.property->string* wid (atom-ref 'FOOT_COMMANDV))])
+      (let ([cmd (property->string* wid (atom-ref 'FOOT_COMMANDV))])
         (if (string=? (list-ref cmd 0) "desktop")
             (cond
              [(string=? (list-ref cmd 1) "insert")

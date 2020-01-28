@@ -11,8 +11,7 @@
    (prefix (footwm ewmh) ewmh.)
    (prefix (footwm hints) hints.)
    (prefix (footwm icccm) icccm.)
-   (prefix (footwm op) op.)
-   (prefix (footwm xutil) xutil.))
+   (prefix (footwm op) op.))
 
   (define main
     (lambda ()
