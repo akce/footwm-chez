@@ -25,8 +25,7 @@
    (prefix (footwm ewmh) ewmh.)
    (prefix (footwm icccm) icccm.)
    (prefix (footwm util) util.)
-   (footwm xlib)
-   (prefix (footwm xutil) xutil.))
+   (footwm xlib))
 
   ;;;;;; Window operations.
 
@@ -229,7 +228,7 @@
 
   (define draw-active-window
     (lambda (wid)
-      (xutil.resize-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry)))
+      (x-configure-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry)))
       (show-window wid)))
 
   (define show-desktop

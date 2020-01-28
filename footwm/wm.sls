@@ -144,7 +144,7 @@
                   (display " ideal")
                   (begin
                     (display (format " non-ideal requesting ~a" ideal))
-                    (xutil.resize-window wid ideal)))))
+                    (x-configure-window wid ideal)))))
           (newline)))))
 
   (define on-configure-request

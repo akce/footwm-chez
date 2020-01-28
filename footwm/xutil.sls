@@ -7,9 +7,7 @@
    property->ulongs
    ulongs-property-set!
    send-message-cardinal
-   text-property-set!
-
-   resize-window)
+   text-property-set!)
   (import
    (rnrs)
    (only (chezscheme)
@@ -131,23 +129,4 @@
                     (x-set-text-property wid &tp propatom))
                 (free/u8** u8mem (length str*))
                 (x-free (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
-
-  (define resize-window
-    (lambda (wid geo)
-      (let ([change-mask 0])
-        (fmem ([changes &changes XWindowChanges])
-          (when (geometry-x geo)
-            (ftype-set! XWindowChanges (x) &changes (geometry-x geo))
-            (set! change-mask (bitwise-copy-bit change-mask CWX 1)))
-          (when (geometry-y geo)
-            (ftype-set! XWindowChanges (y) &changes (geometry-y geo))
-            (set! change-mask (bitwise-copy-bit change-mask CWY 1)))
-          (when (geometry-width geo)
-            (ftype-set! XWindowChanges (width) &changes (geometry-width geo))
-            (set! change-mask (bitwise-copy-bit change-mask CWWidth 1)))
-          (when (geometry-height geo)
-            (ftype-set! XWindowChanges (height) &changes (geometry-height geo))
-            (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))
-          (x-configure-window wid change-mask &changes)
-          #;(display (format "#x~x x-configure-window change-mask #b~b~n" wid change-mask))))))
 )

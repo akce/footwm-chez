@@ -482,7 +482,7 @@
           ;; Request may just be for stack order update, so resize only if there's a geom change.
           (if (or x y w h)
             (let ([g (make-geometry x y w h)])
-              (xutil.resize-window (xconfigurerequestevent-wid ev) g)
+              (x-configure-window (xconfigurerequestevent-wid ev) g)
               g)
             #f))))
 

@@ -624,7 +624,7 @@
     (x-change-property (window atom atom int int void* int) int)
     (x-close-display () int)
     ;; data should be a u8* but using a void* instead.
-    (x-configure-window (window unsigned (* XWindowChanges)) int)
+    (XConfigureWindow (window unsigned (* XWindowChanges)) int)
     (x-default-root-window () window)
     (x-destroy-window (window) int)
     (x-flush () int)
@@ -651,6 +651,25 @@
     ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
     (xutf8-text-list-to-text-property (void* int unsigned (* XTextProperty)) int)
     (xutf8-text-property-to-text-list ((* XTextProperty) (* u8**) (* int)) int))
+
+  (define x-configure-window
+    (lambda (wid geo)
+      (let ([change-mask 0])
+        (fmem ([changes &changes XWindowChanges])
+          (when (geometry-x geo)
+            (ftype-set! XWindowChanges (x) &changes (geometry-x geo))
+            (set! change-mask (bitwise-copy-bit change-mask CWX 1)))
+          (when (geometry-y geo)
+            (ftype-set! XWindowChanges (y) &changes (geometry-y geo))
+            (set! change-mask (bitwise-copy-bit change-mask CWY 1)))
+          (when (geometry-width geo)
+            (ftype-set! XWindowChanges (width) &changes (geometry-width geo))
+            (set! change-mask (bitwise-copy-bit change-mask CWWidth 1)))
+          (when (geometry-height geo)
+            (ftype-set! XWindowChanges (height) &changes (geometry-height geo))
+            (set! change-mask (bitwise-copy-bit change-mask CWHeight 1)))
+          (XConfigureWindow wid change-mask &changes)
+          #;(display (format "#x~x x-configure-window change-mask #b~b~n" wid change-mask))))))
 
   (define x-get-atom-name
     (lambda (a)
