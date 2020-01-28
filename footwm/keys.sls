@@ -123,20 +123,20 @@
       (let loop ()
         (let ([ev (x-next-event)])
           (cond
-           ((xkeyevent? ev)		(on-key ev))
-           (else
-            (let ([eid (xanyevent-type ev)])
-              (case-equal? eid
-               [KeyPressEvent (display "Ignore KeyPressEvent\n")]
-               [KeyReleaseEvent (display "Ignore KeyReleaseEvent\n")]
-               [else
-                (display (format "Unsupported event ~d~n" eid))])))))
+            [(xkeyevent? ev) (on-key ev)]
+            [else
+              ;; Should rarely happen (only for unmaskable events) since we're XSelectInput only on KeyPress.
+              (display (format "Unsupported event ~d~n" (xanyevent-type ev)))]))
         (loop))))
 
   (define on-key
     (lambda (ev)
       (display (format "#x~x Key event state #b~b~n" (xanyevent-wid (xkeyevent-xany ev)) (xkeyevent-state ev)))
-      (let* ([key (cons (xkeyevent-keycode ev) (xkeyevent-state ev))]
-             [action (assoc key (key-actions))])
-        (when action
-            ((cdr action)))))))
+      (case-equal? (xanyevent-type (xkeyevent-xany ev))
+        [KeyPressEvent
+          (display "Ignore KeyPressEvent\n")]
+        [KeyReleaseEvent
+          (let* ([key (cons (xkeyevent-keycode ev) (xkeyevent-state ev))]
+                 [action (assoc key (key-actions))])
+            (when action
+              ((cdr action))))]))))

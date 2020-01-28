@@ -318,18 +318,6 @@
           (hashtable-ref atoms a #f)))
       (values init-atoms atom-ref)))
 
-  (define-syntax define-xevent
-    (syntax-rules ()
-      [(_ name (record idname idval)
-          ((field type) (fieldn typen) ...))
-       (begin
-         (define-ftype name
-          (struct
-           [field type]
-           [fieldn typen] ...))
-         (define idname idval)
-         (define-record-type record (fields field fieldn ...)))]))
-
   ;; type aliases.
   (define-ftype card32 integer-32)
   (define-ftype dpy* void*)
@@ -357,6 +345,18 @@
      [wid		window]))
   (define-record-type xanyevent
     (fields type serial send-event d wid))
+
+  (define-syntax define-xevent
+    (syntax-rules ()
+      [(_ name (record idname idval)
+          ((field type) (field* type*) ...))
+       (begin
+         (define-ftype name
+          (struct
+           [field type]
+           [field* type*] ...))
+         (define idname idval)
+         (define-record-type record (fields field field* ...)))]))
 
   (define-xevent XClientMessageEvent
     (xclientmessageevent	ClientMessage	33)
@@ -836,6 +836,10 @@
              (make-xany cevent)
              (ftype-fields xdestroywindow cevent (wid))))
            (KeyPressEvent
+            (apply make-xkeyevent
+             (make-xany cevent)
+             (ftype-fields xkey cevent (root subwindow time x y x-root y-root state keycode same-screen))))
+           (KeyReleaseEvent
             (apply make-xkeyevent
              (make-xany cevent)
              (ftype-fields xkey cevent (root subwindow time x y x-root y-root state keycode same-screen))))
