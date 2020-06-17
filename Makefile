@@ -1,5 +1,6 @@
-# SPDX-License-Identifier: MIT
 # Footwm Chez scheme Makefile.
+# Written by Akce 2019-2020.
+# SPDX-License-Identifier: Unlicense
 
 # Library destination directory. This should be an object directory contained in (library-directories).
 # eg, set in CHEZSCHEMELIBDIRS environment variable.

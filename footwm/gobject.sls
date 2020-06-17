@@ -1,3 +1,9 @@
+;; Glib/GObject defines.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm gobject)
   (export
    gcallback

@@ -1,3 +1,9 @@
+;; Footwm shell (command line) interface functions.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm shell)
   (export
    main

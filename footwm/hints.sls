@@ -1,4 +1,9 @@
 ;; Foot specific wm hints and properties support.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm hints)
   (export
    desktop-add-set!

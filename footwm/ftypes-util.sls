@@ -1,4 +1,9 @@
 ;; ftypes (chez-ffi) utility functions.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm ftypes-util)
   (export
    c-function

@@ -2,6 +2,11 @@
 ;; As at version 1.5.
 ;; See:
 ;;    https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm ewmh)
   (export
    init-atoms

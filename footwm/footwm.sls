@@ -1,3 +1,11 @@
+;; Footwm main module.
+;;
+;; This contains the footwm init, end and event loop functions.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm footwm)
   (export
    init-desktops

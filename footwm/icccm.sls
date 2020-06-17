@@ -1,6 +1,12 @@
-;;;; X - Inter Client Communication Conventions (Manual) support.
-;;;; Reference:
-;;;;	https://www.x.org/docs/ICCCM/icccm.pdf
+;; Footwm Inter Client Communication Conventions (Manual) support.
+;;
+;; Reference:
+;;	https://www.x.org/docs/ICCCM/icccm.pdf
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm icccm)
   (export
    init-atoms

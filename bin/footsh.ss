@@ -1,5 +1,11 @@
 #! /usr/bin/scheme --script
 
+;; Footwm shell (command line) interface.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (suppress-greeting #t)
 
 (import

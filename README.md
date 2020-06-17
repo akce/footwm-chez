@@ -131,4 +131,4 @@ Footwm has no state, it gathers all needed information from X properties, so it 
 
 ## License
 
-Copyright (c) 2019 Akce. Released under the MIT license. See LICENSE file for details.
+Written by Akce 2019-2020 . Released into the public domain. See LICENSE file for details.

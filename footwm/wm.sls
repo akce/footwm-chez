@@ -1,5 +1,10 @@
-;; Window, desktop, and layout operations.
-(library (footwm op)
+;; Common Footwm wm operations. eg, Window, desktop, and layout etc
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
+(library (footwm wm)
   (export
    manage-window?
    ;; Window operations.

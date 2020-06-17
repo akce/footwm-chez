@@ -1,3 +1,9 @@
+;; Footwm X keys support.
+;;
+;; Written by Akce 2019-2020.
+;;
+;; SPDX-License-Identifier: Unlicense
+
 (library (footwm keys)
   (export
    alt
