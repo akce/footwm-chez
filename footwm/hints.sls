@@ -12,7 +12,7 @@
   (import
    (rnrs base)
    (only (chezscheme) define-values)
-   (prefix (footwm op) op.)
+   (prefix (footwm wm) wm.)
    (footwm xlib))
 
   (define-values
@@ -40,8 +40,8 @@
         (if (string=? (list-ref cmd 0) "desktop")
             (cond
              [(string=? (list-ref cmd 1) "insert")
-              (op.desktop-insert (list-ref cmd 2) (string->number (list-ref cmd 3)))]
+              (wm.desktop-insert (list-ref cmd 2) (string->number (list-ref cmd 3)))]
              [(string=? (list-ref cmd 1) "delete")
-              (op.desktop-delete (string->number (list-ref cmd 2)))]
+              (wm.desktop-delete (string->number (list-ref cmd 2)))]
              [(string=? (list-ref cmd 1) "rename")
-              (op.desktop-rename (string->number (list-ref cmd 2)) (list-ref cmd 3))]))))))
+              (wm.desktop-rename (string->number (list-ref cmd 2)) (list-ref cmd 3))]))))))

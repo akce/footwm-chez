@@ -14,7 +14,7 @@
  (footwm keys)
  (prefix (footwm ewmh) ewmh.)
  (prefix (footwm hints) hints.)
- (prefix (footwm op) op.))
+ (prefix (footwm wm) wm.))
 
 (define terminal
   (let ([t "urxvtc"])
@@ -26,11 +26,11 @@
 (key-config
  ;; Window selection.
  ('F1 '()
-   (op.activate-window/index 1))
+   (wm.activate-window/index 1))
  ('F2 '()
-   (op.activate-window/index 2))
+   (wm.activate-window/index 2))
  ('F3 '()
-   (op.activate-window/index 3))
+   (wm.activate-window/index 3))
  ;; Window menu.
  ('F4 '()
    (system "footwin"))
@@ -46,7 +46,7 @@
    (system "footdesk"))
  ;; Close current window/desktop.
  ('F9 `(,(alt))
-   (op.close-window/index 0))
+   (wm.close-window/index 0))
  ('F10 `(,(alt))
    (hints.desktop-delete-set! 0))
  ;; Terminal shortcut.

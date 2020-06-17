@@ -8,7 +8,7 @@
  (prefix (footwm ewmh) ewmh.)
  (prefix (footwm hints) hints.)
  (prefix (footwm icccm) icccm.)
- (prefix (footwm wm) wm.)
+ (prefix (footwm footwm) footwm.)
  (footwm xlib))
 
 (current-display (x-open-display))
@@ -19,4 +19,4 @@
 (ewmh.init-atoms)
 (hints.init-atoms)
 
-(wm.main)
+(footwm.main)

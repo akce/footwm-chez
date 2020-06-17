@@ -9,7 +9,7 @@
  (footwm gobject)
  (prefix (footwm icccm) icccm.)
  (footwm menugtk)
- (prefix (footwm op) op.)
+ (prefix (footwm wm) wm.)
  (footwm xlib))
 
 (current-display (x-open-display))
@@ -45,12 +45,12 @@
 (define make-window-rows
   (lambda ()
     (let ([desks (ewmh.desktop-names)]
-          [wids (remove-active-window (op.window-sort (ewmh.client-list)))])
+          [wids (remove-active-window (wm.window-sort (ewmh.client-list)))])
       (map
        (lambda (i wid)
          (let ([c (icccm.class-hint wid)]
                [dname (list-ref desks (ewmh.window-desktop wid))])
-           (list i (hex wid) dname (icccm.class-hint-instance c) (icccm.class-hint-class c) (urgency-flag wid) (op.window-name wid) wid)))
+           (list i (hex wid) dname (icccm.class-hint-instance c) (icccm.class-hint-class c) (urgency-flag wid) (wm.window-name wid) wid)))
        (enumerate wids) wids))))
 
 (define make-window-data

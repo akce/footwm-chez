@@ -10,9 +10,9 @@
  (prefix (footwm ewmh) ewmh.)
  (prefix (footwm hints) hints.)
  (prefix (footwm icccm) icccm.)
- (prefix (footwm op) op.)
+ (prefix (footwm wm) wm.)
  (prefix (footwm shell) shell.)
- (prefix (footwm wm) wm.))
+ (prefix (footwm footwm) footwm.))
 
 (current-display (x-open-display))
 (root (x-default-root-window))

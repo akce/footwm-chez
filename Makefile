@@ -27,8 +27,8 @@ LIBS =	\
 	footwm/gobject.sls	\
 	footwm/icccm.sls	\
 	footwm/ewmh.sls		\
-	footwm/op.sls		\
 	footwm/wm.sls		\
+	footwm/footwm.sls	\
 	footwm/gtk.sls		\
 	footwm/keys.sls		\
 	footwm/shell.sls	\
@@ -41,8 +41,8 @@ LIBSO =	\
 	footwm/xlib.so		\
 	footwm/ewmh.so		\
 	footwm/icccm.so		\
-	footwm/op.so		\
 	footwm/wm.so		\
+	footwm/footwm.so	\
 	footwm/gobject.so	\
 	footwm/gtk.so		\
 	footwm/keys.so		\

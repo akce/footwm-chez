@@ -1,232 +1,253 @@
-(library (footwm wm)
+;; Window, desktop, and layout operations.
+(library (footwm op)
   (export
-   init-desktops
-   init-windows
-   main)
+   manage-window?
+   ;; Window operations.
+   activate-window
+   banish-window
+   move-window-to-desktop
+   window-name
+   window-sort
+   activate-window/index
+   close-window/index
+   ;; Desktop operations.
+   desktop-activate
+   desktop-insert
+   get-unassigned
+   desktop-delete
+   desktop-rename
+   ;; Layout operations.
+   draw-active-window
+   arrange-windows)
   (import
    (rnrs)
-   (only (chezscheme) format)
-   (only (footwm util) case-equal?)
-   (footwm xlib)
+   (only (chezscheme) add1 enumerate format sub1)
    (prefix (footwm ewmh) ewmh.)
-   (prefix (footwm hints) hints.)
    (prefix (footwm icccm) icccm.)
-   (prefix (footwm op) op.))
+   (prefix (footwm util) util.)
+   (footwm xlib))
 
-  (define main
+  ;;;;;; Window operations.
+
+  (define top-level-window?
+    (lambda (wid)
+      (memq wid (ewmh.client-list))))
+
+  (define manage-window?
+    (lambda (wid)
+      (and (icccm.manage-window? wid)
+          (ewmh.show-in-taskbar? wid))))
+
+  (define activate-window
+    (lambda (wid)
+      ;; promote window to top of ewmh.client-list, set as ewmh.active-window.
+      (if (top-level-window? wid)
+          (unless (= wid (ewmh.active-window))
+            (let ([clients (ewmh.client-list)])
+              (ewmh.client-list-set! (cons wid (remove wid clients)))
+              (if (= (ewmh.window-desktop wid) (ewmh.current-desktop))
+                  (arrange-windows)
+                  (desktop-activate (ewmh.window-desktop wid))))))))
+
+  (define banish-window
+    (lambda (wid)
+      ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list.
+      (if (top-level-window? wid)
+          (let ([state (icccm.get-wm-state wid)])
+            (ewmh.client-list-set! (append (remove wid (ewmh.client-list)) (list wid)))
+            (when (eqv? state icccm.NormalState)
+              ;; Normal means the window is visible, hide and re-arrange desktop.
+              (iconify-window wid)
+              (arrange-windows))))))
+
+  (define move-window-to-desktop
+    (lambda (wid index)
+      (when (top-level-window? wid)
+        (when (< index (ewmh.desktop-count))
+          (unless (= index (ewmh.window-desktop wid))
+            (ewmh.window-desktop-set! wid index)
+            (if (eqv? (icccm.get-wm-state wid) icccm.NormalState)
+                (arrange-windows)))))))
+
+  ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
+  (define window-name
+    (lambda (wid)
+      (let ([ename (ewmh.name wid)])
+        (if ename
+            ename
+            (icccm.name wid)))))
+
+  ;;;; Window sorting.
+
+  (define-record-type winfo
+    (fields wid desktop stack))
+
+  (define make-winfo-list
+    (lambda (wids)
+      ;; Filter winfo-desktop removes stale windows. It's an edge case, but it can happen that a
+      ;; window is closed just as we've been called. Such windows will have desktop = #f.
+      (filter
+        winfo-desktop
+        (map
+         (lambda (wid i)
+           (make-winfo wid (ewmh.window-desktop wid) i))
+         wids (enumerate wids)))))
+
+  ;; Order by desktop, followed by order in stack.
+  (define window>?
+    (lambda (win-l win-r)
+      (cond
+       [(eqv? (winfo-desktop win-l) (winfo-desktop win-r))
+        (< (winfo-stack win-l) (winfo-stack win-r))]
+       [else
+        (< (winfo-desktop win-l) (winfo-desktop win-r))])))
+
+  (define sorted-winfo
+    (lambda (wids)
+      (list-sort window>? (make-winfo-list wids))))
+
+  (define window-sort
+    (lambda (wids)
+      ;; return only a list of wids. Less efficient than returning records but it keeps the interface clean.
+      (map winfo-wid (sorted-winfo wids))))
+
+  ;;;; Client window operations.
+
+  (define window-op/index
+    (lambda (op index)
+      (let* ([wlist (sorted-winfo (ewmh.client-list))]
+             [d (ewmh.current-desktop)]
+             [dlist
+              (filter (lambda (w)
+                        (eqv? d (winfo-desktop w))) wlist)])
+        (when (< index (length dlist))
+          (op (winfo-wid (list-ref dlist index)))))))
+
+  ;; Select window to activate by position in list.
+  (define activate-window/index
+    (lambda (index)
+      (window-op/index ewmh.window-active-request! index)))
+
+  (define close-window/index
+    (lambda (index)
+      (window-op/index ewmh.window-close-request! index)))
+
+  ;;;;;; Desktop operations.
+
+  (define adjust-windows-desktop
+    (lambda (pos action)
+      (for-each
+       (lambda (wid)
+         (let ([d (ewmh.window-desktop wid)])
+           (if (and d (>= d pos))
+               (ewmh.window-desktop-set! wid (action d)))))
+       (ewmh.client-list))))
+
+  (define desktop-activate
+    (lambda (index)
+      (when (< index (ewmh.desktop-count))
+        (let ([c (ewmh.current-desktop)])
+          (unless (= index c)
+            (for-each
+             (lambda (wid)
+               (let ([wd (ewmh.window-desktop wid)])
+                 (if wd
+                   (cond
+                    [(= wd index)
+                     (ewmh.window-desktop-set! wid c)]
+                    [(< wd index)
+                     (ewmh.window-desktop-set! wid (add1 wd))]))
+                  #| else ignore, only windows at or below index need adjustment.|#))
+             (ewmh.client-list))
+            (let* ([names (ewmh.desktop-names)]
+                   [name (list-ref names index)])
+              (ewmh.desktop-names-set! (util.list-insert (remove name names) name c)))
+            (arrange-windows))))))
+
+  (define desktop-insert
+    (lambda (name index)
+      (let ([names (ewmh.desktop-names)])
+        ;; desktop names must be unique.
+        (unless (member name names)
+          (ewmh.desktop-names-set! (util.list-insert names name index))
+          (adjust-windows-desktop index add1)
+          (ewmh.desktop-count-set! (add1 (length names)))
+          (if (= index (ewmh.current-desktop))
+              (arrange-windows))))))
+
+  (define get-unassigned
+    (lambda (names)
+      (util.list-find-index
+       (lambda (x)
+         (string=? "Unassigned" x))
+       names)))
+
+  (define desktop-delete
+    (lambda (index)
+      (let ([c (ewmh.desktop-count)])
+        (if (< index c)
+          (let* ([names (ewmh.desktop-names)]
+                 [unassigned (get-unassigned names)])
+            (when unassigned
+              ;; Move orphaned windows to the unassigned desktop.
+              (for-each
+               (lambda (wid)
+                 (if (= index (ewmh.window-desktop wid))
+                   (ewmh.window-desktop-set! wid unassigned)))
+               (ewmh.client-list))
+              ;; Adjust window desktops at index and higher downwards.
+              (adjust-windows-desktop index sub1)
+              ;; Update desktop ewmh hints.
+              (ewmh.desktop-names-set! (remove (list-ref names index) names))
+              (ewmh.desktop-count-set! (sub1 (length names)))
+              ;; Redraw if deleted desktop was the displayed desktop.
+              (if (= index (ewmh.current-desktop))
+                (arrange-windows))))))))
+
+  (define desktop-rename
+    (lambda (index name)
+      (let ([c (ewmh.desktop-count)])
+        (when (< index c)
+          (let ([names (ewmh.desktop-names)])
+            (unless (string=? "Unassigned" (list-ref names index))
+              (ewmh.desktop-names-set! (util.list-replace names index name))))))))
+
+ ;;;;;; Layout operations.
+
+  (define show-window
+    (lambda (wid)
+      (ewmh.showing-desktop #f)
+      (ewmh.active-window-set! wid)
+      (ewmh.show-window wid)
+      (icccm.show-window wid)))
+
+  (define iconify-window
+    (lambda (wid)
+      (ewmh.iconify-window wid)
+      (icccm.iconify-window wid)))
+
+  (define draw-active-window
+    (lambda (wid)
+      (x-configure-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry)))
+      (show-window wid)))
+
+  (define show-desktop
     (lambda ()
-      (install-as-wm)
-      ;; Replace the default error handler with our own. This ensures that the wm continues to function even
-      ;; after an error. eg, when trying to access a resource from a destroyed window.
-      (x-set-error-handler)
-      (init-desktops)
-      (init-windows)
-      (op.arrange-windows)
-      (run)))
+      ;; set input focus to root (so keygrabbers still function) and clear ewmh.
+      (icccm.focus-root)
+      (ewmh.showing-desktop #t)
+      (ewmh.active-window-set! None)))
 
-  ;; Install as *the* window manager.
-  ;; raises an error condition on failure.
-  (define install-as-wm
+  (define arrange-windows
     (lambda ()
-      ;; The window manager client (wm) is the only client that can select SubstructureRedirect on the root window.
-      ;; Any config change requested by directo child windows will result in CirculateRequest, ConfigureRequest,
-      ;; or MapRequest events being sent to the wm. The wm can then honour, disregard, or modify those requests.
-      (let* ([installed #t]
-             [orig (x-set-error-handler
-                    (lambda (d ev)
-                      (if (eq? (xerrorevent-error-code ev) BadAccess)
-                        (set! installed #f))))]
-             [mask
-              (bitwise-ior
-               PropertyChange
-               StructureNotify		; Structure = geometry, border, stacking info for a window.
-               SubstructureNotify	; Sub = structure notify for child windows.
-               SubstructureRedirect)])	; Redirect child window change requests to this client.
-          (x-select-input (root) mask)
-          (x-sync)
-          (x-set-error-handler orig)
-          (unless installed
-            (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running.")))))))
-
-  (define init-desktops
-    (lambda ()
-      ;; footwm needs _NET_DESKTOP_NAMES, _NET_NUMBER_OF_DESKTOPS, and _NET_CURRENT_DESKTOP.
-      ;; Make sure they exist or create if necessary.
-      (unless (ewmh.current-desktop)
-          (ewmh.current-desktop-set! 0))
-      (if (null? (ewmh.desktop-names))
-          (ewmh.desktop-names-set! '("Unassigned")))
-      (unless (ewmh.desktop-count)
-          (ewmh.desktop-count-set! 1))))
-
-  (define init-windows
-    ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
-    (lambda ()
-      (let* ([allwids (x-query-tree)]
-             [ws (filter op.manage-window? allwids)]
-             [defgroup (op.get-unassigned (ewmh.desktop-names))])
-        (define wid-exists?
-          (lambda (wid)
-            (memq wid ws)))
-        (define set-join
-          (lambda (l1 l2)
-            (append l1 (filter (lambda (x) (not (memq x l1))) l2))))
-        (ewmh.calculate-workarea allwids)
-        ;; set WM_STATE & _NET_WM_DESKTOP for each window.
-        (for-each
-         (lambda (wid)
-           (icccm.init-window wid)
-           (unless (ewmh.window-desktop wid)
-             (ewmh.window-desktop-set! wid defgroup)))
-         ws)
-        ;; set client-list ewmh hints.
-        (let ([clients (ewmh.client-list)])
-          (if (null? clients)
-              (ewmh.client-list-set! ws)
-              ;; client list already exists, need to sanitise it with ws.
-              (ewmh.client-list-set! (filter wid-exists? (set-join clients ws))))))))
-
-  (define run
-    (lambda ()
-      (let loop ()
-        (let ([ev (x-next-event)])
-          (cond
-           ((xclientmessageevent? ev)		(on-client-message ev))
-           ((xconfigureevent? ev)		(on-configure ev))
-           ((xconfigurerequestevent? ev)	(on-configure-request ev))
-           ((xcreatewindowevent? ev)		(on-create-window ev))
-           ((xdestroywindowevent? ev)		(on-destroy-window ev))
-           ((xmapevent? ev)			(on-map ev))
-           ((xmaprequestevent? ev)		(on-map-request ev))
-           ((xpropertyevent? ev)		(on-property ev))
-           ((xunmapevent? ev)			(on-unmap ev))
-           (else
-	    (display (format "Unknown event ~d~n" (xanyevent-type ev))))))
-        (loop))))
-
-  (define on-client-message
-    (lambda (ev)
-      (let ([wid (xanyevent-wid (xclientmessageevent-xany ev))]
-            [type (xclientmessageevent-message-type ev)])
-        (display (format "#x~x ClientMessage ~a ~a~n" wid type (x-get-atom-name type)))
-        (case-equal? type
-         [(ewmh.atom-ref '_NET_ACTIVE_WINDOW)
-          (op.activate-window wid)]
-         [(ewmh.atom-ref '_NET_CLOSE_WINDOW)
-          (icccm.delete-window wid)]
-         [(ewmh.atom-ref '_NET_CURRENT_DESKTOP)
-          (op.desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
-         [(ewmh.atom-ref '_NET_WM_STATE)
-          (ewmh.on-client-state wid ev)]
-         [(ewmh.atom-ref '_NET_WM_DESKTOP)
-          (op.move-window-to-desktop wid (list-ref (xclientmessageevent-data ev) 0))]
-         [(icccm.atom-ref 'WM_CHANGE_STATE)
-          (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
-              (op.banish-window wid))]
-         [(icccm.atom-ref 'WM_PROTOCOLS)
-          (let ([a (list-ref (xclientmessageevent-data ev) 0)])
-            (display (format "#x~x WM_PROTOCOLS -> ~a ~a~n" wid a (x-get-atom-name a))))]
-         [else
-          (display (format "#x~x Unknown ClientMessage message type~n" wid))]))))
-
-  (define on-configure
-    (lambda (ev)
-      (let ([wid (xconfigureevent-wid ev)])
-        ;; For Notify events, always ignore those generated by SubstructureRedirects.
-        (when (eq? wid (xanyevent-wid (xconfigureevent-xany ev)))
-          (display (format "#x~x ConfigureNotify" wid))
-          (when (eq? wid (ewmh.active-window))
-            ;; Some windows ignore the initial geom we set during map-request so we check
-            ;; and force the resize if necessary.
-            (let ([ideal (ewmh.workarea-geometry)])
-              (if (geometry=? ideal (xconfigureevent-geometry ev))
-                  (display " ideal")
-                  (begin
-                    (display (format " non-ideal requesting ~a" ideal))
-                    (x-configure-window wid ideal)))))
-          (newline)))))
-
-  (define on-configure-request
-    (lambda (ev)
-      (let ([wid (xconfigurerequestevent-wid ev)]
-            [g (icccm.on-configure-request ev)])
-        (display (format "#x~x ConfigureRequest ~a~n" wid g))
-        (when (ewmh.dock-window? wid)
-          ;; ConfigureRequest is for a dock window, recalculate work area.
-          ;; I'd prefer to handle this in the ConfigureNotify handler, but i'm not getting
-          ;; those events for windows that already exist at wm-startup time.
-          (ewmh.calculate-workarea (x-query-tree))
-          (op.draw-active-window (ewmh.active-window))))))
-
-  (define on-create-window
-    (lambda (ev)
-      (when (icccm.on-create-window ev)
-        (display (format "#x~x CreateNotify~n" (xcreatewindowevent-wid ev))))))
-
-  (define on-destroy-window
-    (lambda (ev)
-      ;; For Notify events, always ignore those generated by SubstructureRedirects.
-      (if (= (xdestroywindowevent-wid ev) (xanyevent-wid (xdestroywindowevent-xany ev)))
-          (begin
-            (display (format "#x~x DestroyNotify~n" (xdestroywindowevent-wid ev)))
-            (ewmh.remove-window (xdestroywindowevent-wid ev))
-            (op.arrange-windows)))))
-
-  (define on-map
-    (lambda (ev)
-      ;; For Notify events, always ignore those generated by SubstructureRedirects.
-      (let ([wid (xmapevent-wid ev)]
-            [aid (ewmh.active-window)])
-        (when (eq? wid (xanyevent-wid (xmapevent-xany ev)))
-          (if (eq? wid aid)
-              ;; Don't use the fancy icccm version as it doesn't always work. eg, Some SDL windowed app
-              ;; regaining focus don't regain keyboard..
-              ;; This simple version seems to work better, at least so far..
-            (x-set-input-focus wid RevertToNone CurrentTime)
-            #;(icccm.focus-window wid))
-          (display (format "#x~x MapNotify ~a~n" wid (op.window-name wid)))))))
-
-  (define on-map-request
-    (lambda (ev)
-      (let ([wid (xmaprequestevent-wid ev)])
-        (display (format "#x~x MapRequest ~a~n" wid (op.window-name wid)))
-        (icccm.on-map-request ev)
-        (unless (ewmh.dock-window? wid)
-          (ewmh.on-map-request ev)
-          (op.arrange-windows)))))
-
-  (define on-property
-    (lambda (ev)
-      (let ([wid (xanyevent-wid (xpropertyevent-xany ev))]
-            [atom (xpropertyevent-propatom ev)])
-        (display (format "#x~x PropertyNotify ~a~n" wid (x-get-atom-name atom)))
-        (when (hints.command? atom)
-         (hints.on-command wid)))))
-
-  (define on-unmap
-    (lambda (ev)
-      ;; Only action non-redirect events as we subscribe to both root-substructure & child structure notify
-      ;; (in order to get child window destroy events).
-      (if (= (xunmapevent-wid ev) (xanyevent-wid (xunmapevent-xany ev)))
-          ;; Window has been unmapped/hidden.
-          ;; This could be a prelude to deletion, or it could be the window is just going iconic.
-          ;; Check wm-state:
-          ;; - ICONIC (the window is hidden, do nothing unless it was visible)
-          ;; - WITHDRAWN (the window is being removed, remove it from EWMH hints).
-          #;(icccm.on-unmap ev)	;; transitions WM_STATE::NORMAL -> WITHDRAWN
-          (let ([wid (xunmapevent-wid ev)])
-            (if (memq wid (ewmh.client-list))
-              (let ([state (icccm.get-wm-state wid)])
-                (display (format "#x~x UnmapNotify state=~a\n" wid state))
-                ;; State could be #f if window is already deleted.
-                (when (or (not state) (not (eq? state icccm.IconicState)))
-                  (display (format "#x~x removing window from EWMH client lists~n" wid))
-                  (ewmh.remove-window wid)
-                  (when (eq? wid (ewmh.active-window))
-                    (ewmh.active-window-set! None))
-                  (op.arrange-windows)))
-              ;; We don't store dockapps in client-list, but watch them so we can update struts.
-              ;; Traversing all child windows is a bit brute force. Need to consider a FOOT_DOCKAPP_LIST.
-              (begin
-                (ewmh.calculate-workarea (remove wid (x-query-tree)))
-                (op.draw-active-window (ewmh.active-window)))))))))
+      (let ([aws (ewmh.client-list)]
+            [d (ewmh.current-desktop)])
+        (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) aws)])
+          (for-each iconify-window ows)	; should do this only on wm-init and desktop change..
+          (if (null? ws)
+            (show-desktop)	; no window to show:
+            (let ([vis (car ws)]		; visible window
+                  [hs (cdr ws)])		; hidden windows
+              (for-each iconify-window hs)
+              (unless (eq? vis (ewmh.active-window))
+                (draw-active-window vis)))))))))

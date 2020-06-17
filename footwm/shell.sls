@@ -10,7 +10,6 @@
    (prefix (footwm ewmh) ewmh.)
    (prefix (footwm hints) hints.)
    (prefix (footwm icccm) icccm.)
-   (prefix (footwm op) op.)
    (prefix (footwm wm) wm.)
    (footwm xlib))
 
@@ -41,7 +40,7 @@
        [(string=? "wl" cmd)
         (windows)]
        [(string=? "ws" cmd)
-        (op.activate-window/index (string->number (list-ref args 0)))]
+        (wm.activate-window/index (string->number (list-ref args 0)))]
        [else
         (display "command not understood. showing help.")
         (newline)
@@ -95,7 +94,7 @@ Enters shell mode if no [command] given.
          (lambda (wid i)
            (display (window-display-string wid i))
            (newline))
-         (op.window-sort wids) (enumerate wids)))))
+         (wm.window-sort wids) (enumerate wids)))))
 
   (define desktop-display-string
     (lambda (desk)
@@ -112,4 +111,4 @@ Enters shell mode if no [command] given.
          (ewmh.window-desktop wid)
          (icccm.class-hint-instance c)
          (icccm.class-hint-class c)
-         (op.window-name wid))))))
+         (wm.window-name wid))))))
