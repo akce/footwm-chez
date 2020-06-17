@@ -179,7 +179,11 @@
             [aid (ewmh.active-window)])
         (when (eq? wid (xanyevent-wid (xmapevent-xany ev)))
           (if (eq? wid aid)
-            (icccm.focus-window wid))
+              ;; Don't use the fancy icccm version as it doesn't always work. eg, Some SDL windowed app
+              ;; regaining focus don't regain keyboard..
+              ;; This simple version seems to work better, at least so far..
+            (x-set-input-focus wid RevertToNone CurrentTime)
+            #;(icccm.focus-window wid))
           (display (format "#x~x MapNotify ~a~n" wid (op.window-name wid)))))))
 
   (define on-map-request
