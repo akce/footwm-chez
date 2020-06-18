@@ -10,10 +10,15 @@
 (library (footwm ewmh)
   (export
    atom
+   net-supported-set!
    client-list
    client-list-set!
    desktop-count
    desktop-count-set!
+   desktop-geometry
+   desktop-geometry-sync!
+   desktop-viewport
+   desktop-viewport-init!
    current-desktop
    current-desktop-set!
    current-desktop-request!
@@ -55,9 +60,12 @@
          _NET_CLIENT_LIST
          _NET_CLOSE_WINDOW
          _NET_CURRENT_DESKTOP
+         _NET_DESKTOP_GEOMETRY
          _NET_DESKTOP_NAMES
+         _NET_DESKTOP_VIEWPORT
          _NET_NUMBER_OF_DESKTOPS
          _NET_SHOWING_DESKTOP
+         _NET_SUPPORTED
          _NET_WORKAREA
          _NET_WM_DESKTOP
          _NET_WM_NAME
@@ -82,7 +90,9 @@
   ;;;;;; Root window properties (and messages)
 
   ;;;; _NET_SUPPORTED ATOM[]/32
-  ;; TODO
+  (define net-supported-set!
+    (lambda ()
+      (ulongs-property-set! (root) (atom 'ref '_NET_SUPPORTED) (atom 'values) (x-atom 'ref 'ATOM))))
 
   ;;;; _NET_CLIENT_LIST WINDOW[]/32
 
@@ -109,10 +119,25 @@
       (cardinal-set! (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) number)))
 
   ;;;; _NET_DESKTOP_GEOMETRY width, height, CARDINAL[2]/32
-  ;; TODO
+  (define desktop-geometry
+    (lambda ()
+      (let ([g (property->ulongs (root) (atom 'ref '_NET_DESKTOP_GEOMETRY) (x-atom 'ref 'CARDINAL))])
+        (make-geometry 0 0 (list-ref g 0) (list-ref g 1)))))
+
+  (define desktop-geometry-sync!
+    (lambda ()
+      (let ([g (window-attributes-geom (x-get-window-attributes (root)))])
+        (ulongs-property-set! (root) (atom 'ref '_NET_DESKTOP_GEOMETRY) `(,(geometry-width g) ,(geometry-height g)) (x-atom 'ref 'CARDINAL)))))
 
   ;;;; _NET_DESKTOP_VIEWPORT x, y, CARDINAL[][2]/32
-  ;; TODO
+  ;; Footwm doesn't support large desktops, so it will always be 0, 0.
+  (define desktop-viewport
+    (lambda ()
+      (property->ulongs (root) (atom 'ref '_NET_DESKTOP_VIEWPORT) (x-atom 'ref 'CARDINAL))))
+
+  (define desktop-viewport-init!
+    (lambda ()
+      (ulongs-property-set! (root) (atom 'ref '_NET_DESKTOP_VIEWPORT) '(0 0) (x-atom 'ref 'CARDINAL))))
 
   ;;;; _NET_CURRENT_DESKTOP desktop, CARDINAL/32
 
@@ -156,7 +181,6 @@
       (send-message-cardinal (root) wid (atom 'ref '_NET_ACTIVE_WINDOW) 0)))
 
   ;;;; _NET_WORKAREA x, y, width, height CARDINAL[][4]/32
-  ;; TODO
   (define workarea-geometry
     (lambda ()
       (let ([gl (property->ulongs (root) (atom 'ref '_NET_WORKAREA) (x-atom 'ref 'CARDINAL))])
@@ -168,15 +192,15 @@
 
   (define calculate-workarea
     (lambda (wids)
-      (let ([rg (window-attributes-geom (x-get-window-attributes (root)))])
+      (let ([dg (desktop-geometry)])
         ;; find the maximal strut.
         (let loop ([struts (map get-strut (filter dock-window? wids))] [left 0] [right 0] [top 0] [bottom 0])
           (cond
            [(null? struts)
             (let ([x left]
                   [y top]
-                  [w (- (geometry-width rg) (+ left right))]
-                  [h (- (geometry-height rg) (+ top bottom))])
+                  [w (- (geometry-width dg) (+ left right))]
+                  [h (- (geometry-height dg) (+ top bottom))])
               (workarea-set! x y w h))]
            [else
             (let ([strut (car struts)])

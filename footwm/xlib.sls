@@ -326,6 +326,7 @@
           [(intern)	(init-atoms)]
           [(ref)	(atom-ref (car args))]
           [(list)	atom-list]
+          [(values)	(vector->list (hashtable-values atoms))]
           ))))
 
   ;; type aliases.
