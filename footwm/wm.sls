@@ -22,6 +22,7 @@
    desktop-delete
    desktop-rename
    ;; Layout operations.
+   ideal-window-geometry
    draw-active-window
    arrange-windows)
   (import
@@ -219,6 +220,14 @@
 
  ;;;;;; Layout operations.
 
+  (define ideal-window-geometry
+    (lambda (wid)
+      (cond
+        [(ewmh.fullscreen-window? wid)
+         (ewmh.desktop-geometry)]
+        [else
+          (ewmh.workarea-geometry)])))
+
   (define show-window
     (lambda (wid)
       (ewmh.showing-desktop #f)
@@ -233,7 +242,7 @@
 
   (define draw-active-window
     (lambda (wid)
-      (x-configure-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry)))
+      (x-configure-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ideal-window-geometry wid)))
       (show-window wid)))
 
   (define show-desktop

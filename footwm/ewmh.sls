@@ -44,6 +44,7 @@
    show-window
    iconify-window
    demands-attention?
+   fullscreen-window?
    get-wm-strut
    get-wm-strut-partial
    pid
@@ -73,6 +74,7 @@
          _NET_WM_STATE
          _NET_WM_STATE_DEMANDS_ATTENTION
          _NET_WM_STATE_HIDDEN
+         _NET_WM_STATE_FULLSCREEN
          _NET_WM_STRUT
          _NET_WM_STRUT_PARTIAL
          _NET_WM_WINDOW_TYPE
@@ -311,13 +313,37 @@
     (lambda (wid values)
       (ulongs-property-set! wid (atom 'ref '_NET_WM_STATE) values (x-atom 'ref 'ATOM))))
 
+  ;; Defines for on-client-state: action.
+  (define _NET_WM_STATE_REMOVE	0)	; remove/unset property
+  (define _NET_WM_STATE_ADD	1)	; add/set property
+  (define _NET_WM_STATE_TOGGLE	2)	; toggle property
+
   (define on-client-state
     (lambda (wid ev)
       (let ([action (list-ref (xclientmessageevent-data ev) 0)]
             [prop1 (list-ref (xclientmessageevent-data ev) 1)]
             [prop2 (list-ref (xclientmessageevent-data ev) 2)]
-            #;[source (list-ref (xclientmessageevent-data ev) 3)])
-        (display (format "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (x-get-atom-name prop1) prop2 (x-get-atom-name prop2))))))
+            #;[source (list-ref (xclientmessageevent-data ev) 3)]
+            [wm-state (get-net-wm-state wid)])
+        (display
+          (format
+            "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (x-get-atom-name prop1) prop2 (x-get-atom-name prop2)))
+        (net-wm-state-set!
+          wid
+          (cond
+            [(= action _NET_WM_STATE_REMOVE)
+             (remv prop1 wm-state)]
+            [(= action _NET_WM_STATE_ADD)
+             (if (memv prop1 wm-state)
+                 wm-state
+                 (cons prop1 wm-state))]
+            [(= action _NET_WM_STATE_TOGGLE)
+             (if (memv prop1 wm-state)
+                 (remv prop1 wm-state)
+                 (cons prop1 wm-state))]
+            [else
+              (error #f (format "#x~x Bad _NET_WM_STATE action!" wid) action)]))
+        )))
 
   (define add-net-wm-states-state!
     (lambda (wid a)
@@ -345,6 +371,15 @@
   (define demands-attention?
     (lambda (wid)
       (let ([a (atom 'ref '_NET_WM_STATE_DEMANDS_ATTENTION)]
+            [states (get-net-wm-state wid)])
+        (if (memq a states)
+            #t
+            #f))))
+
+  ;; _NET_WM_STATE_FULLSCREEN
+  (define fullscreen-window?
+    (lambda (wid)
+      (let ([a (atom 'ref '_NET_WM_STATE_FULLSCREEN)]
             [states (get-net-wm-state wid)])
         (if (memq a states)
             #t
