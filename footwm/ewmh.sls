@@ -48,6 +48,8 @@
    get-wm-strut
    get-wm-strut-partial
    pid
+   #;frame-extents
+   frame-extents-set!
    on-map-request
    remove-window)
   (import
@@ -64,7 +66,9 @@
          _NET_DESKTOP_GEOMETRY
          _NET_DESKTOP_NAMES
          _NET_DESKTOP_VIEWPORT
+         _NET_FRAME_EXTENTS
          _NET_NUMBER_OF_DESKTOPS
+         _NET_REQUEST_FRAME_EXTENTS
          _NET_SHOWING_DESKTOP
          _NET_SUPPORTED
          _NET_WORKAREA
@@ -428,6 +432,25 @@
 
   ;;;; _NET_FRAME_EXTENTS left, right, top, bottom, CARDINAL[4]/32
   ;; TODO
+  #;(define frame-extents
+    (lambda (wid)
+      (let ([gl (property->ulongs wid (atom 'ref '_NET_FRAME_EXTENTS) (x-atom 'ref 'CARDINAL))])
+        (cond
+          [(null? gl)
+           #f]
+          [else
+            ;; FIXME: left right top bottom != x y width height
+            ;; FIXME: This is unused by the WM, but there should be an extents->geometry function.
+            (make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3))]))))
+
+  (define frame-extents-set!
+    (lambda (wid g)
+      (ulongs-property-set! wid (atom 'ref '_NET_FRAME_EXTENTS)
+                            `(,(geometry-x g)		                ; left
+                               ,(- (geometry-width g) (geometry-x g))	; right
+                               ,(geometry-y g)				; top
+                               ,(- (geometry-height g) (geometry-y g)))	; bottom
+                            (x-atom 'ref 'CARDINAL))))
 
   ;;;; _NET_WM_OPAQUE_REGION x, y, width, height, CARDINAL[][4]/32
   ;; N/A

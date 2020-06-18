@@ -127,6 +127,8 @@
           (icccm.delete-window wid)]
          [(ewmh.atom 'ref '_NET_CURRENT_DESKTOP)
           (wm.desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
+         [(ewmh.atom 'ref '_NET_REQUEST_FRAME_EXTENTS)
+          (ewmh.frame-extents-set! wid (wm.ideal-window-geometry wid))]
          [(ewmh.atom 'ref '_NET_WM_STATE)
           (ewmh.on-client-state wid ev)
           (when (eqv? (ewmh.active-window) wid)
