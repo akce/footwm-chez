@@ -21,9 +21,9 @@
 (current-display (x-open-display))
 (root (x-default-root-window))
 
-(x-init-atoms)
-(ewmh.init-atoms)
-(icccm.init-atoms)
+(x-atom 'intern)
+(ewmh.atom 'intern)
+(icccm.atom 'intern)
 
 (define hex
   (lambda (num)

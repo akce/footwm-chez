@@ -20,9 +20,9 @@
 (current-display (x-open-display))
 (root (x-default-root-window))
 
-(x-init-atoms)
-(ewmh.init-atoms)
-(hints.init-atoms)
+(x-atom 'intern)
+(ewmh.atom 'intern)
+(hints.atom 'intern)
 
 (define make-desktop-data
   (lambda ()

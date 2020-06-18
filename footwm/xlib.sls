@@ -159,7 +159,7 @@
    XWindowAttributes
    XWindowChanges
 
-   x-init-atoms x-atom-ref
+   x-atom
 
    Success
    BadAccess
@@ -272,7 +272,6 @@
    xutf8-text-list-to-text-property
    xutf8-text-property-to-text-list
 
-   atom
    card32
    dpy*
    pixmap
@@ -322,7 +321,12 @@
       (define atom-ref
         (lambda (a)
           (hashtable-ref atoms a #f)))
-      (values init-atoms atom-ref)))
+      (lambda (cmd . args)
+        (case cmd
+          [(intern)	(init-atoms)]
+          [(ref)	(atom-ref (car args))]
+          [(list)	atom-list]
+          ))))
 
   ;; type aliases.
   (define-ftype card32 integer-32)
@@ -529,12 +533,9 @@
      [stack-mode	int]))
 
   ;; X atoms from Xatom.h
-  (define atom-list
-    '(ATOM
-       CARDINAL
-       WINDOW))
-  (define-values
-      (x-init-atoms x-atom-ref) (make-atom-manager atom-list))
+  (define x-atom
+    (make-atom-manager
+      '(ATOM CARDINAL WINDOW)))
 
   ;; Error codes. From X.h
   (enum error-codes
@@ -884,7 +885,7 @@
     (lambda (wid atomprop value)
       (fmem ([num &num unsigned-32])
             (foreign-set! 'unsigned-32 num 0 value)
-            (x-change-property wid atomprop (x-atom-ref 'CARDINAL) 32 0 num 1))))
+            (x-change-property wid atomprop (x-atom 'ref 'CARDINAL) 32 0 num 1))))
 
   (define ulongs-property-set!
     (lambda (wid atomprop ulongs typeatom)

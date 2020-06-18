@@ -23,10 +23,10 @@
 (current-display (x-open-display))
 (root (x-default-root-window))
 
-(x-init-atoms)
-(icccm.init-atoms)
-(ewmh.init-atoms)
-(hints.init-atoms)
+(x-atom 'intern)
+(icccm.atom 'intern)
+(ewmh.atom 'intern)
+(hints.atom 'intern)
 
 (let ([argv (command-line)])
   (cond

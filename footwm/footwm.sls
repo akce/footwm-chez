@@ -118,20 +118,20 @@
             [type (xclientmessageevent-message-type ev)])
         (display (format "#x~x ClientMessage ~a ~a~n" wid type (x-get-atom-name type)))
         (case-equal? type
-         [(ewmh.atom-ref '_NET_ACTIVE_WINDOW)
+         [(ewmh.atom 'ref '_NET_ACTIVE_WINDOW)
           (wm.activate-window wid)]
-         [(ewmh.atom-ref '_NET_CLOSE_WINDOW)
+         [(ewmh.atom 'ref '_NET_CLOSE_WINDOW)
           (icccm.delete-window wid)]
-         [(ewmh.atom-ref '_NET_CURRENT_DESKTOP)
+         [(ewmh.atom 'ref '_NET_CURRENT_DESKTOP)
           (wm.desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
-         [(ewmh.atom-ref '_NET_WM_STATE)
+         [(ewmh.atom 'ref '_NET_WM_STATE)
           (ewmh.on-client-state wid ev)]
-         [(ewmh.atom-ref '_NET_WM_DESKTOP)
+         [(ewmh.atom 'ref '_NET_WM_DESKTOP)
           (wm.move-window-to-desktop wid (list-ref (xclientmessageevent-data ev) 0))]
-         [(icccm.atom-ref 'WM_CHANGE_STATE)
+         [(icccm.atom 'ref 'WM_CHANGE_STATE)
           (if (eq? (list-ref (xclientmessageevent-data ev) 0) icccm.IconicState)
               (wm.banish-window wid))]
-         [(icccm.atom-ref 'WM_PROTOCOLS)
+         [(icccm.atom 'ref 'WM_PROTOCOLS)
           (let ([a (list-ref (xclientmessageevent-data ev) 0)])
             (display (format "#x~x WM_PROTOCOLS -> ~a ~a~n" wid a (x-get-atom-name a))))]
          [else

@@ -9,8 +9,7 @@
 
 (library (footwm icccm)
   (export
-   init-atoms
-   atom-ref
+   atom
 
    ;; WM_NAME
    name
@@ -101,33 +100,32 @@
    (rnrs)
    (only (chezscheme)
      inexact->exact
-     define-values define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
+     define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
    (only (footwm ftypes-util) fmem)
    (prefix (footwm util) util.)
    (footwm xlib))
 
-  (define atom-list
-    '(WM_CHANGE_STATE
-      WM_CLASS
-      WM_CLIENT_MACHINE
-      WM_COMMAND
-      WM_DELETE_WINDOW
-      WM_HINTS
-      WM_NAME
-      WM_NORMAL_HINTS
-      WM_PROTOCOLS
-      WM_SIZE_HINTS
-      WM_STATE
-      WM_TAKE_FOCUS))
-  (define-values
-      (init-atoms atom-ref) (make-atom-manager atom-list))
+  (define atom
+    (make-atom-manager
+      '(WM_CHANGE_STATE
+         WM_CLASS
+         WM_CLIENT_MACHINE
+         WM_COMMAND
+         WM_DELETE_WINDOW
+         WM_HINTS
+         WM_NAME
+         WM_NORMAL_HINTS
+         WM_PROTOCOLS
+         WM_SIZE_HINTS
+         WM_STATE
+         WM_TAKE_FOCUS)))
 
   ;;;;;; ICCCM 4.1.2 Client properties.
 
   ;;;; ICCCM 4.1.2.1 WM_NAME
   (define name
     (lambda (wid)
-      (property->string wid (atom-ref 'WM_NAME))))
+      (property->string wid (atom 'ref 'WM_NAME))))
 
   ;;;; ICCCM 4.1.2.2 WM_ICON_NAME
   ;; N/A
@@ -176,7 +174,7 @@
   (define get-normal-hints
     (lambda (wid)
       ;; WM_NORMAL_HINTS is of type WM_SIZE_HINTS.
-      (let ([ptrlen (get-property-ptr wid (atom-ref 'WM_NORMAL_HINTS) (atom-ref 'WM_SIZE_HINTS))])
+      (let ([ptrlen (get-property-ptr wid (atom 'ref 'WM_NORMAL_HINTS) (atom 'ref 'WM_SIZE_HINTS))])
         (if ptrlen
             (let* ([ptr (car ptrlen)]
                    [*ptr (foreign-ref 'void* ptr 0)]
@@ -302,7 +300,7 @@
   (define get-wm-hints
     (lambda (wid)
       ;; WM_HINTS has type WM_HINTS.
-      (let* ([at (atom-ref 'WM_HINTS)]
+      (let* ([at (atom 'ref 'WM_HINTS)]
              [ptrlen (get-property-ptr wid at at)])
         (if ptrlen
             (let* ([ptr (car ptrlen)]
@@ -326,7 +324,7 @@
     (lambda (wid)
       ;; This should use XGetClassHint but class hints are just two strings (see ICCCM 4.1.2.5 WM_CLASS).
       ;; Save some hassle and use the text property stuff.
-      (property->string* wid (atom-ref 'WM_CLASS))))
+      (property->string* wid (atom 'ref 'WM_CLASS))))
 
   ;; ICCCM 4.1.2.5 WM_CLASS refers to this first string as the "instance" even though XClassHint has it as res_name.
   ;; Probably because there are a number of "name" ways to populate this value.
@@ -349,7 +347,7 @@
   ;;;; ICCCM 4.1.2.7 WM_PROTOCOLS
   (define get-wm-protocols
     (lambda (wid)
-      (property->ulongs wid (atom-ref 'WM_PROTOCOLS) (x-atom-ref 'ATOM))))
+      (property->ulongs wid (atom 'ref 'WM_PROTOCOLS) (x-atom 'ref 'ATOM))))
 
   (define has-wm-protocol?
     (lambda (wid proto-atom)
@@ -363,7 +361,7 @@
   ;;;; ICCCM 4.1.2.9 WM_CLIENT_MACHINE
   (define client-machine
     (lambda (wid)
-      (property->string wid (atom-ref 'WM_CLIENT_MACHINE))))
+      (property->string wid (atom 'ref 'WM_CLIENT_MACHINE))))
 
   ;;;;; ICCCM 4.1.3 Window manager properties.
 
@@ -381,7 +379,7 @@
 
   (define get-wm-state
     (lambda (wid)
-      (let ([at (atom-ref 'WM_STATE)])
+      (let ([at (atom 'ref 'WM_STATE)])
         (let ([data (property->ulongs wid at at)])
           (if (null? data)
               #f
@@ -390,7 +388,7 @@
   ;; WM *must* set in top-level windows.
   (define wm-state-set!
     (lambda (wid state)
-      (let ([at (atom-ref 'WM_STATE)])
+      (let ([at (atom 'ref 'WM_STATE)])
         (ulongs-property-set! wid at (list state 0) at))))
 
   ;;;; ICCCM 4.1.3.2 WM_ICON_SIZE
@@ -463,7 +461,7 @@
   (define client-iconify-message
     (lambda (wid)
       ;; Sends client message to the WM as the WM is the only client watching SubstructureRedirect on the root window.
-      (send-client-message (root) wid (atom-ref 'WM_CHANGE_STATE) IconicState SubstructureRedirect)))
+      (send-client-message (root) wid (atom 'ref 'WM_CHANGE_STATE) IconicState SubstructureRedirect)))
 
   ;;;;;; ICCCM 4.1.5 Configuring the Window.
   (define-syntax bit-case
@@ -500,11 +498,11 @@
               (if h
                   (wm-hints-input h)
                   #f)]
-             [take-focus (has-wm-protocol? wid (atom-ref 'WM_TAKE_FOCUS))])
+             [take-focus (has-wm-protocol? wid (atom 'ref 'WM_TAKE_FOCUS))])
         (if input-hint
             (if take-focus
                 ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
-                (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_TAKE_FOCUS) StructureNotify)
+                (send-client-message wid wid (atom 'ref 'WM_PROTOCOLS) (atom 'ref 'WM_TAKE_FOCUS) StructureNotify)
                 ;; Passive: manually set input focus.
                 (x-set-input-focus wid RevertToNone CurrentTime))
             ;; PointerRoot mode.
@@ -517,8 +515,8 @@
   ;;;;;; ICCCM 4.2.1.8 Window Deletion.
   (define delete-window
     (lambda (wid)
-      (if (has-wm-protocol? wid (atom-ref 'WM_DELETE_WINDOW))
-          (send-client-message wid wid (atom-ref 'WM_PROTOCOLS) (atom-ref 'WM_DELETE_WINDOW) NoEvent)
+      (if (has-wm-protocol? wid (atom 'ref 'WM_DELETE_WINDOW))
+          (send-client-message wid wid (atom 'ref 'WM_PROTOCOLS) (atom 'ref 'WM_DELETE_WINDOW) NoEvent)
           (x-destroy-window wid))))
 
   ;;;;;; ICCCM Appendix C Obsolete Session management conventions.
@@ -526,7 +524,7 @@
   ;;;; ICCCM C.1.1 WM_COMMAND
   (define command
     (lambda (wid)
-      (property->string* wid (atom-ref 'WM_COMMAND))))
+      (property->string* wid (atom 'ref 'WM_COMMAND))))
 
   ;;;;;; Other/Misc functions.
 
