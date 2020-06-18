@@ -101,6 +101,11 @@
     (lambda ()
       (let loop ()
         (let ([ev (x-next-event)])
+          ;; Non-ideal, but use XGrabServer(3) to stop the X Server from processing requests from
+          ;; other clients while we're handling an event. This gives us a stable view of the server
+          ;; and prevents the floor from being ripped out from under us. And that's important given
+          ;; that all state that footwm needs is stored in window properties.
+          (x-grab-server)
           (cond
            ((xclientmessageevent? ev)		(on-client-message ev))
            ((xconfigureevent? ev)		(on-configure ev))
@@ -112,7 +117,8 @@
            ((xpropertyevent? ev)		(on-property ev))
            ((xunmapevent? ev)			(on-unmap ev))
            (else
-	    (display (format "Unknown event ~d~n" (xanyevent-type ev))))))
+	    (display (format "Unknown event ~d~n" (xanyevent-type ev)))))
+          (x-ungrab-server))
         (loop))))
 
   (define on-client-message

@@ -251,6 +251,7 @@
    x-get-window-attributes
    x-get-window-property
    x-grab-key
+   x-grab-server
    x-intern-atom
    x-keycode-to-keysym
    x-keysym-to-keycode
@@ -268,6 +269,7 @@
    x-string-to-keysym
    x-sync
    x-ungrab-key
+   x-ungrab-server
    x-unmap-window
    xutf8-text-list-to-text-property
    xutf8-text-property-to-text-list
@@ -652,6 +654,7 @@
     (XGetWindowAttributes (window (* XWindowAttributes)) status)
     (x-get-window-property (window atom long long boolean atom (* atom) (* int) (* unsigned-long) (* unsigned-long) (* void*)) int)
     (x-grab-key (int unsigned window boolean int int) int)
+    (x-grab-server () int)
     (x-intern-atom (string boolean) atom)
     (x-keycode-to-keysym (keycode int) keysym)
     (x-keysym-to-keycode (keysym) keycode)
@@ -665,6 +668,7 @@
     (x-set-text-property (window (* XTextProperty) atom) void)
     (XSync (boolean) int)
     (x-ungrab-key (int unsigned window) int)
+    (x-ungrab-server () int)
     (x-unmap-window (window) int)
     ;; TODO void* in Xutf8TextListToTextProperty should be (* u8*).
     ;; I had troubles with foreign-set! and 'u8* so revisit when I understand ftypes better.
