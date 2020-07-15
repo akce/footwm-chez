@@ -1,4 +1,8 @@
-#! /usr/bin/scheme --script
+#! /bin/sh
+#|
+exec /usr/bin/env chez-scheme --eehistory ~/.foot/footsh_history --script "$0" "$@"
+|#
+
 
 ;; Footwm shell (command line) interface.
 ;;
