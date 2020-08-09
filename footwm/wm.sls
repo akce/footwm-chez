@@ -243,6 +243,12 @@
   (define draw-active-window
     (lambda (wid)
       (x-configure-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ideal-window-geometry wid)))
+      ;; Footwm won't arrange any overlapping windows so lower the active window in the
+      ;; stack list so that any override-redirect (eg, tooltips etc) from strut windows
+      ;; will be visible.
+      ;; (As is the case with tint2. My guess is it's reusing its tooltip window so
+      ;; newer footwm windows would obscure tooltips unless we lower our window.)
+      (x-lower-window wid)
       (show-window wid)))
 
   (define show-desktop

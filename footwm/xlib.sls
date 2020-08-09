@@ -256,6 +256,7 @@
    x-keycode-to-keysym
    x-keysym-to-keycode
    x-keysym-to-string
+   x-lower-window
    x-map-window
    x-move-resize-window
    x-next-event
@@ -658,6 +659,7 @@
     (x-intern-atom (string boolean) atom)
     (x-keycode-to-keysym (keycode int) keysym)
     (x-keysym-to-keycode (keysym) keycode)
+    (x-lower-window (window) int)
     (x-map-window (window) int)
     (x-move-resize-window (window int int unsigned unsigned) int)
     (XNextEvent ((* XEvent)) int)
