@@ -86,7 +86,7 @@
    (only (footwm util) enum))
 
   (define lib-load
-    (load-shared-object "libgtk-3.so"))
+    (load-shared-object "libgtk-3.so.0"))
 
   ;; Gdk is an interface between underlying system and gtk+.
   (define-ftype gdkeventkey* void*)

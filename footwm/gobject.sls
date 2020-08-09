@@ -38,8 +38,8 @@
 
   (define lib-load
     (begin
-      (load-shared-object "libgio-2.0.so")
-      (load-shared-object "libgobject-2.0.so")))
+      (load-shared-object "libgio-2.0.so.0")
+      (load-shared-object "libgobject-2.0.so.0")))
 
   (define-syntax define-f
     (syntax-rules ()
