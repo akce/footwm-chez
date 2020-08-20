@@ -248,7 +248,13 @@
       ;; will be visible.
       ;; (As is the case with tint2. My guess is it's reusing its tooltip window so
       ;; newer footwm windows would obscure tooltips unless we lower our window.)
-      (x-lower-window wid)
+      (cond
+        [(ewmh.fullscreen-window? wid)
+         ;; This is a work-around to stop fullscreen windows being obstructed by strut windows.
+         ;; TODO: redo the way strut windows are (not) managed by this wm.
+         (x-raise-window wid)]
+        [else
+          (x-lower-window wid)])
       (show-window wid)))
 
   (define show-desktop

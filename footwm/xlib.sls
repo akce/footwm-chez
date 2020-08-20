@@ -262,6 +262,7 @@
    x-next-event
    x-open-display
    x-query-tree
+   x-raise-window
    x-select-input
    x-send-event
    x-set-error-handler
@@ -664,6 +665,7 @@
     (x-move-resize-window (window int int unsigned unsigned) int)
     (XNextEvent ((* XEvent)) int)
     (XQueryTree (window (* window) (* window) (* window*) (* unsigned)) status)
+    (x-raise-window (window) int)
     (x-select-input (window long) int)
     (x-send-event (window boolean long (* XEvent)) status)
     (x-set-input-focus (window int Time) int)
