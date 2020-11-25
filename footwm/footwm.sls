@@ -101,11 +101,6 @@
     (lambda ()
       (let loop ()
         (let ([ev (x-next-event)])
-          ;; Non-ideal, but use XGrabServer(3) to stop the X Server from processing requests from
-          ;; other clients while we're handling an event. This gives us a stable view of the server
-          ;; and prevents the floor from being ripped out from under us. And that's important given
-          ;; that all state that footwm needs is stored in window properties.
-          (x-grab-server)
           (cond
            ((xclientmessageevent? ev)		(on-client-message ev))
            ((xconfigureevent? ev)		(on-configure ev))
@@ -117,8 +112,7 @@
            ((xpropertyevent? ev)		(on-property ev))
            ((xunmapevent? ev)			(on-unmap ev))
            (else
-	    (display (format "Unknown event ~d~n" (xanyevent-type ev)))))
-          (x-ungrab-server))
+	    (display (format "Unknown event ~d~n" (xanyevent-type ev))))))
         (loop))))
 
   (define on-client-message
@@ -242,18 +236,22 @@
           ;; - WITHDRAWN (the window is being removed, remove it from EWMH hints).
           #;(icccm.on-unmap ev)	;; transitions WM_STATE::NORMAL -> WITHDRAWN
           (let ([wid (xunmapevent-wid ev)])
-            (if (memq wid (ewmh.client-list))
-              (let ([state (icccm.get-wm-state wid)])
-                (display (format "#x~x UnmapNotify state=~a\n" wid state))
-                ;; State could be #f if window is already deleted.
-                (when (or (not state) (not (eq? state icccm.IconicState)))
-                  (display (format "#x~x removing window from EWMH client lists~n" wid))
-                  (ewmh.remove-window wid)
-                  (when (eq? wid (ewmh.active-window))
-                    (ewmh.active-window-set! None))
-                  (wm.arrange-windows)))
-              ;; We don't store dockapps in client-list, but watch them so we can update struts.
-              ;; Traversing all child windows is a bit brute force. Need to consider a FOOT_DOCKAPP_LIST.
-              (begin
+            (cond
+              [(memq wid (ewmh.client-list))
+               (let ([state (icccm.get-wm-state wid)])
+                 (cond
+                   ;; State could be #f if window is already deleted.
+                   [(or (not state) (eq? state icccm.WithdrawnState))
+                    (display (format "#x~x removing window from EWMH client lists~n" wid))
+                    (ewmh.remove-window wid)
+                    (when (eq? wid (ewmh.active-window))
+                      (ewmh.active-window-set! None))
+                    (wm.arrange-windows)]
+                   [else
+                     (display (format "#x~x UnmapNotify ignore state=~a\n" wid state))]))]
+              [else
+                ;; We don't store dockapps in client-list, but watch them so we can update struts.
+                ;; Traversing all child windows is a bit brute force. Need to consider a FOOT_DOCKAPP_LIST.
                 (ewmh.calculate-workarea (remove wid (x-query-tree)))
-                (wm.draw-active-window (ewmh.active-window)))))))))
+                (wm.draw-active-window (ewmh.active-window))])))))
+  )
