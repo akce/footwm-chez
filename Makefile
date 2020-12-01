@@ -2,15 +2,15 @@
 # Written by Akce 2019-2020.
 # SPDX-License-Identifier: Unlicense
 
+# Path to chez scheme executable.
+SCHEME := /usr/bin/scheme
+
 # Library destination directory. This should be an object directory contained in (library-directories).
 # eg, set in CHEZSCHEMELIBDIRS environment variable.
 PREFIX := ~
-LIBDIR := $(PREFIX)/lib
+LIBDIR := $(PREFIX)/lib/csv$(shell $(SCHEME) --version 2>&1)
 BINDIR := $(PREFIX)/bin
 CONFDIR := ~/.foot
-
-# Path to chez scheme executable.
-SCHEME = /usr/bin/scheme
 
 # Scheme compile flags.
 SFLAGS = -q

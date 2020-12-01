@@ -62,7 +62,7 @@ The library source files may be compiled as library shared object files. To comp
 
 The recommended install method is to use the Makefile. It provides targets to compile and install the library files, scripts, and keys config file. The locations are controlled by 4 variables:
 - PREFIX: Base directory where everything is installed. Default: ~ (User home directory).
-- LIBDIR: The base directory where footwm library files go. This is a directory that must be in CHEZSCHEMELIBDIRS. Default: $PREFIX/lib
+- LIBDIR: The base directory where footwm library files go. This is a directory that must be in CHEZSCHEMELIBDIRS. Default: $PREFIX/lib/csv<CHEZ-SCHEME-VERSION>
 - BINDIR: The directory where executable scripts go. This directory should be in PATH. Default: $PREFIX/bin
 - CONFDIR: The directory where configuration files are looked for. Default: ~/.foot
 
