@@ -50,7 +50,7 @@
       (if (top-level-window? wid)
           (unless (= wid (ewmh.active-window))
             (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-            (if (= (ewmh.window-desktop wid) (ewmh.current-desktop))
+            (if (= (ewmh.window-desktop wid) ewmh.current-desktop)
                 (arrange-windows)
                 (desktop-activate (ewmh.window-desktop wid)))))))
 
@@ -121,7 +121,7 @@
   (define window-op/index
     (lambda (op index)
       (let* ([wlist (sorted-winfo ewmh.client-list)]
-             [d (ewmh.current-desktop)]
+             [d ewmh.current-desktop]
              [dlist
               (filter (lambda (w)
                         (eqv? d (winfo-desktop w))) wlist)])
@@ -151,7 +151,7 @@
   (define desktop-activate
     (lambda (index)
       (when (< index ewmh.desktop-count)
-        (let ([c (ewmh.current-desktop)])
+        (let ([c ewmh.current-desktop])
           (unless (= index c)
             (for-each
              (lambda (wid)
@@ -177,7 +177,7 @@
           (set! ewmh.desktop-names (util.list-insert names name index))
           (adjust-windows-desktop index add1)
           (set! ewmh.desktop-count (add1 (length names)))
-          (if (= index (ewmh.current-desktop))
+          (if (= index ewmh.current-desktop)
               (arrange-windows))))))
 
   (define get-unassigned
@@ -206,7 +206,7 @@
               (set! ewmh.desktop-names (remove (list-ref names index) names))
               (set! ewmh.desktop-count (sub1 (length names)))
               ;; Redraw if deleted desktop was the displayed desktop.
-              (if (= index (ewmh.current-desktop))
+              (if (= index ewmh.current-desktop)
                 (arrange-windows))))))))
 
   (define desktop-rename
@@ -265,7 +265,7 @@
 
   (define arrange-windows
     (lambda ()
-      (let ([d (ewmh.current-desktop)])
+      (let ([d ewmh.current-desktop])
         (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) ewmh.client-list)])
           (for-each iconify-window ows)	; should do this only on wm-init and desktop change..
           (if (null? ws)

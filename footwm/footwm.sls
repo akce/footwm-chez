@@ -63,8 +63,8 @@
     (lambda ()
       ;; footwm needs _NET_DESKTOP_NAMES, _NET_NUMBER_OF_DESKTOPS, and _NET_CURRENT_DESKTOP.
       ;; Make sure they exist or create if necessary.
-      (unless (ewmh.current-desktop)
-          (ewmh.current-desktop-set! 0))
+      (unless ewmh.current-desktop
+        (set! ewmh.current-desktop 0))
       (if (null? ewmh.desktop-names)
           (set! ewmh.desktop-names '("Unassigned")))
       (unless ewmh.desktop-count

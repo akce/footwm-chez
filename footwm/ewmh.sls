@@ -18,7 +18,6 @@
    desktop-viewport
    desktop-viewport-init!
    current-desktop
-   current-desktop-set!
    current-desktop-request!
    desktop-names
    active-window
@@ -141,13 +140,12 @@
 
   ;;;; _NET_CURRENT_DESKTOP desktop, CARDINAL/32
 
-  (define current-desktop
-    (lambda ()
-      (first-or-false (property->ulongs (root) (atom 'ref '_NET_CURRENT_DESKTOP) (x-atom 'ref 'CARDINAL)))))
-
-  (define current-desktop-set!
-    (lambda (number)
-      (cardinal-set! (root) (atom 'ref '_NET_CURRENT_DESKTOP) number)))
+  (define-syntax current-desktop
+    (identifier-syntax
+      [id
+        (first-or-false (property->ulongs (root) (atom 'ref '_NET_CURRENT_DESKTOP) (x-atom 'ref 'CARDINAL)))]
+      [(set! id number)
+       (cardinal-set! (root) (atom 'ref '_NET_CURRENT_DESKTOP) number)]))
 
   ;; client: request current desktop change.
   (define current-desktop-request!
@@ -483,9 +481,8 @@
       ;; Adjust workarea with newly mapped dock apps.
       (let ([wid (xmaprequestevent-wid ev)])
         (when (show-in-taskbar? wid)
-          (let ([desk (current-desktop)]
-                [clients client-list])
-            (window-desktop-set! wid desk)
+          (let ([clients client-list])
+            (window-desktop-set! wid current-desktop)
             (set! client-list
               (append
                 (list wid)
