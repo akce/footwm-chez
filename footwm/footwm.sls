@@ -91,11 +91,12 @@
              (ewmh.window-desktop-set! wid defgroup)))
          ws)
         ;; set client-list ewmh hints.
-        (let ([clients (ewmh.client-list)])
-          (if (null? clients)
-              (ewmh.client-list-set! ws)
+        (let ([clients ewmh.client-list])
+          (set! ewmh.client-list
+            (if (null? clients)
+              ws
               ;; client list already exists, need to sanitise it with ws.
-              (ewmh.client-list-set! (filter wid-exists? (set-join clients ws))))))))
+              (filter wid-exists? (set-join clients ws))))))))
 
   (define run
     (lambda ()
@@ -237,7 +238,7 @@
           #;(icccm.on-unmap ev)	;; transitions WM_STATE::NORMAL -> WITHDRAWN
           (let ([wid (xunmapevent-wid ev)])
             (cond
-              [(memq wid (ewmh.client-list))
+              [(memq wid ewmh.client-list)
                (let ([state (icccm.get-wm-state wid)])
                  (cond
                    ;; State could be #f if window is already deleted.

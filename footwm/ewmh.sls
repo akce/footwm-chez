@@ -12,7 +12,6 @@
    atom
    net-supported-set!
    client-list
-   client-list-set!
    desktop-count
    desktop-count-set!
    desktop-geometry
@@ -102,14 +101,12 @@
 
   ;;;; _NET_CLIENT_LIST WINDOW[]/32
 
-  (define client-list
-    (lambda ()
-      (property->ulongs (root) (atom 'ref '_NET_CLIENT_LIST) (x-atom 'ref 'WINDOW))))
-
-  (define client-list-set!
-    (lambda (wids)
-      ;; return as list as lists have more builtin operations.
-      (ulongs-property-set! (root) (atom 'ref '_NET_CLIENT_LIST) wids (x-atom 'ref 'WINDOW))))
+  (define-syntax client-list
+    (identifier-syntax
+      [id
+        (property->ulongs (root) (atom 'ref '_NET_CLIENT_LIST) (x-atom 'ref 'WINDOW))]
+      [(set! id wids)
+       (ulongs-property-set! (root) (atom 'ref '_NET_CLIENT_LIST) wids (x-atom 'ref 'WINDOW))]))
 
   ;;;; _NET_CLIENT_LIST_STACKING WINDOW[]/32
   ;; N/A (Does not seem to be used by any taskbar.)
@@ -491,19 +488,19 @@
       (let ([wid (xmaprequestevent-wid ev)])
         (when (show-in-taskbar? wid)
           (let ([desk (current-desktop)]
-                [clients (client-list)])
+                [clients client-list])
             (window-desktop-set! wid desk)
-            (client-list-set!
-             (append
-              (list wid)
-              (if (memq wid clients)
-                  (remove wid clients)
-                  clients))))))))
+            (set! client-list
+              (append
+                (list wid)
+                (if (memq wid clients)
+                    (remove wid clients)
+                    clients))))))))
 
   (define remove-window
     (lambda (wid)
       ;; Remove window from client lists *only*.
       ;; We don't touch active-window here because we're not changing window state. That's up to the wm proper.
-      (let ([clients (client-list)])
+      (let ([clients client-list])
         (if (memq wid clients)
-            (client-list-set! (remove wid clients)))))))
+            (set! client-list (remove wid clients)))))))
