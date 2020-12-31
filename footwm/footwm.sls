@@ -67,8 +67,8 @@
           (ewmh.current-desktop-set! 0))
       (if (null? (ewmh.desktop-names))
           (ewmh.desktop-names-set! '("Unassigned")))
-      (unless (ewmh.desktop-count)
-          (ewmh.desktop-count-set! 1))))
+      (unless ewmh.desktop-count
+        (set! ewmh.desktop-count 1))))
 
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.

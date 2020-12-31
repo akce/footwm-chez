@@ -13,7 +13,6 @@
    net-supported-set!
    client-list
    desktop-count
-   desktop-count-set!
    desktop-geometry
    desktop-geometry-sync!
    desktop-viewport
@@ -113,13 +112,12 @@
 
   ;;;; _NET_NUMBER_OF_DESKTOPS CARDINAL/32
 
-  (define desktop-count
-    (lambda ()
-      (first-or-false (property->ulongs (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) (x-atom 'ref 'CARDINAL)))))
-
-  (define desktop-count-set!
-    (lambda (number)
-      (cardinal-set! (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) number)))
+  (define-syntax desktop-count
+    (identifier-syntax
+      [id
+        (first-or-false (property->ulongs (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) (x-atom 'ref 'CARDINAL)))]
+      [(set! id number)
+       (cardinal-set! (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) number)]))
 
   ;;;; _NET_DESKTOP_GEOMETRY width, height, CARDINAL[2]/32
   (define desktop-geometry

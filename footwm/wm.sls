@@ -68,7 +68,7 @@
   (define move-window-to-desktop
     (lambda (wid index)
       (when (top-level-window? wid)
-        (when (< index (ewmh.desktop-count))
+        (when (< index ewmh.desktop-count)
           (unless (= index (ewmh.window-desktop wid))
             (ewmh.window-desktop-set! wid index)
             (if (eqv? (icccm.get-wm-state wid) icccm.NormalState)
@@ -150,7 +150,7 @@
 
   (define desktop-activate
     (lambda (index)
-      (when (< index (ewmh.desktop-count))
+      (when (< index ewmh.desktop-count)
         (let ([c (ewmh.current-desktop)])
           (unless (= index c)
             (for-each
@@ -176,7 +176,7 @@
         (unless (member name names)
           (ewmh.desktop-names-set! (util.list-insert names name index))
           (adjust-windows-desktop index add1)
-          (ewmh.desktop-count-set! (add1 (length names)))
+          (set! ewmh.desktop-count (add1 (length names)))
           (if (= index (ewmh.current-desktop))
               (arrange-windows))))))
 
@@ -189,7 +189,7 @@
 
   (define desktop-delete
     (lambda (index)
-      (let ([c (ewmh.desktop-count)])
+      (let ([c ewmh.desktop-count])
         (if (< index c)
           (let* ([names (ewmh.desktop-names)]
                  [unassigned (get-unassigned names)])
@@ -204,14 +204,14 @@
               (adjust-windows-desktop index sub1)
               ;; Update desktop ewmh hints.
               (ewmh.desktop-names-set! (remove (list-ref names index) names))
-              (ewmh.desktop-count-set! (sub1 (length names)))
+              (set! ewmh.desktop-count (sub1 (length names)))
               ;; Redraw if deleted desktop was the displayed desktop.
               (if (= index (ewmh.current-desktop))
                 (arrange-windows))))))))
 
   (define desktop-rename
     (lambda (index name)
-      (let ([c (ewmh.desktop-count)])
+      (let ([c ewmh.desktop-count])
         (when (< index c)
           (let ([names (ewmh.desktop-names)])
             (unless (string=? "Unassigned" (list-ref names index))
