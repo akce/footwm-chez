@@ -50,7 +50,7 @@
 ;; The current window is not included in this list as there's no point selecting the already selected window.
 (define make-window-rows
   (lambda ()
-    (let ([desks (ewmh.desktop-names)]
+    (let ([desks ewmh.desktop-names]
           [wids (remove-active-window (wm.window-sort ewmh.client-list))])
       (map
        (lambda (i wid)

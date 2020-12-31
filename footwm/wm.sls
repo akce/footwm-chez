@@ -164,17 +164,17 @@
                      (ewmh.window-desktop-set! wid (add1 wd))]))
                   #| else ignore, only windows at or below index need adjustment.|#))
              ewmh.client-list)
-            (let* ([names (ewmh.desktop-names)]
+            (let* ([names ewmh.desktop-names]
                    [name (list-ref names index)])
-              (ewmh.desktop-names-set! (util.list-insert (remove name names) name c)))
+              (set! ewmh.desktop-names (util.list-insert (remove name names) name c)))
             (arrange-windows))))))
 
   (define desktop-insert
     (lambda (name index)
-      (let ([names (ewmh.desktop-names)])
+      (let ([names ewmh.desktop-names])
         ;; desktop names must be unique.
         (unless (member name names)
-          (ewmh.desktop-names-set! (util.list-insert names name index))
+          (set! ewmh.desktop-names (util.list-insert names name index))
           (adjust-windows-desktop index add1)
           (set! ewmh.desktop-count (add1 (length names)))
           (if (= index (ewmh.current-desktop))
@@ -191,7 +191,7 @@
     (lambda (index)
       (let ([c ewmh.desktop-count])
         (if (< index c)
-          (let* ([names (ewmh.desktop-names)]
+          (let* ([names ewmh.desktop-names]
                  [unassigned (get-unassigned names)])
             (when unassigned
               ;; Move orphaned windows to the unassigned desktop.
@@ -203,7 +203,7 @@
               ;; Adjust window desktops at index and higher downwards.
               (adjust-windows-desktop index sub1)
               ;; Update desktop ewmh hints.
-              (ewmh.desktop-names-set! (remove (list-ref names index) names))
+              (set! ewmh.desktop-names (remove (list-ref names index) names))
               (set! ewmh.desktop-count (sub1 (length names)))
               ;; Redraw if deleted desktop was the displayed desktop.
               (if (= index (ewmh.current-desktop))
@@ -213,9 +213,9 @@
     (lambda (index name)
       (let ([c ewmh.desktop-count])
         (when (< index c)
-          (let ([names (ewmh.desktop-names)])
+          (let ([names ewmh.desktop-names])
             (unless (string=? "Unassigned" (list-ref names index))
-              (ewmh.desktop-names-set! (util.list-replace names index name))))))))
+              (set! ewmh.desktop-names (util.list-replace names index name))))))))
 
  ;;;;;; Layout operations.
 

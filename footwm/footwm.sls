@@ -65,8 +65,8 @@
       ;; Make sure they exist or create if necessary.
       (unless (ewmh.current-desktop)
           (ewmh.current-desktop-set! 0))
-      (if (null? (ewmh.desktop-names))
-          (ewmh.desktop-names-set! '("Unassigned")))
+      (if (null? ewmh.desktop-names)
+          (set! ewmh.desktop-names '("Unassigned")))
       (unless ewmh.desktop-count
         (set! ewmh.desktop-count 1))))
 
@@ -75,7 +75,7 @@
     (lambda ()
       (let* ([allwids (x-query-tree)]
              [ws (filter wm.manage-window? allwids)]
-             [defgroup (wm.get-unassigned (ewmh.desktop-names))])
+             [defgroup (wm.get-unassigned ewmh.desktop-names)])
         (define wid-exists?
           (lambda (wid)
             (memq wid ws)))

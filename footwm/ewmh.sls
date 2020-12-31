@@ -21,7 +21,6 @@
    current-desktop-set!
    current-desktop-request!
    desktop-names
-   desktop-names-set!
    active-window
    active-window-set!
    window-active-request!
@@ -157,14 +156,13 @@
 
   ;;;; _NET_DESKTOP_NAMES UTF8_STRING[]
 
-  (define desktop-names
-    (lambda ()
-      ;; return as list as lists have more builtin operations.
-      (property->string* (root) (atom 'ref '_NET_DESKTOP_NAMES))))
-
-  (define desktop-names-set!
-    (lambda (names)
-      (text-property-set! (root) names (atom 'ref '_NET_DESKTOP_NAMES))))
+  (define-syntax desktop-names
+    (identifier-syntax
+      [id
+        ;; return as list as lists have more builtin operations.
+        (property->string* (root) (atom 'ref '_NET_DESKTOP_NAMES))]
+      [(set! id names)
+       (text-property-set! (root) names (atom 'ref '_NET_DESKTOP_NAMES))]))
 
   ;;;; _NET_ACTIVE_WINDOW WINDOW/32
 

@@ -85,7 +85,7 @@ Enters shell mode if no [command] given.
 
   (define desktops
     (lambda ()
-      (let ([names (ewmh.desktop-names)])
+      (let ([names ewmh.desktop-names])
         (for-each
          (lambda (desk)
            (display (desktop-display-string desk))

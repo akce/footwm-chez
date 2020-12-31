@@ -30,7 +30,7 @@
      '("Id" "Desktop")
      (list g-type-int g-type-string g-type-int)
      ;; The current desktop is not included in this list as there's no point selecting the already selected desktop.
-     (let* ([ds (cdr (ewmh.desktop-names))]
+     (let* ([ds (cdr ewmh.desktop-names)]
             [idxs (enumerate ds)])
        (map list idxs ds (map add1 idxs))))))
 
