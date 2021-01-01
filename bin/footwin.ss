@@ -34,7 +34,7 @@
     (cond
      [(null? wids) wids]
      ;; Comparing active-window handles the case where the current desktop is empty.
-     [(eq? (car wids) (ewmh.active-window)) (cdr wids)]
+     [(eq? (car wids) ewmh.active-window) (cdr wids)]
      [else wids])))
 
 (define urgency-flag

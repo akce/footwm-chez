@@ -21,7 +21,6 @@
    current-desktop-request!
    desktop-names
    active-window
-   active-window-set!
    window-active-request!
    workarea-geometry
    calculate-workarea
@@ -164,13 +163,12 @@
 
   ;;;; _NET_ACTIVE_WINDOW WINDOW/32
 
-  (define active-window
-    (lambda ()
-      (first-or-false (property->ulongs (root) (atom 'ref '_NET_ACTIVE_WINDOW) (x-atom 'ref 'WINDOW)))))
-
-  (define active-window-set!
-    (lambda (wid)
-      (ulongs-property-set! (root) (atom 'ref '_NET_ACTIVE_WINDOW) (list wid) (x-atom 'ref 'WINDOW))))
+  (define-syntax active-window
+    (identifier-syntax
+      [id
+        (first-or-false (property->ulongs (root) (atom 'ref '_NET_ACTIVE_WINDOW) (x-atom 'ref 'WINDOW)))]
+      [(set! id wid)
+       (ulongs-property-set! (root) (atom 'ref '_NET_ACTIVE_WINDOW) (list wid) (x-atom 'ref 'WINDOW))]))
 
   ;; client: Request WM activate window.
   (define window-active-request!

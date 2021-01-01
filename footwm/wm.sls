@@ -48,7 +48,7 @@
     (lambda (wid)
       ;; promote window to top of ewmh.client-list, set as ewmh.active-window.
       (if (top-level-window? wid)
-          (unless (= wid (ewmh.active-window))
+          (unless (= wid ewmh.active-window)
             (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
             (if (= (ewmh.window-desktop wid) ewmh.current-desktop)
                 (arrange-windows)
@@ -230,7 +230,7 @@
   (define show-window
     (lambda (wid)
       (ewmh.showing-desktop #f)
-      (ewmh.active-window-set! wid)
+      (set! ewmh.active-window wid)
       (ewmh.show-window wid)
       (icccm.show-window wid)))
 
@@ -261,7 +261,7 @@
       ;; set input focus to root (so keygrabbers still function) and clear ewmh.
       (icccm.focus-root)
       (ewmh.showing-desktop #t)
-      (ewmh.active-window-set! None)))
+      (set! ewmh.active-window None)))
 
   (define arrange-windows
     (lambda ()
@@ -273,5 +273,5 @@
             (let ([vis (car ws)]		; visible window
                   [hs (cdr ws)])		; hidden windows
               (for-each iconify-window hs)
-              (unless (eq? vis (ewmh.active-window))
+              (unless (eq? vis ewmh.active-window)
                 (draw-active-window vis)))))))))
