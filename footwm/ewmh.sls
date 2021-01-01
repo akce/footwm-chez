@@ -10,7 +10,7 @@
 (library (footwm ewmh)
   (export
    atom
-   net-supported-set!
+   net-supported-init!
    client-list
    desktop-count
    desktop-geometry
@@ -91,7 +91,7 @@
   ;;;;;; Root window properties (and messages)
 
   ;;;; _NET_SUPPORTED ATOM[]/32
-  (define net-supported-set!
+  (define net-supported-init!
     (lambda ()
       (ulongs-property-set! (root) (atom 'ref '_NET_SUPPORTED) (atom 'values) (x-atom 'ref 'ATOM))))
 
