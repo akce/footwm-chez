@@ -15,6 +15,7 @@
    window-sort
    activate-window/index
    close-window/index
+   activate-urgent
    run-or-raise-em
    ;; Desktop operations.
    desktop-activate
@@ -137,6 +138,19 @@
   (define close-window/index
     (lambda (index)
       (window-op/index ewmh.window-close-request! index)))
+
+  (define activate-urgent
+    (lambda ()
+      (let ([wids
+              (filter
+                (lambda (wid)
+                  (or
+                    (icccm.wm-hints-urgency (icccm.get-wm-hints wid))
+                    (ewmh.demands-attention? wid)))
+                ewmh.client-list)])
+        (unless (null? wids)
+          (activate-window (car wids))
+           (x-sync)))))
 
   (define run-or-raise-em
     (lambda (instance command)
