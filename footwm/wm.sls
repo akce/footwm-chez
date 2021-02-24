@@ -14,6 +14,7 @@
    window-name
    window-sort
    activate-window/index
+   banish-window/index
    close-window/index
    activate-urgent
    run-or-raise-em
@@ -59,13 +60,10 @@
   (define banish-window
     (lambda (wid)
       ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list.
-      (if (top-level-window? wid)
-          (let ([state (icccm.get-wm-state wid)])
-            (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))
-            (when (eqv? state icccm.NormalState)
-              ;; Normal means the window is visible, hide and re-arrange desktop.
-              (iconify-window wid)
-              (arrange-windows))))))
+      (when (top-level-window? wid)
+        (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))
+        (when (eqv? wid ewmh.active-window)
+          (arrange-windows)))))
 
   (define move-window-to-desktop
     (lambda (wid index)
@@ -134,6 +132,10 @@
   (define activate-window/index
     (lambda (index)
       (window-op/index ewmh.window-active-request! index)))
+
+  (define banish-window/index
+    (lambda (index)
+      (window-op/index banish-window index)))
 
   (define close-window/index
     (lambda (index)
