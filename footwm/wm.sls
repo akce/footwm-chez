@@ -15,6 +15,7 @@
    window-sort
    activate-window/index
    close-window/index
+   run-or-raise-em
    ;; Desktop operations.
    desktop-activate
    desktop-insert
@@ -27,7 +28,7 @@
    arrange-windows)
   (import
    (rnrs)
-   (only (chezscheme) add1 enumerate format sub1)
+   (only (chezscheme) add1 enumerate format sub1 system)
    (prefix (footwm ewmh) ewmh.)
    (prefix (footwm icccm) icccm.)
    (prefix (footwm util) util.)
@@ -136,6 +137,18 @@
   (define close-window/index
     (lambda (index)
       (window-op/index ewmh.window-close-request! index)))
+
+  (define run-or-raise-em
+    (lambda (instance command)
+      (let loop ([wids ewmh.client-list])
+        (cond
+          [(null? wids)
+           (system (string-append "exec " command))]
+          [(string-ci=? instance (icccm.class-hint-instance (icccm.class-hint (car wids))))
+            (activate-window (car wids))
+            (x-sync)]
+          [else
+            (loop (cdr wids))]))))
 
   ;;;;;; Desktop operations.
 
