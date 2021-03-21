@@ -65,8 +65,8 @@
       ;; Make sure they exist or create if necessary.
       (unless ewmh.current-desktop
         (set! ewmh.current-desktop 0))
-      (if (null? ewmh.desktop-names)
-          (set! ewmh.desktop-names '("Unassigned")))
+      (when (null? ewmh.desktop-names)
+        (set! ewmh.desktop-names '("Unassigned")))
       (unless ewmh.desktop-count
         (set! ewmh.desktop-count 1))))
 
