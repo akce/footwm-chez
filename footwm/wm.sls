@@ -11,6 +11,7 @@
    activate-window
    banish-window
    move-window-to-desktop
+   remove-window
    window-name
    window-sort
    activate-window/index
@@ -66,12 +67,20 @@
 
   (define move-window-to-desktop
     (lambda (wid index)
-      (when (top-level-window? wid)
-        (when (< index ewmh.desktop-count)
-          (unless (= index (ewmh.window-desktop wid))
-            (ewmh.window-desktop-set! wid index)
-            (if (eqv? (icccm.get-wm-state wid) icccm.NormalState)
-                (arrange-windows)))))))
+      (when (and
+              (top-level-window? wid)
+              (< index ewmh.desktop-count)
+              (not (= index (ewmh.window-desktop wid))))
+        (ewmh.window-desktop-set! wid index)
+        (when (eqv? (icccm.get-wm-state wid) icccm.NormalState)
+          (arrange-windows)))))
+
+  (define remove-window
+    (lambda (wid)
+      (ewmh.remove-window wid)
+      (when (eq? wid ewmh.active-window)
+        (set! ewmh.active-window None))
+      (arrange-windows)))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
   (define window-name
