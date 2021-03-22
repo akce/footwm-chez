@@ -21,7 +21,6 @@
    ;; Desktop operations.
    desktop-activate
    desktop-insert
-   get-unassigned
    desktop-delete
    desktop-rename
    ;; Layout operations.
@@ -209,35 +208,46 @@
           (if (= index ewmh.current-desktop)
               (arrange-windows))))))
 
-  (define get-unassigned
-    (lambda (names)
-      (util.list-find-index
-       (lambda (x)
-         (string=? "Unassigned" x))
-       names)))
+  (define merge-desktop-to
+    (lambda (old-desktop-id new-desktop-id)
+      ;; Move orphaned windows to the destination desktop.
+      (for-each
+        (lambda (wid)
+          (when (= old-desktop-id (ewmh.window-desktop wid))
+            (ewmh.window-desktop-set! wid new-desktop-id)))
+        ewmh.client-list)
+      ;; Adjust window desktops at old-desktop-id and higher downwards.
+      (adjust-windows-desktop old-desktop-id sub1)
+      (delete-desktop-hints old-desktop-id)
+      ;; Redraw if one of the affected desktops was visible.
+      (when (or (= ewmh.current-desktop old-desktop-id)
+                (= ewmh.current-desktop new-desktop-id))
+        (arrange-windows))))
+
+  (define delete-desktop-hints
+    (lambda (delete-index)
+      ;; Update desktop ewmh hints.
+      (let ([names ewmh.desktop-names])
+        (set! ewmh.desktop-names (remove (list-ref names delete-index) names))
+        (set! ewmh.desktop-count (sub1 (length names))))))
 
   (define desktop-delete
-    (lambda (index)
+    (lambda (delete-index)
       (let ([c ewmh.desktop-count])
-        (if (< index c)
-          (let ([names ewmh.desktop-names])
-            (cond
-              [(get-unassigned names)
-               => (lambda (unassigned)
-                    ;; Move orphaned windows to the unassigned desktop.
-                    (for-each
-                      (lambda (wid)
-                        (when (= index (ewmh.window-desktop wid))
-                          (ewmh.window-desktop-set! wid unassigned)))
-                      ewmh.client-list)
-                    ;; Adjust window desktops at index and higher downwards.
-                    (adjust-windows-desktop index sub1)
-                    ;; Update desktop ewmh hints.
-                    (set! ewmh.desktop-names (remove (list-ref names index) names))
-                    (set! ewmh.desktop-count (sub1 (length names)))
-                    ;; Redraw if deleted desktop was the displayed desktop.
-                    (when (= index ewmh.current-desktop)
-                      (arrange-windows)))]))))))
+        (cond
+          [(or (>= delete-index c)		; sanity check for a valid index.
+               (< delete-index 0))
+           (if #f #f)]
+          [(= c 1)
+           ;; Special case. There's only one desktop.
+           ;; Rather than delete, just rename it to Default.
+           (desktop-rename 0 "Default")]
+          [(= (+ delete-index 1) c)
+           ;; Deleting the last desktop results in merging to previous desktop in line.
+           (merge-desktop-to delete-index (- delete-index 1))]
+          [else
+            ;; Otherwise merge to following desktop.
+            (merge-desktop-to delete-index (+ delete-index 1))]))))
 
   (define desktop-rename
     (lambda (index name)

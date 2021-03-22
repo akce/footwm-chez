@@ -66,7 +66,7 @@
       (unless ewmh.current-desktop
         (set! ewmh.current-desktop 0))
       (when (null? ewmh.desktop-names)
-        (set! ewmh.desktop-names '("Unassigned")))
+        (set! ewmh.desktop-names '("Default")))
       (unless ewmh.desktop-count
         (set! ewmh.desktop-count 1))))
 
@@ -74,8 +74,7 @@
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda ()
       (let* ([allwids (x-query-tree)]
-             [ws (filter wm.manage-window? allwids)]
-             [defgroup (wm.get-unassigned ewmh.desktop-names)])
+             [ws (filter wm.manage-window? allwids)])
         (define wid-exists?
           (lambda (wid)
             (memq wid ws)))
@@ -88,7 +87,7 @@
          (lambda (wid)
            (icccm.init-window wid)
            (unless (ewmh.window-desktop wid)
-             (ewmh.window-desktop-set! wid defgroup)))
+             (ewmh.window-desktop-set! wid 0)))
          ws)
         ;; set client-list ewmh hints.
         (let ([clients ewmh.client-list])
