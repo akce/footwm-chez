@@ -58,12 +58,21 @@ BINS =	\
 	$(BINDIR)/footwin	\
 	$(BINDIR)/footwm
 
+CONFIGS = \
+	  etc/footkeysconfig.sls \
+	  etc/footwmconfig.sls
+
+ICONFIGS = $(addprefix $(CONFDIR)/,$(notdir $(CONFIGS)))
+
 all: $(LIBSO)
 
 %.so: %.sls
 	echo '(reset-handler abort) (compile-library "'$<'")' | $(SCHEME) $(SFLAGS)
 
 $(BINDIR)/%: bin/%.ss
+	$(INSTALL) -D -p $< $@
+
+$(CONFDIR)/%.sls: etc/%.sls
 	$(INSTALL) -D -p $< $@
 
 install-bin: $(BINS)
@@ -76,10 +85,7 @@ install-so: all
 
 install: install-src install-so install-bin
 
-$(CONFDIR)/footkeysconfig.sls: etc/footkeysconfig.sls.sample
-	$(INSTALL) -D -p $< $@
-
-install-config: $(CONFDIR)/footkeysconfig.sls
+install-config: $(ICONFIGS)
 
 clean:
 	rm -f $(LIBSO)

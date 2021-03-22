@@ -17,6 +17,39 @@
  (prefix (footwm footwm) footwm.)
  (footwm xlib))
 
+(define read-config
+  (lambda (filename)
+    (let ([f (open-input-file filename)])
+      (let loop ([i (read f)] [acc '()])
+        (cond
+          [(eof-object? i)
+           (reverse acc)]
+          [else
+            (loop (read f) (cons i acc))])))))
+
+(define-syntax config-section
+  (syntax-rules ()
+    [(_ config name)
+     (cond
+       [(find
+          (lambda (x)
+            (eq? 'name (car x)))
+          config)
+        => cdr]
+       [else
+         #f])]))
+
+(define conf
+  (let ([argv (cdr (command-line))])
+    (cond
+      [(null? argv)
+       (let ([default-file "~/.foot/footwmconfig.sls"])
+         (if (file-exists? default-file)
+             (read-config default-file)
+             '((desktops "Default"))))]
+      [else
+        (read-config (car argv))])))
+
 (current-display (x-open-display))
 (root (x-default-root-window))
 
@@ -25,4 +58,4 @@
 (ewmh.atom 'intern)
 (hints.atom 'intern)
 
-(footwm.main)
+(footwm.main (config-section conf desktops))

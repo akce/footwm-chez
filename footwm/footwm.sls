@@ -22,7 +22,7 @@
    (prefix (footwm wm) wm.))
 
   (define main
-    (lambda ()
+    (lambda (desktops)
       (install-as-wm)
       ;; Replace the default error handler with our own. This ensures that the wm continues to function even
       ;; after an error. eg, when trying to access a resource from a destroyed window.
@@ -30,7 +30,7 @@
       (ewmh.net-supported-init!)
       (ewmh.desktop-geometry-sync!)
       (ewmh.desktop-viewport-init!)
-      (init-desktops)
+      (init-desktops desktops)
       (init-windows)
       (wm.arrange-windows)
       (run)))
@@ -60,15 +60,15 @@
             (raise (condition (make-error) (make-message-condition "Failed to install. Another WM is running.")))))))
 
   (define init-desktops
-    (lambda ()
+    (lambda (desktops)
       ;; footwm needs _NET_DESKTOP_NAMES, _NET_NUMBER_OF_DESKTOPS, and _NET_CURRENT_DESKTOP.
       ;; Make sure they exist or create if necessary.
       (unless ewmh.current-desktop
         (set! ewmh.current-desktop 0))
       (when (null? ewmh.desktop-names)
-        (set! ewmh.desktop-names '("Default")))
+        (set! ewmh.desktop-names desktops))
       (unless ewmh.desktop-count
-        (set! ewmh.desktop-count 1))))
+        (set! ewmh.desktop-count (length desktops)))))
 
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
