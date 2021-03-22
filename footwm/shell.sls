@@ -10,13 +10,13 @@
    desktops
    windows)
   (import
-   (rnrs base)
+   (rnrs)
    (only (chezscheme) enumerate format)
-   (only (rnrs io simple) display newline)
    (prefix (footwm ewmh) ewmh.)
    (prefix (footwm hints) hints.)
    (prefix (footwm icccm) icccm.)
    (prefix (footwm wm) wm.)
+   (only (footwm util) list-find-index)
    (footwm xlib))
 
 (define main
@@ -30,13 +30,13 @@
        [(string=? "da" cmd)
         (hints.desktop-add-set! (list-ref args 0) (string->number (list-ref args 1)))]
        [(string=? "dc" cmd)
-        (hints.desktop-delete-set! (string->number (list-ref args 0)))]
+        (hints.desktop-delete-set! (get-desktop-id (list-ref args 0)))]
        [(string=? "dl" cmd)
         (desktops)]
        [(string=? "dr" cmd)
-        (hints.desktop-rename-set! (string->number (list-ref args 0)) (list-ref args 1))]
+        (hints.desktop-rename-set! (get-desktop-id (list-ref args 0)) (list-ref args 1))]
        [(string=? "ds" cmd)
-        (ewmh.current-desktop-request! (string->number (list-ref args 0)))]
+        (ewmh.current-desktop-request! (get-desktop-id (list-ref args 0)))]
        [(string=? "wb" cmd)
         (icccm.client-iconify-message (string->number (list-ref args 0)))]
        [(string=? "wc" cmd)
@@ -62,14 +62,14 @@
 where [command] is one of:
   da <name> <desktop-index>
     Add a new desktop named <name> at position <desktop-index>
-  dc <desktop-index>
-    Close the desktop at position <desktop-index>
+  dc <desktop-index-or-name>
+    Close the desktop referenced by <desktop-index-or-name>
   dl
     List desktops
-  dr <desktop-index> <new-name>
-    Rename desktop at <desktop-index> with name <new-name>
-  ds <desktop-index>
-    Select desktop at <desktop-index>
+  dr <desktop-index-or-name> <new-name>
+    Rename desktop referenced by <desktop-index-or-name> with <new-name>
+  ds <desktop-index-or-name>
+    Select desktop referenced by <desktop-index-or-name>
   wc <window-id>
     Close the window given by <window-id>
   wd <window-id> <desktop-index>
@@ -79,7 +79,7 @@ where [command] is one of:
   wl
     List all windows, regardless desktop
 
-Enters shell mode if no [command] given.
+Enter shell mode if no [command] given.
 "
       binary))))
 
@@ -117,4 +117,16 @@ Enters shell mode if no [command] given.
          (ewmh.window-desktop wid)
          (icccm.class-hint-instance c)
          (icccm.class-hint-class c)
-         (wm.window-name wid))))))
+         (wm.window-name wid)))))
+
+  (define get-desktop-id
+    (lambda (number-or-name)
+      (cond
+        [(string->number number-or-name)
+         => values]
+        [else
+          (list-find-index
+            (lambda (d)
+              (string-ci=? d number-or-name))
+            ewmh.desktop-names)])))
+  )
