@@ -76,7 +76,7 @@ install-so: all
 
 install: install-src install-so install-bin
 
-$(CONFDIR)/footkeysconfig.sls: footkeysconfig.sls.sample
+$(CONFDIR)/footkeysconfig.sls: etc/footkeysconfig.sls.sample
 	$(INSTALL) -D -p $< $@
 
 install-config: $(CONFDIR)/footkeysconfig.sls
