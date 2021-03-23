@@ -24,6 +24,7 @@ INSTALL = /usr/bin/install
 LIBS =	\
 	footwm/ftypes-util.sls	\
 	footwm/util.sls		\
+	footwm/config.sls	\
 	footwm/xlib.sls		\
 	footwm/gobject.sls	\
 	footwm/icccm.sls	\
@@ -39,6 +40,7 @@ LIBS =	\
 LIBSO =	\
 	footwm/ftypes-util.so	\
 	footwm/util.so		\
+	footwm/config.so	\
 	footwm/xlib.so		\
 	footwm/ewmh.so		\
 	footwm/icccm.so		\

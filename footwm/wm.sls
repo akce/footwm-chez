@@ -7,6 +7,7 @@
 (library (footwm wm)
   (export
    manage-window?
+   add-window
    ;; Window operations.
    activate-window
    banish-window
@@ -24,10 +25,14 @@
    desktop-insert
    desktop-delete
    desktop-rename
+   get-desktop-id
    ;; Layout operations.
    ideal-window-geometry
    draw-active-window
-   arrange-windows)
+   arrange-windows
+   ;; Misc
+   assign-desktop
+   )
   (import
    (rnrs)
    (only (chezscheme) add1 enumerate format sub1 system)
@@ -46,6 +51,26 @@
     (lambda (wid)
       (and (icccm.manage-window? wid)
           (ewmh.show-in-taskbar? wid))))
+
+  (define add-window
+    (lambda (ev assignments)
+      ;; Mainly EWMH house keeping.
+      ;; Add/move window to top of client window list etc.
+      ;; Set window desktop and set active window.
+      ;; TODO: Adjust workarea with newly mapped dock apps?
+      (let ([wid (xmaprequestevent-wid ev)])
+        (when (ewmh.show-in-taskbar? wid)
+          (let ([clients ewmh.client-list]
+                [deskid (assign-desktop assignments wid)])
+            (ewmh.window-desktop-set! wid deskid)
+            (set! ewmh.client-list
+              (append
+                (list wid)
+                (if (memq wid clients)
+                    (remove wid clients)
+                    clients)))
+            (unless (= deskid ewmh.current-desktop)
+              (desktop-activate deskid)))))))
 
   (define activate-window
     (lambda (wid)
@@ -168,11 +193,15 @@
         (cond
           [(null? wids)
            (system (string-append "exec " command))]
-          [(string-ci=? instance (icccm.class-hint-instance (icccm.class-hint (car wids))))
+          [(window-instance? (car wids) instance)
             (activate-window (car wids))
             (x-sync)]
           [else
             (loop (cdr wids))]))))
+
+  (define window-instance?
+    (lambda (wid instance)
+      (string-ci=? instance (icccm.class-hint-instance (icccm.class-hint wid)))))
 
   ;;;;;; Desktop operations.
 
@@ -263,6 +292,17 @@
       (when (< index ewmh.desktop-count)
         (set! ewmh.desktop-names (util.list-replace ewmh.desktop-names index name)))))
 
+  (define get-desktop-id
+    (lambda (number-or-name)
+      (cond
+        [(string->number number-or-name)
+         => values]
+        [else
+          (util.list-find-index
+            (lambda (d)
+              (string-ci=? d number-or-name))
+            ewmh.desktop-names)])))
+
  ;;;;;; Layout operations.
 
   (define ideal-window-geometry
@@ -320,4 +360,36 @@
                   [hs (cdr ws)])		; hidden windows
               (for-each iconify-window hs)
               (unless (eq? vis ewmh.active-window)
-                (draw-active-window vis)))))))))
+                (draw-active-window vis))))))))
+
+  ;;; Misc
+
+  (define rule-compare car)
+  (define rule-column cadr)
+  (define rule-value caddr)
+  (define rule-desktop cadddr)
+
+  (define match-assign?
+    (lambda (a wid)
+      (case (rule-column a)
+        [(instance)
+         (window-instance? wid (rule-value a))]
+        [else
+          #f])))
+
+  ;; assign a desktop for the window.
+  (define assign-desktop
+    (case-lambda
+      [(assignments wid)
+       (assign-desktop assignments wid ewmh.current-desktop)]
+      [(assignments wid default-desktop)
+       (cond
+         [(find
+            (lambda (a)
+              (match-assign? a wid))
+            assignments)
+          => (lambda (a)
+               (get-desktop-id (rule-desktop a)))]
+         [else
+           default-desktop])]))
+  )

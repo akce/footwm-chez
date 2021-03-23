@@ -11,33 +11,12 @@
 
 (import
  (rnrs base)
+ (footwm config)
  (prefix (footwm ewmh) ewmh.)
  (prefix (footwm hints) hints.)
  (prefix (footwm icccm) icccm.)
  (prefix (footwm footwm) footwm.)
  (footwm xlib))
-
-(define read-config
-  (lambda (filename)
-    (let ([f (open-input-file filename)])
-      (let loop ([i (read f)] [acc '()])
-        (cond
-          [(eof-object? i)
-           (reverse acc)]
-          [else
-            (loop (read f) (cons i acc))])))))
-
-(define-syntax config-section
-  (syntax-rules ()
-    [(_ config name)
-     (cond
-       [(find
-          (lambda (x)
-            (eq? 'name (car x)))
-          config)
-        => cdr]
-       [else
-         #f])]))
 
 (define conf
   (let ([argv (cdr (command-line))])
@@ -45,10 +24,10 @@
       [(null? argv)
        (let ([default-file "~/.foot/footwmconfig.sls"])
          (if (file-exists? default-file)
-             (read-config default-file)
+             (config-load default-file)
              '((desktops "Default"))))]
       [else
-        (read-config (car argv))])))
+        (config-load (car argv))])))
 
 (current-display (x-open-display))
 (root (x-default-root-window))
@@ -58,4 +37,4 @@
 (ewmh.atom 'intern)
 (hints.atom 'intern)
 
-(footwm.main (config-section conf desktops))
+(footwm.main (config-section conf desktops) (config-section conf assignments))

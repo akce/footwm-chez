@@ -22,7 +22,7 @@
    (prefix (footwm wm) wm.))
 
   (define main
-    (lambda (desktops)
+    (lambda (desktops assignments)
       (install-as-wm)
       ;; Replace the default error handler with our own. This ensures that the wm continues to function even
       ;; after an error. eg, when trying to access a resource from a destroyed window.
@@ -31,9 +31,9 @@
       (ewmh.desktop-geometry-sync!)
       (ewmh.desktop-viewport-init!)
       (init-desktops desktops)
-      (init-windows)
+      (init-windows assignments)
       (wm.arrange-windows)
-      (run)))
+      (run assignments)))
 
   ;; Install as *the* window manager.
   ;; raises an error condition on failure.
@@ -72,7 +72,7 @@
 
   (define init-windows
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
-    (lambda ()
+    (lambda (assignments)
       (let* ([allwids (x-query-tree)]
              [ws (filter wm.manage-window? allwids)])
         (define wid-exists?
@@ -87,7 +87,7 @@
          (lambda (wid)
            (icccm.init-window wid)
            (unless (ewmh.window-desktop wid)
-             (ewmh.window-desktop-set! wid 0)))
+             (ewmh.window-desktop-set! wid (wm.assign-desktop assignments wid))))
          ws)
         ;; set client-list ewmh hints.
         (let ([clients ewmh.client-list])
@@ -98,7 +98,7 @@
               (filter wid-exists? (set-join clients ws))))))))
 
   (define run
-    (lambda ()
+    (lambda (assignments)
       (let loop ()
         (let ([ev (x-next-event)])
           (cond
@@ -108,7 +108,7 @@
            ((xcreatewindowevent? ev)		(on-create-window ev))
            ((xdestroywindowevent? ev)		(on-destroy-window ev))
            ((xmapevent? ev)			(on-map ev))
-           ((xmaprequestevent? ev)		(on-map-request ev))
+           ((xmaprequestevent? ev)		(on-map-request ev assignments))
            ((xpropertyevent? ev)		(on-property ev))
            ((xunmapevent? ev)			(on-unmap ev))
            (else
@@ -205,12 +205,12 @@
   ;; MapRequest: A window has requested that it become viewable.
   ;; see XMapWindow(3).
   (define on-map-request
-    (lambda (ev)
+    (lambda (ev assignments)
       (let ([wid (xmaprequestevent-wid ev)])
         (display (format "#x~x MapRequest ~a~n" wid (wm.window-name wid)))
         (icccm.on-map-request ev)
         (unless (ewmh.dock-window? wid)
-          (ewmh.on-map-request ev)
+          (wm.add-window ev assignments)
           (wm.arrange-windows)))))
 
   (define on-property

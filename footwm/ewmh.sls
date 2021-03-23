@@ -45,7 +45,6 @@
    pid
    #;frame-extents
    frame-extents-set!
-   on-map-request
    remove-window)
   (import
    (rnrs)
@@ -470,23 +469,6 @@
   ;; TODO
 
   ;;;;; Other/misc functions.
-
-  (define on-map-request
-    (lambda (ev)
-      ;; EWMH house keeping.
-      ;; Add/move window to top of client window list etc.
-      ;; Set window desktop and set active window.
-      ;; Adjust workarea with newly mapped dock apps.
-      (let ([wid (xmaprequestevent-wid ev)])
-        (when (show-in-taskbar? wid)
-          (let ([clients client-list])
-            (window-desktop-set! wid current-desktop)
-            (set! client-list
-              (append
-                (list wid)
-                (if (memq wid clients)
-                    (remove wid clients)
-                    clients))))))))
 
   (define remove-window
     (lambda (wid)
