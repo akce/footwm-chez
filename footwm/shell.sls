@@ -8,7 +8,8 @@
   (export
    main
    desktops
-   windows)
+   windows
+   sync)
   (import
    (rnrs)
    (only (chezscheme) enumerate format)
@@ -117,4 +118,12 @@ Enter shell mode if no [command] given.
          (icccm.class-hint-instance c)
          (icccm.class-hint-class c)
          (wm.window-name wid)))))
+
+  ;; This is a handy shortcut to call after manipulating window state.
+  (define sync
+    (lambda ()
+      ;; Have the wm update itself.
+      (wm.arrange-windows)
+      ;; Push changes to x server.
+      (x-sync)))
   )
