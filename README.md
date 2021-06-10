@@ -122,13 +122,54 @@ On catastrophic error, you may need to switch out of X into a virtual terminal a
     Password: *****
     $ tmux attach -t wm
     # fix issue...
+    # restart footwm (note that you'll probably have to specify DISPLAY :0)
     # optionally detach from session
     <CTRL>-b d
     # switch back to X.. usually on 1st or 7th virtual terminal
     <ALT>-F7
 
-Footwm has no state, it gathers all needed information from X properties, so it should be possible (depending on the error) to restart the footwm process and resume after code has been modified.
+Footwm has no state. Instead it gathers all needed information from X properties on demand, so it should be possible (depending on the error) to restart the footwm process and resume after code has been modified.
+
+The foot shell (footsh) also allows for easy manipulation of window state. Invoking footsh without arguments will run a new Chez cafe (ie, a REPL) with the main footwm libraries pre-loaded and all (except xlib) prefixed.
+
+NOTE: xlib is not prefixed as it uses ftypes and redefining exported symbols can cause issues there.
+
+It's always best here to refer to the source code for what is possible.
+
+A sample session. Comments are embedded:
+```
+$ footsh
+> ; query for all windows
+  (x-query-tree)
+(4194786 4196454 4195745 18874371 4196341 4195903 4196100
+ 8388614 10485762 10485765 10485768 10485780 25165825
+ 18874369 18874384 23068673 18874387 18874390 31457281
+ 33554433 35651585 18874409 20971521)
+> ; query only for managed top level windows
+  ewmh.client-list
+(4194786 4196454 18874371 4196341 4195745 4195903 4196100
+  8388614)
+> ; get the list of managed window titles
+  (map ewmh.name ewmh.client-list)
+("footsh" "README.md + (~/marvels/footwm) - NVIM"
+  "GitHub - akce/footwm-chez: Implementation of footwm in chez scheme — Mozilla Firefox"
+  "icccm.sls (~/marvels/footwm/footwm) - NVIM"
+  "|> Josie (Everything's Gonna Be Fine) / Blink 182 - PEACE"
+  "ewmh.sls (~/marvels/footwm/footwm) - NVIM"
+  "jerry@talisman:~" "tmux")
+> ; move the current window to the second desktop
+  (ewmh.window-desktop-set! (car ewmh.client-list) 1)
+1
+> ; have footwm react to changes and push to X server
+  (shell.sync)
+1
+```
+A limitation of footsh is that it won't manipulate footwm code, as experienced LISPers might expect.
+
+Instead, footsh can alter X properties and footwm can react. As footwm is stateless (and only requires a restart), this has proved an effective developement model.
+
+And for those perusing the code: the naming convention for functions tries to follow OBJECT-ATTRIBUTE. eg, (ewmh.window-desktop wid) refers to the desktop assigned to window wid.
 
 ## License
 
-Written by Akce 2019-2020 . Released into the public domain. See LICENSE file for details.
+Written by Akce 2019-2021. Released into the public domain. See LICENSE file for details.
