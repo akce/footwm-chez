@@ -294,6 +294,8 @@
    ulongs-property-set!
    text-property-set!
 
+   define-root-property
+
    send-message-cardinal)
   (import
    (chezscheme)
@@ -987,6 +989,48 @@
                     (x-set-text-property wid &tp propatom))
                 (free/u8** u8mem (length str*))
                 (x-free (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
+
+  (define-syntax first-or-false
+    (syntax-rules ()
+      [(_ ls)
+       (let ([als ls])
+         (and (pair? als)
+              (car als)))]))
+
+  (define-syntax define-root-property
+    (lambda (x)
+      (syntax-case x ()
+        [(_ name prop-sym atom-id atom-type)
+         (case (syntax->datum #'prop-sym)
+           [(ulong/list)
+            #'(define-syntax name
+                (identifier-syntax
+                  [id (property->ulongs (root) atom-id atom-type)]
+                  [(set! id value)
+                   (ulongs-property-set! (root) atom-id value atom-type)]))]
+           [(ulong)
+            #'(define-syntax name
+                (identifier-syntax
+                  [id
+                    (first-or-false (property->ulongs (root) atom-id atom-type))]
+                  [(set! id value)
+                   (ulongs-property-set! (root) atom-id (list value) atom-type)]))])]
+        [(_ name prop-sym atom-id)
+         (case (syntax->datum #'prop-sym)
+           [(string/list)
+            #'(define-syntax name
+                (identifier-syntax
+                  [id
+                    (property->string* (root) atom-id)]
+                  [(set! id value)
+                   (text-property-set! (root) value atom-id)]))]
+           [(string)
+            #'(define-syntax name
+                (identifier-syntax
+                  [id
+                    (first-or-false (property->string* (root) atom-id))]
+                  [(set! id value)
+                   (text-property-set! (root) (list value) atom-id)]))])])))
 
   (define send-message-cardinal
     (lambda (root wid atom value)

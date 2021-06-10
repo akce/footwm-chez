@@ -96,24 +96,20 @@
 
   ;;;; _NET_CLIENT_LIST WINDOW[]/32
 
-  (define-syntax client-list
-    (identifier-syntax
-      [id
-        (property->ulongs (root) (atom 'ref '_NET_CLIENT_LIST) (x-atom 'ref 'WINDOW))]
-      [(set! id wids)
-       (ulongs-property-set! (root) (atom 'ref '_NET_CLIENT_LIST) wids (x-atom 'ref 'WINDOW))]))
+  (define-root-property client-list
+    ulong/list
+    (atom 'ref '_NET_CLIENT_LIST)
+    (x-atom 'ref 'WINDOW))
 
   ;;;; _NET_CLIENT_LIST_STACKING WINDOW[]/32
   ;; N/A (Does not seem to be used by any taskbar.)
 
   ;;;; _NET_NUMBER_OF_DESKTOPS CARDINAL/32
 
-  (define-syntax desktop-count
-    (identifier-syntax
-      [id
-        (first-or-false (property->ulongs (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) (x-atom 'ref 'CARDINAL)))]
-      [(set! id number)
-       (cardinal-set! (root) (atom 'ref '_NET_NUMBER_OF_DESKTOPS) number)]))
+  (define-root-property desktop-count
+    ulong
+    (atom 'ref '_NET_NUMBER_OF_DESKTOPS)
+    (x-atom 'ref 'CARDINAL))
 
   ;;;; _NET_DESKTOP_GEOMETRY width, height, CARDINAL[2]/32
   (define desktop-geometry
@@ -138,12 +134,10 @@
 
   ;;;; _NET_CURRENT_DESKTOP desktop, CARDINAL/32
 
-  (define-syntax current-desktop
-    (identifier-syntax
-      [id
-        (first-or-false (property->ulongs (root) (atom 'ref '_NET_CURRENT_DESKTOP) (x-atom 'ref 'CARDINAL)))]
-      [(set! id number)
-       (cardinal-set! (root) (atom 'ref '_NET_CURRENT_DESKTOP) number)]))
+  (define-root-property current-desktop
+    ulong
+    (atom 'ref '_NET_CURRENT_DESKTOP)
+    (x-atom 'ref 'CARDINAL))
 
   ;; client: request current desktop change.
   (define current-desktop-request!
@@ -152,22 +146,16 @@
 
   ;;;; _NET_DESKTOP_NAMES UTF8_STRING[]
 
-  (define-syntax desktop-names
-    (identifier-syntax
-      [id
-        ;; return as list as lists have more builtin operations.
-        (property->string* (root) (atom 'ref '_NET_DESKTOP_NAMES))]
-      [(set! id names)
-       (text-property-set! (root) names (atom 'ref '_NET_DESKTOP_NAMES))]))
+  (define-root-property desktop-names
+    string/list
+    (atom 'ref '_NET_DESKTOP_NAMES))
 
   ;;;; _NET_ACTIVE_WINDOW WINDOW/32
 
-  (define-syntax active-window
-    (identifier-syntax
-      [id
-        (first-or-false (property->ulongs (root) (atom 'ref '_NET_ACTIVE_WINDOW) (x-atom 'ref 'WINDOW)))]
-      [(set! id wid)
-       (ulongs-property-set! (root) (atom 'ref '_NET_ACTIVE_WINDOW) (list wid) (x-atom 'ref 'WINDOW))]))
+  (define-root-property active-window
+    ulong
+    (atom 'ref '_NET_ACTIVE_WINDOW)
+    (x-atom 'ref 'WINDOW))
 
   ;; client: Request WM activate window.
   (define window-active-request!
