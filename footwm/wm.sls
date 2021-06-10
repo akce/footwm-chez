@@ -389,7 +389,10 @@
               (match-assign? a wid))
             assignments)
           => (lambda (a)
-               (get-desktop-id (rule-desktop a)))]
+               ;; Fallback to the default desktop if the desired desktop doesn't exist.
+               ;; Perhaps we should create the desktop instead of the fallback?
+               (or (get-desktop-id (rule-desktop a))
+                   default-desktop))]
          [else
            default-desktop])]))
   )
