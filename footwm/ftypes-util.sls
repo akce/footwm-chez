@@ -21,9 +21,10 @@
    (chezscheme)
    (footwm util))
 
-  (meta define symbol->function-name-string
-        (lambda (sym)
-          (kebab-case->pascal-case (symbol->string sym))))
+  (meta define symbol/kebab-case->pascal-case
+        (lambda (stx)
+          (datum->syntax stx
+            (kebab-case->pascal-case (symbol->string (syntax->datum stx))))))
 
   ;; [syntax] c-function: converts scheme-like function names to c-like function names before passing to foreign-procedure.
   ;; ie, word separating hyphens are converted to underscores for c.
@@ -38,10 +39,7 @@
       (syntax-case stx ()
         [(_ (name args return) ...)
          (with-syntax ([(function-string ...)
-                        (map (lambda (n)
-                               (datum->syntax n
-                                 (symbol->function-name-string (syntax->datum n))))
-                             #'(name ...))])
+                        (map symbol/kebab-case->pascal-case #'(name ...))])
             #'(begin
                 (define name
                   (foreign-procedure function-string args return)) ...))])))
@@ -66,10 +64,7 @@
       (syntax-case stx ()
         [(_ (type instance) (name (arg ...) return) ...)
          (with-syntax ([(function-string ...)
-                        (map (lambda (n)
-                               (datum->syntax n
-                                 (symbol->function-name-string (syntax->datum n))))
-                             #'(name ...))])
+                        (map symbol/kebab-case->pascal-case #'(name ...))])
             #'(begin
                 (define name
                   (let ([ffi-func (foreign-procedure function-string (type arg ...) return)])
