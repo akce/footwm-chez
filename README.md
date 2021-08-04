@@ -54,40 +54,27 @@ footdesk: typing the name of a desktop that does not exist and pressing ENTER wi
 
 [gtk3] (for footdesk & footwin)
 
-## Compiling and installing
+## Building and Installing
 
-The library source files may be compiled as library shared object files. To compile, issue the command:
+The footwm source can be run in-place, just add the checkout path to CHEZSCHEMELIBDIRS and `bin` to your shell's PATH environment variables.
 
-    $ make 
+`footwm` can also be compiled to program files using the provided GNU makefile.
 
-The recommended install method is to use the Makefile. It provides targets to compile and install the library files, scripts, and keys config file. The locations are controlled by 4 variables:
-- PREFIX: Base directory where everything is installed. Default: ~ (User home directory).
-- LIBDIR: The base directory where footwm library files go. This is a directory that must be in CHEZSCHEMELIBDIRS. Default: $PREFIX/lib/csv<CHEZ-SCHEME-VERSION>
-- BINDIR: The directory where executable scripts go. This directory should be in PATH. Default: $PREFIX/bin
-- CONFDIR: The directory where configuration files are looked for. Default: ~/.foot
+These will be installed to BINDIR, which is ~/bin by default.
 
-To install library source files to LIBDIR:
+The makefile requires IRREGEXDIR to point to local [irregex] source. The default location is ~/lib/csv*chez-version*. eg, ~/lib/csv9.5.4
 
-    $ make install-src
+The makefile also has a target to install the sample config files. This should only be run once during the very first install.
 
-To install (and if necessary, compile) library shared-object files to LIBDIR:
+Be very careful as it will overwrite any existing (and possibly customised) configs.
 
-    $ make install-so
-
-To install the executable scripts to BINDIR. Note that the scripts are installed without their '.ss' suffix. eg, footwm.ss becomes footwm.
-
-    $ make install-bin
-
-To install library source, shared objects, and executables:
-
-    $ make install
-
-To install and customise footkeys config:
+To use:
 
     $ make install-config
-    $ $EDITOR ~/.foot/footkeysconfig.sls
 
-The *install-config* target is special in that it's not done as part of *make install* as it's a destructive operation and has the potential to overwrite a customised configuration file. It's expected that this command will only be run once ever during the first install.
+Note that dependencies are not tracked, so if you make changes to any of the library files, you'll need to rebuild everything from scratch. ie,
+
+    $ make clean && make
 
 ### Insert into .xinitrc.
 
@@ -134,6 +121,8 @@ The foot shell (footsh) also allows for easy manipulation of window state. Invok
 
 NOTE: xlib is not prefixed as it uses ftypes and redefining exported symbols can cause issues there.
 
+NOTE NOTE: the compiled version of `footsh` does not pre-import footwm library bindings. This is due to a difference between [Chez Scheme] program mode vs script mode that i haven't quite figured out yet. Run `footsh` from within the source directory if you need this feature although hopefully it's not needed so much now that the code has matured.
+
 It's always best here to refer to the source code for what is possible.
 
 A sample session. Comments are embedded:
@@ -164,12 +153,12 @@ $ footsh
   (shell.sync)
 1
 ```
-A limitation of footsh is that it won't manipulate footwm code, as experienced LISPers might expect.
+A limitation of footsh is that it won't manipulate/eval running footwm code, as experienced LISPers might expect.
 
-Instead, footsh can alter X properties and footwm can react. As footwm is stateless (and only requires a restart), this has proved an effective developement model.
+Instead, alter X properties via `footsh` or some other app. `footwm` is stateless and loads from X on each event change. Or restart `footwm` itself if there's a code change.
 
-And for those perusing the code: the naming convention for functions tries to follow OBJECT-ATTRIBUTE. eg, (ewmh.window-desktop wid) refers to the desktop assigned to window wid.
+For those perusing the code: the naming convention for functions tries to follow OBJECT-ATTRIBUTE. eg, (ewmh.window-desktop wid) refers to the desktop assigned to window wid.
 
 ## License
 
-Written by Akce 2019-2021. Released into the public domain. See LICENSE file for details.
+Written by Jerry 2019-2021. Released into the public domain. See LICENSE file for details.

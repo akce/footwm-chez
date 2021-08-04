@@ -1,17 +1,14 @@
-#! /usr/bin/scheme --script
+#! /usr/bin/env -S chez-scheme --quiet --debug-on-exception --program
 
 ;; Footwm key handler app.
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
-(suppress-greeting #t)
-(debug-on-exception #t)
-
 (import
- (rnrs base)
- (only (chezscheme) new-cafe)
+ (rnrs)
+ (only (chezscheme) command-line-arguments getenv new-cafe)
  (prefix (footwm ewmh) ewmh.)
  (prefix (footwm hints) hints.)
  (prefix (footwm icccm) icccm.)
@@ -35,7 +32,5 @@
   (cond
    [(null? argv)
     (keys.main (default-config))]
-   [(string=? (car argv) "shell")
-    (keys.shell)]
    [else
     (keys.main (car argv))]))
