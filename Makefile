@@ -60,4 +60,4 @@ install: all
 install-config: $(ICONFIGS)
 
 clean:
-	rm -f $(WSOS) $(SOS) $(BINS:.ss=.wpo) $(IBINS) footwm/*.{so,wpo}
+	rm -f $(WSOS) $(SOS) $(BINS:.ss=.wpo) $(IBINS) footwm/*.so footwm/*.wpo
