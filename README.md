@@ -2,14 +2,11 @@
 
 Footwm - Focus On One Thing Window Manager.
 
-Footwm aims to efficiently manage multitudes of windows without the need for tab bars or getting in the way.
+Footwm aims to efficiently manage lots of windows without the need for tab bars, or getting in the way.
 
 It does this by:
 - Storing windows and desktops in Most Recently Used (MRU) order
 - Providing menus to find, filter and then perform actions on those windows/desktops.
-
-[EWMH]: https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html "EWMH"
-[ICCC]: https://www.x.org/docs/ICCCM/icccm.pdf
 
 Footwm is written in mostly [r6rs](http://www.r6rs.org/) scheme (using [Chez Scheme]) and implements standard [EWMH] and [ICCC] hints where possible.
 
@@ -20,7 +17,7 @@ Footwm functionality is divided among these applications:
 - footdesk: [gtk3] menu for selecting and closing desktops
 - footsh: command line client for manipulating footwm/[EWMH]/[ICCC] hints
 
-[tmux]: https://github.com/tmux/tmux
+Footwm supports [EWMH] struts so it is possible to use status bars such as (tint2)[https://gitlab.com/o9000/tint2].
 
 Footwm does not provide an execution monitor. Using a terminal multiplexer like [tmux] is highly recommended instead (see HACKING below).
 
@@ -44,10 +41,6 @@ footdesk: typing the name of a desktop that does not exist and pressing ENTER wi
 
 ## Dependencies
 
-[Chez Scheme]: https://cisco.github.io/ChezScheme/ "Chez Scheme"
-[irregex]: http://synthcode.com/scheme/irregex/ "irregex"
-[gtk3]: https://developer.gnome.org/gtk3/stable/ "gtk3"
-
 [Chez Scheme]
 
 [irregex] (for footdesk & footwin)
@@ -56,13 +49,17 @@ footdesk: typing the name of a desktop that does not exist and pressing ENTER wi
 
 ## Building and Installing
 
-The footwm source can be run in-place, just add the checkout path to CHEZSCHEMELIBDIRS and `bin` to your shell's PATH environment variables.
-
-`footwm` can also be compiled to program files using the provided GNU makefile.
+`footwm` can be compiled to component program files and installed using the provided GNU makefile.
 
 These will be installed to BINDIR, which is ~/bin by default.
 
-The makefile requires IRREGEXDIR to point to local [irregex] source. The default location is ~/lib/csv*chez-version*. eg, ~/lib/csv9.5.4
+eg, to install to /usr/local/bin
+```sh
+$ make
+$ sudo make BINDIR=/usr/local/bin install
+```
+
+The makefile requires IRREGEXDIR to point to local [irregex] source. The default location is ~/lib/csv**chez-version**. eg, ~/lib/csv9.5.4
 
 The makefile also has a target to install the sample config files. This should only be run once during the very first install.
 
@@ -72,7 +69,9 @@ To use:
 
     $ make install-config
 
-Note that dependencies are not tracked, so if you make changes to any of the library files, you'll need to rebuild everything from scratch. ie,
+The footwm source can be run in-place, just add its path to CHEZSCHEMELIBDIRS and `bin` to your shell's PATH environment variables. However, this should probably only be done if you're modifying the code.
+
+Note that footwm dependencies are not tracked, so if you make changes to any of the library files, you'll need to rebuild everything from scratch. ie,
 
     $ make clean && make
 
@@ -95,8 +94,6 @@ Note that you'll need to create a non-background process to stop xinit/startx fr
     # Non background process.
     env DISPLAY=:0 urxvt -name wm -e tmux attach-session -t wm
 ```
-
-Optional: Install remaining dependencies ([irregex] & [gtk3]) for the menu apps.
 
 ## Hacking
 
@@ -161,4 +158,17 @@ For those perusing the code: the naming convention for functions tries to follow
 
 ## License
 
-Written by Jerry 2019-2021. Released into the public domain. See LICENSE file for details.
+footwm is an [unlicensed](LICENSE) work released into the Public Domain.
+
+
+[Chez Scheme]: https://cisco.github.io/ChezScheme/ "Chez Scheme"
+
+[EWMH]: https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html "EWMH"
+
+[ICCC]: https://www.x.org/docs/ICCCM/icccm.pdf
+
+[tmux]: https://github.com/tmux/tmux
+
+[irregex]: http://synthcode.com/scheme/irregex/ "irregex"
+
+[gtk3]: https://developer.gnome.org/gtk3/stable/ "gtk3"
