@@ -17,7 +17,7 @@ Footwm functionality is divided among these applications:
 - footdesk: [gtk3] menu for selecting and closing desktops
 - footsh: command line client for manipulating footwm/[EWMH]/[ICCC] hints
 
-Footwm supports [EWMH] struts so it is possible to use status bars such as (tint2)[https://gitlab.com/o9000/tint2].
+Footwm supports [EWMH] struts so it is possible to use status bars such as [tint2](https://gitlab.com/o9000/tint2).
 
 Footwm does not provide an execution monitor. Using a terminal multiplexer like [tmux] is highly recommended instead (see HACKING below).
 
