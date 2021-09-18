@@ -1,4 +1,4 @@
-# Footwm Chez scheme Makefile.
+# Footwm Chez scheme GNUmakefile.
 # Written by Jerry 2019-2021.
 # SPDX-License-Identifier: Unlicense
 
@@ -28,6 +28,10 @@ BINS =	\
 	bin/footwm.ss
 
 SOS = $(BINS:.ss=.so)
+
+# wso = whole-shared-object, but it could be called .app or something similar.
+# These are the outputs of compile-whole-{library,program}.
+# It's a custom extension created so as not to clash with regular .so shared objects.
 WSOS = $(BINS:.ss=.wso)
 
 IBINS = $(addprefix $(BINDIR)/,$(notdir $(BINS:.ss=)))
@@ -38,6 +42,7 @@ CONFIGS = \
 
 ICONFIGS = $(addprefix $(CONFDIR)/,$(notdir $(CONFIGS)))
 
+# Setting this stops GNU make from removing these intermediate files.
 .SECONDARY: $(WSOS) $(BINS:.ss=.wpo)
 
 all: $(IBINS)
@@ -45,6 +50,7 @@ all: $(IBINS)
 %.wpo: %.ss
 	echo "(reset-handler abort) (compile-imported-libraries #t) (generate-wpo-files #t) (library-directories '(\".\" \"$(IRREGEXDIR)\")) (compile-program \"$<\")" | $(SCHEME) $(SFLAGS)
 
+# Must set libs-visible? to #t so that footkeys configs can import footwm libs.
 %.wso: %.wpo
 	echo "(reset-handler abort) (compile-imported-libraries #t) (generate-wpo-files #t) (library-directories '(\".\" \"$(IRREGEXDIR)\")) (compile-whole-program \"$<\" \"$@\" #t)" | $(SCHEME) $(SFLAGS)
 	chmod +x "$@"
