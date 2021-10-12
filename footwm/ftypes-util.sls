@@ -1,6 +1,6 @@
 ;; ftypes (chez-ffi) utility functions.
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
@@ -80,26 +80,40 @@
                      (* i (ftype-sizeof unsigned-long)))
                    (iota (length ulongs))))))
 
-  ;; [syntax] (fmem ((var varptr type)) ...)
+  ;; [syntax] (fmem ((var type)) ...)
+  ;; [syntax] (fmem ((var varptr type [count])) ...)
   (define-syntax fmem
     (syntax-rules ()
-      [(_ ((var varptr type) ...) first rest ...)
+      [(_ ((var type) ...) first rest ...)
        (let ([var (foreign-alloc (ftype-sizeof type))] ...)
+         (dynamic-wind
+           (lambda () #t)
+           (lambda ()
+             first rest ...)
+           (lambda ()
+             (foreign-free var) ...)))]
+      [(_ ((var varptr type . count) ...) first rest ...)
+       (let ([var (foreign-alloc (* (parse-alloc-count count) (ftype-sizeof type)))] ...)
          (let ([varptr (make-ftype-pointer type var)] ...)
-           (let ([r (begin first rest ...)])
-             ;; make-ftype-pointer implicitly locks var, so manually unlock before free.
-             (unlock-object var) ...
-             (foreign-free var) ...
-             r)))]
-      [(_ ((var varptr type num) ...) first rest ...)
-       ;; Ensure num is at least 1, that's a requirement of foreign-alloc.
-       (let ([var (foreign-alloc (* (if (= num 0) 1 num) (ftype-sizeof type)))] ...)
-         (let ([varptr (make-ftype-pointer type var)] ...)
-           (let ([r (begin first rest ...)])
-             ;; make-ftype-pointer implicitly locks var, so manually unlock before free.
-             (unlock-object var) ...
-             (foreign-free var) ...
-             r)))]))
+           (dynamic-wind
+             (lambda () #t)
+             (lambda ()
+               first rest ...)
+             (lambda ()
+               (foreign-free var) ...))))]))
+
+  ;; parse, or rather destructure, the optional alloc count parameter.
+  (define-syntax parse-alloc-count
+    (syntax-rules ()
+      [(_ ())
+       1]
+      [(_ (count))
+       (and (identifier? #'count) (integer? #'count) (> #'count 0))
+       count]
+      [(_ (count))
+       ;; Hope that the 'count' identifier is a var or function call referring to a positive int.
+       count]
+      ))
 
   (define free/u8**
     (lambda (u8** len)

@@ -3,7 +3,7 @@
 ;; See:
 ;;    https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
@@ -48,7 +48,7 @@
    remove-window)
   (import
    (rnrs)
-   (only (chezscheme) format)
+   (only (chezscheme) errorf format)
    (footwm xlib))
 
   (define atom
@@ -305,9 +305,8 @@
             [prop2 (list-ref (xclientmessageevent-data ev) 2)]
             #;[source (list-ref (xclientmessageevent-data ev) 3)]
             [wm-state (get-net-wm-state wid)])
-        (display
-          (format
-            "#x~x _NET_WM_STATE action ~a ~a ~a ~a ~a ~n" wid action prop1 (x-get-atom-name prop1) prop2 (x-get-atom-name prop2)))
+        (format
+          "#x~x _NET_WM_STATE action ~a ~a(~a) ~a(~a)~n" wid action (x-get-atom-name prop1) prop1 (x-get-atom-name prop2) prop2)
         (net-wm-state-set!
           wid
           (cond
@@ -322,7 +321,7 @@
                  (remv prop1 wm-state)
                  (cons prop1 wm-state))]
             [else
-              (error #f (format "#x~x Bad _NET_WM_STATE action!" wid) action)]))
+              (errorf 'on-client-state "#x~x Bad _NET_WM_STATE action! ~a" wid action)]))
         )))
 
   (define add-net-wm-states-state!

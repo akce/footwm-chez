@@ -239,6 +239,7 @@
    UTF8String
 
    x-change-property
+   x-delete-property
    x-close-display
    x-configure-window
    x-default-root-window
@@ -647,6 +648,7 @@
   (c-default-function
     (dpy* (current-display))
     (x-change-property (window atom atom int int void* int) int)
+    (x-delete-property (window atom) int)
     (x-close-display () int)
     ;; data should be a u8* but using a void* instead.
     (XConfigureWindow (window unsigned (* XWindowChanges)) int)
@@ -901,9 +903,14 @@
   (define ulongs-property-set!
     (lambda (wid atomprop ulongs typeatom)
       (let ([len (length ulongs)])
-        (fmem ([mem &mem unsigned-long len])
-          (fill-memory/ulongs mem ulongs)
-          (x-change-property wid atomprop typeatom 32 0 mem len)))))
+        (cond
+          [(fx>? len 0)
+           (fmem ([mem &mem unsigned-long len])
+             (fill-memory/ulongs mem ulongs)
+             (x-change-property wid atomprop typeatom 32 0 mem len))]
+          [else
+            (format (current-error-port) "#x~x deleting property ~a(~a)~n" wid (x-get-atom-name atomprop) atomprop)
+            (x-delete-property wid atomprop)]))))
 
   (define property->string
     (lambda (wid propatom)
@@ -937,7 +944,6 @@
 
   ;; Return list/pair (address length) of property memory data or #f on failure.
   ;; Caller *Must* foreign-free returned address.
-  ;; (Using list as the fmem macro won't allow a values return.)
   (define get-property-ptr
     (lambda (wid propatom atomtype)
       (fmem ([atr &atr atom]		;; atr = actual type return
@@ -949,36 +955,37 @@
         (let* ([pr (foreign-alloc (ftype-sizeof void*))]
                [&pr (make-ftype-pointer void* pr)]
                [rc (x-get-window-property wid propatom 0 2048 #f atomtype &atr &afr &nir &bar &pr)])
-          (if (= rc 0)
-              ;; maybe success: make sure there was something returned.
-              (let ([len (foreign-ref 'unsigned-long nir 0)])
-                (if (> len 0)
-                    ;; more success: return data ptr and length.
-                    (list pr len)
-                    (begin
-                      ;; nothing back, free memory and return.
-                      (x-free (foreign-ref 'void* pr 0))
-                      (unlock-object pr)
-                      (foreign-free pr)
-                      #f)))
-              ;; failure: return false.
-              #f)))))
+          (cond
+            [(= rc 0)
+             ;; maybe success: make sure there was something returned.
+             (let ([len (foreign-ref 'unsigned-long nir 0)])
+               (cond
+                 [(> len 0)
+                  ;; more success: return data ptr and length.
+                  (values pr len)]
+                 [else
+                   ;; nothing back, free memory and return.
+                   (x-free (foreign-ref 'void* pr 0))
+                   (foreign-free pr)
+                   (values #f #f)]))]
+             [else
+               ;; failure: return false.
+               (values #f #f)])))))
 
   ;; window property to list of unsigned longs.
   (define property->ulongs
     (lambda (wid propatom atomtype)
-      (let ([ptrlen (get-property-ptr wid propatom atomtype)])
-        (if ptrlen
-            ;; success: extract window ids from pr.
-            (let* ([ptr (list-ref ptrlen 0)]
-                   [*ptr (foreign-ref 'void* ptr 0)]
-                   [len (list-ref ptrlen 1)]
+      (let-values ([(ptr len) (get-property-ptr wid propatom atomtype)])
+        (cond
+          [ptr
+            (let* ([*ptr (foreign-ref 'void* ptr 0)]
                    [nums (ptr->ulongs *ptr len)])
               (x-free *ptr)
               (foreign-free ptr)
-              nums)
+              nums)]
+          [else
             ;; failure: return empty.
-            (list)))))
+            (list)]))))
 
   (define text-property-set!
     (lambda (wid str* propatom)

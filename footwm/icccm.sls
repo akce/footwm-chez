@@ -3,7 +3,7 @@
 ;; Reference:
 ;;	https://www.x.org/docs/ICCCM/icccm.pdf
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
@@ -100,7 +100,7 @@
    (rnrs)
    (only (chezscheme)
      inexact->exact
-     define-ftype foreign-free ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof unlock-object)
+     define-ftype foreign-free ftype-pointer-address ftype-ref make-ftype-pointer foreign-ref ftype-set! ftype-sizeof)
    (only (footwm ftypes-util) fmem)
    (prefix (footwm util) util.)
    (footwm xlib))
@@ -174,32 +174,31 @@
   (define get-normal-hints
     (lambda (wid)
       ;; WM_NORMAL_HINTS is of type WM_SIZE_HINTS.
-      (let ([ptrlen (get-property-ptr wid (atom 'ref 'WM_NORMAL_HINTS) (atom 'ref 'WM_SIZE_HINTS))])
-        (if ptrlen
-            (let* ([ptr (car ptrlen)]
-                   [*ptr (foreign-ref 'void* ptr 0)]
-                   [wp (make-ftype-pointer c-size-hints *ptr)]
+      (let-values ([(ptr len) (get-property-ptr wid (atom 'ref 'WM_NORMAL_HINTS) (atom 'ref 'WM_SIZE_HINTS))])
+        (cond
+          [ptr
+            (let* ([wp (make-ftype-pointer c-size-hints (foreign-ref 'void* ptr 0))]
                    ;; Make the record.
                    [ret (make-size-hints
-                         (ftype-ref c-size-hints (flags) wp)
-                         (ftype-ref c-size-hints (min-width) wp)
-                         (ftype-ref c-size-hints (min-height) wp)
-                         (ftype-ref c-size-hints (max-width) wp)
-                         (ftype-ref c-size-hints (max-height) wp)
-                         (ftype-ref c-size-hints (width-inc) wp)
-                         (ftype-ref c-size-hints (height-inc) wp)
-                         (ftype-ref c-size-hints (min-aspect-x) wp)
-                         (ftype-ref c-size-hints (min-aspect-y) wp)
-                         (ftype-ref c-size-hints (max-aspect-x) wp)
-                         (ftype-ref c-size-hints (max-aspect-y) wp)
-                         (ftype-ref c-size-hints (base-width) wp)
-                         (ftype-ref c-size-hints (base-height) wp)
-                         (ftype-ref c-size-hints (win-gravity) wp))])
-              (x-free *ptr)
-              (unlock-object *ptr)
+                          (ftype-ref c-size-hints (flags) wp)
+                          (ftype-ref c-size-hints (min-width) wp)
+                          (ftype-ref c-size-hints (min-height) wp)
+                          (ftype-ref c-size-hints (max-width) wp)
+                          (ftype-ref c-size-hints (max-height) wp)
+                          (ftype-ref c-size-hints (width-inc) wp)
+                          (ftype-ref c-size-hints (height-inc) wp)
+                          (ftype-ref c-size-hints (min-aspect-x) wp)
+                          (ftype-ref c-size-hints (min-aspect-y) wp)
+                          (ftype-ref c-size-hints (max-aspect-x) wp)
+                          (ftype-ref c-size-hints (max-aspect-y) wp)
+                          (ftype-ref c-size-hints (base-width) wp)
+                          (ftype-ref c-size-hints (base-height) wp)
+                          (ftype-ref c-size-hints (win-gravity) wp))])
+              (x-free (ftype-pointer-address wp))
               (foreign-free ptr)
-              ret)
-            #f))))
+              ret)]
+          [else
+            #f]))))
 
   (define normal-hints-flags->string
     (lambda (nh)
@@ -300,24 +299,23 @@
   (define get-wm-hints
     (lambda (wid)
       ;; WM_HINTS has type WM_HINTS.
-      (let* ([at (atom 'ref 'WM_HINTS)]
-             [ptrlen (get-property-ptr wid at at)])
-        (if ptrlen
-            (let* ([ptr (car ptrlen)]
-                   [*ptr (foreign-ref 'void* ptr 0)]
-                   [wp (make-ftype-pointer c-wm-hints *ptr)]
+      (let*-values ([(at) (atom 'ref 'WM_HINTS)]
+                    [(ptr len) (get-property-ptr wid at at)])
+        (cond
+          [ptr
+            (let* ([wp (make-ftype-pointer c-wm-hints (foreign-ref 'void* ptr 0))]
                    [fl (ftype-ref c-wm-hints (flags) wp)]
                    ;; Make the record.
                    [ret (make-wm-hints
-                         fl
-                         (if (bitwise-bit-set? fl InputHint) (ftype-ref c-wm-hints (input) wp) #f)
-                         (if (bitwise-bit-set? fl StateHint) (ftype-ref c-wm-hints (initial-state) wp) #f)
-                         (if (bitwise-bit-set? fl WindowGroupHint) (ftype-ref c-wm-hints (window-group) wp) #f))])
-              (x-free *ptr)
-              (unlock-object *ptr)
+                          fl
+                          (if (bitwise-bit-set? fl InputHint) (ftype-ref c-wm-hints (input) wp) #f)
+                          (if (bitwise-bit-set? fl StateHint) (ftype-ref c-wm-hints (initial-state) wp) #f)
+                          (if (bitwise-bit-set? fl WindowGroupHint) (ftype-ref c-wm-hints (window-group) wp) #f))])
+              (x-free (ftype-pointer-address wp))
               (foreign-free ptr)
-              ret)
-            #f))))
+              ret)]
+          [else
+            #f]))))
 
   ;;;; ICCCM 4.1.2.5 WM_CLASS
   (define class-hint
