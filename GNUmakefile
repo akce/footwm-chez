@@ -45,7 +45,7 @@ ICONFIGS = $(addprefix $(CONFDIR)/,$(notdir $(CONFIGS)))
 # Setting this stops GNU make from removing these intermediate files.
 .SECONDARY: $(WSOS) $(BINS:.ss=.wpo)
 
-all: $(IBINS)
+all: $(WSOS)
 
 %.wpo: %.ss
 	echo "(reset-handler abort) (compile-imported-libraries #t) (generate-wpo-files #t) (library-directories '(\".\" \"$(IRREGEXDIR)\")) (compile-program \"$<\")" | $(SCHEME) $(SFLAGS)
@@ -61,9 +61,12 @@ $(BINDIR)/%: bin/%.wso
 $(CONFDIR)/%.sls: etc/%.sls
 	$(INSTALL) -D -p $< $@
 
-install: all
+install: $(IBINS)
 
 install-config: $(ICONFIGS)
 
 clean:
-	rm -f $(WSOS) $(SOS) $(BINS:.ss=.wpo) $(IBINS) footwm/*.so footwm/*.wpo
+	$(RM) $(WSOS) $(SOS) $(BINS:.ss=.wpo) footwm/*.so footwm/*.wpo
+
+clean-all: clean
+	$(RM) $(IBINS)
