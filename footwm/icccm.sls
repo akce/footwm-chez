@@ -134,8 +134,8 @@
   ;; See also the XGetWMNormalHints manpage for extra info.
   ;; Constraints on window geometry.
   (util.enum size-hints-flags
-        (USPosition	0)
-        (USSize		1)
+        (USPosition	0)	; obsolete
+        (USSize		1)	; obsolete
         (PPosition	2)
         (PSize		3)
         (PMinSize	4)
@@ -169,7 +169,40 @@
      [win-gravity	long]))
 
   (define-record-type size-hints
-    (fields flags min-w min-h max-w max-h w-inc h-inc min-aspect-x min-aspect-y max-aspect-x max-aspect-y base-w base-h win-gravity))
+    (fields
+      flags
+      min-w min-h
+      max-w max-h
+      w-inc h-inc
+      min-aspect-x min-aspect-y
+      max-aspect-x max-aspect-y
+      base-w base-h
+      win-gravity)
+    (protocol
+      (lambda (new)
+        (lambda (fptr)
+          (let ([fl (ftype-ref c-size-hints (flags) fptr)])
+            (let-syntax ([flag-ref
+                           (syntax-rules ()
+                             [(_ flag field)
+                              (if (bitwise-bit-set? fl flag)
+                                (ftype-ref c-size-hints (field) fptr)
+                                #f)])])
+              (new
+                fl
+                (flag-ref PMinSize min-width)
+                (flag-ref PMinSize min-height)
+                (flag-ref PMaxSize max-width)
+                (flag-ref PMaxSize max-height)
+                (flag-ref PResizeInc width-inc)
+                (flag-ref PResizeInc height-inc)
+                (flag-ref PAspect min-aspect-x)
+                (flag-ref PAspect min-aspect-y)
+                (flag-ref PAspect max-aspect-x)
+                (flag-ref PAspect max-aspect-y)
+                (flag-ref PBaseSize base-width)
+                (flag-ref PBaseSize base-height)
+                (flag-ref PWinGravity win-gravity))))))))
 
   (define get-normal-hints
     (lambda (wid)
@@ -178,22 +211,7 @@
         (cond
           [ptr
             (let* ([wp (make-ftype-pointer c-size-hints (foreign-ref 'void* ptr 0))]
-                   ;; Make the record.
-                   [ret (make-size-hints
-                          (ftype-ref c-size-hints (flags) wp)
-                          (ftype-ref c-size-hints (min-width) wp)
-                          (ftype-ref c-size-hints (min-height) wp)
-                          (ftype-ref c-size-hints (max-width) wp)
-                          (ftype-ref c-size-hints (max-height) wp)
-                          (ftype-ref c-size-hints (width-inc) wp)
-                          (ftype-ref c-size-hints (height-inc) wp)
-                          (ftype-ref c-size-hints (min-aspect-x) wp)
-                          (ftype-ref c-size-hints (min-aspect-y) wp)
-                          (ftype-ref c-size-hints (max-aspect-x) wp)
-                          (ftype-ref c-size-hints (max-aspect-y) wp)
-                          (ftype-ref c-size-hints (base-width) wp)
-                          (ftype-ref c-size-hints (base-height) wp)
-                          (ftype-ref c-size-hints (win-gravity) wp))])
+                   [ret (make-size-hints wp)])
               (x-free (ftype-pointer-address wp))
               (foreign-free ptr)
               ret)]
@@ -287,7 +305,22 @@
      [window-group	window]))
 
   (define-record-type wm-hints
-    (fields flags input initial-state window-group))
+    (fields flags input initial-state window-group)
+    (protocol
+      (lambda (new)
+        (lambda (fptr)
+          (let ([fl (ftype-ref c-wm-hints (flags) fptr)])
+            (let-syntax ([flag-ref
+                           (syntax-rules ()
+                             [(_ flag field)
+                              (if (bitwise-bit-set? fl flag)
+                                (ftype-ref c-wm-hints (field) fptr)
+                                #f)])])
+              (new
+                fl
+                (flag-ref InputHint input)
+                (flag-ref StateHint initial-state)
+                (flag-ref WindowGroupHint window-group))))))))
 
   ;; Add a pseudo record accessor for the urgency hint.
   (define wm-hints-urgency
@@ -304,13 +337,7 @@
         (cond
           [ptr
             (let* ([wp (make-ftype-pointer c-wm-hints (foreign-ref 'void* ptr 0))]
-                   [fl (ftype-ref c-wm-hints (flags) wp)]
-                   ;; Make the record.
-                   [ret (make-wm-hints
-                          fl
-                          (if (bitwise-bit-set? fl InputHint) (ftype-ref c-wm-hints (input) wp) #f)
-                          (if (bitwise-bit-set? fl StateHint) (ftype-ref c-wm-hints (initial-state) wp) #f)
-                          (if (bitwise-bit-set? fl WindowGroupHint) (ftype-ref c-wm-hints (window-group) wp) #f))])
+                   [ret (make-wm-hints wp)])
               (x-free (ftype-pointer-address wp))
               (foreign-free ptr)
               ret)]

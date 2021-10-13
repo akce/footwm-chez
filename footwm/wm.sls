@@ -327,20 +327,22 @@
 
   (define draw-active-window
     (lambda (wid)
-      (x-configure-window wid (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ideal-window-geometry wid)))
-      ;; Footwm won't arrange any overlapping windows so lower the active window in the
-      ;; stack list so that any override-redirect (eg, tooltips etc) from strut windows
-      ;; will be visible.
-      ;; (As is the case with tint2. My guess is it's reusing its tooltip window so
-      ;; newer footwm windows would obscure tooltips unless we lower our window.)
-      (cond
-        [(ewmh.fullscreen-window? wid)
-         ;; This is a work-around to stop fullscreen windows being obstructed by strut windows.
-         ;; TODO: redo the way strut windows are (not) managed by this wm.
-         (x-raise-window wid)]
-        [else
-          (x-lower-window wid)])
-      (show-window wid)))
+      (let ([normal-hints (icccm.get-normal-hints wid)])
+        (format #t "#x~x WMHints ~a ~a~n" wid (icccm.normal-hints-flags->string normal-hints) normal-hints)
+        (x-configure-window wid (icccm.apply-normal-hints normal-hints (ideal-window-geometry wid)))
+        ;; Footwm won't arrange any overlapping windows so lower the active window in the
+        ;; stack list so that any override-redirect (eg, tooltips etc) from strut windows
+        ;; will be visible.
+        ;; (As is the case with tint2. My guess is it's reusing its tooltip window so
+        ;; newer footwm windows would obscure tooltips unless we lower our window.)
+        (cond
+          [(ewmh.fullscreen-window? wid)
+           ;; This is a work-around to stop fullscreen windows being obstructed by strut windows.
+           ;; TODO: redo the way strut windows are (not) managed by this wm.
+           (x-raise-window wid)]
+          [else
+            (x-lower-window wid)])
+        (show-window wid))))
 
   (define show-desktop
     (lambda ()
