@@ -298,6 +298,18 @@
   (define _NET_WM_STATE_ADD	1)	; add/set property
   (define _NET_WM_STATE_TOGGLE	2)	; toggle property
 
+  (define action->string
+    (lambda (actid)
+      (case actid
+        [(0)
+         "REMOVE"]
+        [(1)
+         "ADD"]
+        [(2)
+         "TOGGLE"]
+        [else
+          "UNKNOWN"])))
+
   (define on-client-state
     (lambda (wid ev)
       (let ([action (list-ref (xclientmessageevent-data ev) 0)]
@@ -306,7 +318,8 @@
             #;[source (list-ref (xclientmessageevent-data ev) 3)]
             [wm-state (get-net-wm-state wid)])
         (format
-          "#x~x _NET_WM_STATE action ~a ~a(~a) ~a(~a)~n" wid action (x-get-atom-name prop1) prop1 (x-get-atom-name prop2) prop2)
+          #t
+          "#x~x _NET_WM_STATE action ~a ~a(~a) ~a(~a)~n" wid (action->string action) (x-get-atom-name prop1) prop1 (x-get-atom-name prop2) prop2)
         (net-wm-state-set!
           wid
           (cond
