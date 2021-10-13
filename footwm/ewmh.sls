@@ -67,6 +67,7 @@
          _NET_SUPPORTED
          _NET_WORKAREA
          _NET_WM_DESKTOP
+         _NET_WM_FULL_PLACEMENT
          _NET_WM_NAME
          _NET_WM_PID
          _NET_WM_STATE
@@ -459,8 +460,8 @@
 
   ;;;;;; Other Properties
 
-  ;;;; _NET_FULL_PLACEMENT
-  ;; TODO
+  ;;;; _NET_WM_FULL_PLACEMENT
+  ;; Setting in _NET_SUPPORTED indicates to Clients that the WM wants complete charge of window placement.
 
   ;;;; Compositing Managers.
   ;; N/A
