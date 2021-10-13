@@ -222,18 +222,22 @@
     (lambda (nh)
       (let-values ([(op g) (open-string-output-port)])
         (put-string op "(flags")
-        (bit-case (size-hints-flags nh)
-          ;; user position.
-          ([USPosition	(put-string op " USPosition")]
-           [USSize	(put-string op " USSize")]
-           [PPosition	(put-string op " PPosition")]
-           [PSize	(put-string op " PSize")]
-           [PMinSize	(put-string op " PMinSize")]
-           [PMaxSize	(put-string op " PMaxSize")]
-           [PResizeInc	(put-string op " PResizeInc")]
-           [PAspect	(put-string op " PAspect")]
-           [PBaseSize	(put-string op " PBaseSize")]
-           [PWinGravity	(put-string op " PWinGravity")]))
+        (cond
+          [nh
+            (bit-case (size-hints-flags nh)
+              ;; user position.
+              ([USPosition	(put-string op " USPosition")]
+               [USSize	(put-string op " USSize")]
+               [PPosition	(put-string op " PPosition")]
+               [PSize	(put-string op " PSize")]
+               [PMinSize	(put-string op " PMinSize")]
+               [PMaxSize	(put-string op " PMaxSize")]
+               [PResizeInc	(put-string op " PResizeInc")]
+               [PAspect	(put-string op " PAspect")]
+               [PBaseSize	(put-string op " PBaseSize")]
+               [PWinGravity	(put-string op " PWinGravity")]))]
+          [else
+            #f])
         (put-string op ")")
         (g))))
 
