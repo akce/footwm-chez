@@ -261,6 +261,7 @@
    x-map-window
    x-move-resize-window
    x-next-event
+   x-with-next-event
    x-open-display
    x-query-tree
    x-raise-window
@@ -821,6 +822,19 @@
       (fmem ([ev &ev XEvent])
         (XNextEvent &ev)
         (make-event &ev))))
+
+  (define x-with-next-event
+    (lambda (func)
+      (fmem ([ev &ev XEvent])
+        (dynamic-wind
+          (lambda () #t)
+          (lambda ()
+            (XNextEvent &ev)
+            #;(x-grab-server)
+            (func (make-event &ev)))
+          (lambda ()
+            #f
+            #;(x-ungrab-server))))))
 
   ;; Convert the cevent struct to a scheme record.
   ;; TODO this c-struct->scheme-record conversion to be done in xlib as part of define-xevent??

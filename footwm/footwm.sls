@@ -101,19 +101,20 @@
   (define run
     (lambda (assignments)
       (let loop ()
-        (let ([ev (x-next-event)])
-          (cond
-           ((xclientmessageevent? ev)		(on-client-message ev))
-           ((xconfigureevent? ev)		(on-configure ev))
-           ((xconfigurerequestevent? ev)	(on-configure-request ev))
-           ((xcreatewindowevent? ev)		(on-create-window ev))
-           ((xdestroywindowevent? ev)		(on-destroy-window ev))
-           ((xmapevent? ev)			(on-map ev))
-           ((xmaprequestevent? ev)		(on-map-request ev assignments))
-           ((xpropertyevent? ev)		(on-property ev))
-           ((xunmapevent? ev)			(on-unmap ev))
-           (else
-	    (format #t "Unknown event ~d~n" (xanyevent-type ev)))))
+        (x-with-next-event
+          (lambda (ev)
+            (cond
+              [(xclientmessageevent? ev)	(on-client-message ev)]
+              [(xconfigureevent? ev)		(on-configure ev)]
+              [(xconfigurerequestevent? ev)	(on-configure-request ev)]
+              [(xcreatewindowevent? ev)		(on-create-window ev)]
+              [(xdestroywindowevent? ev)	(on-destroy-window ev)]
+              [(xmapevent? ev)			(on-map ev)]
+              [(xmaprequestevent? ev)		(on-map-request ev assignments)]
+              [(xpropertyevent? ev)		(on-property ev)]
+              [(xunmapevent? ev)		(on-unmap ev)]
+              [else
+                (format #t "Unknown event ~d~n" (xanyevent-type ev))])))
         (loop))))
 
   (define on-client-message

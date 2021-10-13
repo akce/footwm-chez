@@ -64,18 +64,28 @@
             [(ewmh.dock-window? wid)
              (ewmh.calculate-workarea ewmh.client-list)
              (arrange-windows)]
+            [(eqv? deskid ewmh.current-desktop)
+              (activate-window wid)]
             [else
-             (activate-window wid)])))))
+             (desktop-activate deskid)])))))
 
   (define activate-window
     (lambda (wid)
       ;; promote window to top of ewmh.client-list, set as ewmh.active-window.
-      (if (top-level-window? wid)
-          (unless (= wid ewmh.active-window)
-            (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-            (if (= (ewmh.window-desktop wid) ewmh.current-desktop)
-                (arrange-windows)
-                (desktop-activate (ewmh.window-desktop wid)))))))
+      (let ([deskid (ewmh.window-desktop wid)])
+        #;(if wid
+          (format #t "#x~x ACTIVATE-WINDOW aw=~x wd=~a ~a~n" wid ewmh.active-window deskid (window-name wid))
+          (format #t "~a ACTIVATE-WINDOW" wid))
+        (when (and
+                ;; wid and deskid must not be #f as can happen if there's lots of activity between X next event
+                ;; generation and X server grabbing (exclusive lock).
+                wid deskid
+                (top-level-window? wid)
+                (not (= wid ewmh.active-window)))
+          (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+          (if (= (ewmh.window-desktop wid) ewmh.current-desktop)
+            (arrange-windows)
+            (desktop-activate (ewmh.window-desktop wid)))))))
 
   (define banish-window
     (lambda (wid)
@@ -387,6 +397,9 @@
       [(assignments wid)
        (assign-desktop assignments wid ewmh.current-desktop)]
       [(assignments wid default-desktop)
+       ;; Ultra paranoid check. default-desktop must be a number within desktop count!
+       (unless (and (fixnum? default-desktop) (fx>=? default-desktop 0) (fx<? default-desktop ewmh.desktop-count))
+         (set! default-desktop 0))
        (cond
          [(find
             (lambda (a)
