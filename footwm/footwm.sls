@@ -74,14 +74,13 @@
     ;; Import pre-existing windows that need to be managed and then arranges as per initial desktop layout.
     (lambda (assignments)
       (let* ([allwids (x-query-tree)]
-             [ws (filter wm.manage-window? allwids)])
+             [ws (filter icccm.manage-window? allwids)])
         (define wid-exists?
           (lambda (wid)
             (memq wid ws)))
         (define set-join
           (lambda (l1 l2)
             (append l1 (filter (lambda (x) (not (memq x l1))) l2))))
-        (ewmh.calculate-workarea allwids)
         ;; set WM_STATE & _NET_WM_DESKTOP for each window.
         (for-each
          (lambda (wid)
@@ -95,7 +94,9 @@
             (if (null? clients)
               ws
               ;; client list already exists, need to sanitise it with ws.
-              (filter wid-exists? (set-join clients ws))))))))
+              (filter wid-exists? (set-join clients ws)))))
+
+        (ewmh.calculate-workarea ewmh.client-list))))
 
   (define run
     (lambda (assignments)
@@ -209,9 +210,7 @@
       (let ([wid (xmaprequestevent-wid ev)])
         (format #t "#x~x MapRequest ~a~n" wid (wm.window-name wid))
         (icccm.on-map-request ev)
-        (unless (ewmh.dock-window? wid)
-          (wm.add-window ev assignments)
-          (wm.arrange-windows)))))
+        (wm.add-window ev assignments))))
 
   (define on-property
     (lambda (ev)
@@ -232,20 +231,19 @@
           ;; - ICONIC (the window is hidden, do nothing unless it was visible)
           ;; - WITHDRAWN (the window is being removed, remove it from EWMH hints).
           #;(icccm.on-unmap ev)	;; transitions WM_STATE::NORMAL -> WITHDRAWN
-          (let ([wid (xunmapevent-wid ev)])
+          (let ([wid (xunmapevent-wid ev)]
+                [client-list ewmh.client-list])
             (cond
-              [(memq wid ewmh.client-list)
+              [(memq wid client-list)
                (let ([state (icccm.get-wm-state wid)])
                  (cond
                    ;; State could be #f if window is already deleted.
                    [(or (not state) (eq? state icccm.WithdrawnState))
                     (format #t "#x~x removing window from EWMH client lists~n" wid)
-                    (wm.remove-window wid)]
+                    (wm.remove-window wid)
+                    ]
                    [else
-                     (format #t "#x~x UnmapNotify ignore state=~a\n" wid state)]))]
-              [else
-                ;; We don't store dockapps in client-list, but watch them so we can update struts.
-                ;; Traversing all child windows is a bit brute force. Need to consider a FOOT_DOCKAPP_LIST.
-                (ewmh.calculate-workarea (remove wid (x-query-tree)))
-                (wm.draw-active-window ewmh.active-window)])))))
+                     (format #t "#x~x UnmapNotify ignore state=~a\n" wid state)]
+                   ))]
+              )))))
   )

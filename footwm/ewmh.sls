@@ -32,7 +32,7 @@
    window-desktop-request!
    get-wm-window-type
    dock-window?
-   show-in-taskbar?
+   user-selectable?
    get-net-wm-state
    net-wm-state-set!
    on-client-state
@@ -270,12 +270,10 @@
 
   (define dock-window?
     (lambda (wid)
-      (let ([types (get-wm-window-type wid)])
-        (if (memq (atom 'ref '_NET_WM_WINDOW_TYPE_DOCK) types)
-            #t
-            #f))))
+      (and (memq (atom 'ref '_NET_WM_WINDOW_TYPE_DOCK) (get-wm-window-type wid)) #t)))
 
-  (define show-in-taskbar?
+  ;; This has scope for improvement. Refer to discussion in _NET_WM_WINDOW_TYPE.
+  (define user-selectable?
     (lambda (wid)
       (let ([types (get-wm-window-type wid)])
         (cond

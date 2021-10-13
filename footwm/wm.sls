@@ -1,12 +1,11 @@
 ;; Common Footwm wm operations. eg, Window, desktop, and layout etc
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
 (library (footwm wm)
   (export
-   manage-window?
    add-window
    ;; Window operations.
    activate-window
@@ -43,34 +42,30 @@
 
   ;;;;;; Window operations.
 
-  (define top-level-window?
-    (lambda (wid)
-      (memq wid ewmh.client-list)))
-
-  (define manage-window?
-    (lambda (wid)
-      (and (icccm.manage-window? wid)
-          (ewmh.show-in-taskbar? wid))))
+  (define top-level-window? ewmh.user-selectable?)
 
   (define add-window
     (lambda (ev assignments)
       ;; Mainly EWMH house keeping.
       ;; Add/move window to top of client window list etc.
       ;; Set window desktop and set active window.
-      ;; TODO: Adjust workarea with newly mapped dock apps?
+      ;; Adjust workarea with newly mapped dock apps.
       (let ([wid (xmaprequestevent-wid ev)])
-        (when (ewmh.show-in-taskbar? wid)
-          (let ([clients ewmh.client-list]
-                [deskid (assign-desktop assignments wid)])
-            (ewmh.window-desktop-set! wid deskid)
-            (set! ewmh.client-list
-              (append
-                (list wid)
-                (if (memq wid clients)
-                    (remove wid clients)
-                    clients)))
-            (unless (= deskid ewmh.current-desktop)
-              (desktop-activate deskid)))))))
+        (let ([clients ewmh.client-list]
+              [deskid (assign-desktop assignments wid)])
+          (ewmh.window-desktop-set! wid deskid)
+          (set! ewmh.client-list
+            (cons
+              wid
+              (if (memq wid clients)
+                (remove wid clients)
+                clients)))
+          (cond
+            [(ewmh.dock-window? wid)
+             (ewmh.calculate-workarea ewmh.client-list)
+             (arrange-windows)]
+            [else
+             (activate-window wid)])))))
 
   (define activate-window
     (lambda (wid)
@@ -103,9 +98,14 @@
   (define remove-window
     (lambda (wid)
       (ewmh.remove-window wid)
-      (when (eq? wid ewmh.active-window)
-        (set! ewmh.active-window None))
-      (arrange-windows)))
+      (cond
+        [(eqv? wid ewmh.active-window)
+         ;; DOCK windows (affecting STRUTS) will never be the active window so no need to calculate workarea here.
+         (set! ewmh.active-window None)
+         (arrange-windows)]
+        [else
+          (ewmh.calculate-workarea ewmh.client-list)
+          (draw-active-window ewmh.active-window)])))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
   (define window-name
@@ -153,7 +153,7 @@
 
   (define window-op/index
     (lambda (op index)
-      (let* ([wlist (sorted-winfo ewmh.client-list)]
+      (let* ([wlist (sorted-winfo (filter ewmh.user-selectable? ewmh.client-list))]
              [d ewmh.current-desktop]
              [dlist
               (filter (lambda (w)
@@ -212,7 +212,7 @@
          (let ([d (ewmh.window-desktop wid)])
            (if (and d (>= d pos))
                (ewmh.window-desktop-set! wid (action d)))))
-       ewmh.client-list)))
+       (filter ewmh.user-selectable? ewmh.client-list))))
 
   (define desktop-activate
     (lambda (index)
@@ -229,7 +229,7 @@
                     [(< wd index)
                      (ewmh.window-desktop-set! wid (add1 wd))]))
                   #| else ignore, only windows at or below index need adjustment.|#))
-             ewmh.client-list)
+             (filter ewmh.user-selectable? ewmh.client-list))
             (let* ([names ewmh.desktop-names]
                    [name (list-ref names index)])
               (set! ewmh.desktop-names (util.list-insert (remove name names) name c)))
@@ -253,7 +253,7 @@
         (lambda (wid)
           (when (= old-desktop-id (ewmh.window-desktop wid))
             (ewmh.window-desktop-set! wid new-desktop-id)))
-        ewmh.client-list)
+        (filter ewmh.user-selectable? ewmh.client-list))
       ;; Adjust window desktops at old-desktop-id and higher downwards.
       (adjust-windows-desktop old-desktop-id sub1)
       (delete-desktop-hints old-desktop-id)
@@ -354,7 +354,9 @@
   (define arrange-windows
     (lambda ()
       (let ([d ewmh.current-desktop])
-        (let-values ([(ws ows) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) ewmh.client-list)])
+        (let-values ([(ws ows) (partition
+                                 (lambda (w) (eq? d (ewmh.window-desktop w)))
+                                 (filter ewmh.user-selectable? ewmh.client-list))])
           (for-each iconify-window ows)	; should do this only on wm-init and desktop change..
           (if (null? ws)
             (show-desktop)	; no window to show:
