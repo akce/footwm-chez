@@ -34,6 +34,10 @@ SOS = $(BINS:.ss=.so)
 # It's a custom extension created so as not to clash with regular .so shared objects.
 WSOS = $(BINS:.ss=.wso)
 
+# Using wildcard is a bit of a cheat but reduces maintenance.
+# Just make sure to avoid creating dummy/test .sls files in the footwm sub-dir.
+SRCS = $(wildcard footwm/*.sls)
+
 IBINS = $(addprefix $(BINDIR)/,$(notdir $(BINS:.ss=)))
 
 CONFIGS = \
@@ -47,7 +51,7 @@ ICONFIGS = $(addprefix $(CONFDIR)/,$(notdir $(CONFIGS)))
 
 all: $(WSOS)
 
-%.wpo: %.ss
+%.wpo: %.ss $(SRCS)
 	echo "(reset-handler abort) (compile-imported-libraries #t) (generate-wpo-files #t) (library-directories '(\".\" \"$(IRREGEXDIR)\")) (compile-program \"$<\")" | $(SCHEME) $(SFLAGS)
 
 # Must set libs-visible? to #t so that footkeys configs can import footwm libs.
