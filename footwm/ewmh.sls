@@ -34,8 +34,11 @@
    dock-window?
    user-selectable?
    get-net-wm-state
-   net-wm-state-set!
-   on-client-state
+   window-wm-state?
+   make-wm-state-change
+   wm-state-change-action wm-state-change-prop1 wm-state-change-prop2
+   add-net-wm-states-state!
+   del-net-wm-states-state!
    show-window
    iconify-window
    demands-attention?
@@ -184,6 +187,7 @@
                   [y top]
                   [w (- (geometry-width dg) (+ left right))]
                   [h (- (geometry-height dg) (+ top bottom))])
+              (format #t "calculate-workarea ~a, ~a ~ax~a ~a~n" x y w h wids)
               (workarea-set! x y w h))]
            [else
             (let ([strut (car struts)])
@@ -289,52 +293,48 @@
       (property->ulongs wid (atom 'ref '_NET_WM_STATE) (x-atom 'ref 'ATOM))))
 
   (define net-wm-state-set!
-    (lambda (wid values)
-      (ulongs-property-set! wid (atom 'ref '_NET_WM_STATE) values (x-atom 'ref 'ATOM))))
+    (lambda (wid value)
+      (ulongs-property-set! wid (atom 'ref '_NET_WM_STATE) value (x-atom 'ref 'ATOM))))
+
+  (define window-wm-state?
+    (lambda (wid prop)
+      (and
+        (memq (if (symbol? prop)
+                (atom 'ref prop)
+                prop)
+              (get-net-wm-state wid))
+        #t)))
 
   ;; Defines for on-client-state: action.
   (define _NET_WM_STATE_REMOVE	0)	; remove/unset property
   (define _NET_WM_STATE_ADD	1)	; add/set property
   (define _NET_WM_STATE_TOGGLE	2)	; toggle property
 
-  (define action->string
+  (define action->symbol
     (lambda (actid)
       (case actid
         [(0)
-         "REMOVE"]
+         'REMOVE]
         [(1)
-         "ADD"]
+         'ADD]
         [(2)
-         "TOGGLE"]
+         'TOGGLE]
         [else
-          "UNKNOWN"])))
+          'UNKNOWN])))
 
-  (define on-client-state
-    (lambda (wid ev)
-      (let ([action (list-ref (xclientmessageevent-data ev) 0)]
-            [prop1 (list-ref (xclientmessageevent-data ev) 1)]
-            [prop2 (list-ref (xclientmessageevent-data ev) 2)]
-            #;[source (list-ref (xclientmessageevent-data ev) 3)]
-            [wm-state (get-net-wm-state wid)])
-        (format
-          #t
-          "#x~x _NET_WM_STATE action ~a ~a(~a) ~a(~a)~n" wid (action->string action) (x-get-atom-name prop1) prop1 (x-get-atom-name prop2) prop2)
-        (net-wm-state-set!
-          wid
-          (cond
-            [(= action _NET_WM_STATE_REMOVE)
-             (remv prop1 wm-state)]
-            [(= action _NET_WM_STATE_ADD)
-             (if (memv prop1 wm-state)
-                 wm-state
-                 (cons prop1 wm-state))]
-            [(= action _NET_WM_STATE_TOGGLE)
-             (if (memv prop1 wm-state)
-                 (remv prop1 wm-state)
-                 (cons prop1 wm-state))]
-            [else
-              (errorf 'on-client-state "#x~x Bad _NET_WM_STATE action! ~a" wid action)]))
-        )))
+  (define-record-type wm-state-change
+    (fields action prop1 prop2 source)
+    (protocol
+      (lambda (new)
+        (lambda (ev)
+          (new
+            (action->symbol (list-ref (xclientmessageevent-data ev) 0))
+            (list-ref (xclientmessageevent-data ev) 1)
+            (let ([p2 (list-ref (xclientmessageevent-data ev) 2)])
+              (if (eqv? p2 0)
+                #f
+                p2))
+            (list-ref (xclientmessageevent-data ev) 3))))))
 
   (define add-net-wm-states-state!
     (lambda (wid a)
@@ -361,20 +361,12 @@
   ;; Like icccm.UrgencyHint but can be set by both wm & clients. It is usually cleared by the wm on activation.
   (define demands-attention?
     (lambda (wid)
-      (let ([a (atom 'ref '_NET_WM_STATE_DEMANDS_ATTENTION)]
-            [states (get-net-wm-state wid)])
-        (if (memq a states)
-            #t
-            #f))))
+      (window-wm-state? wid '_NET_WM_STATE_DEMANDS_ATTENTION)))
 
   ;; _NET_WM_STATE_FULLSCREEN
   (define fullscreen-window?
     (lambda (wid)
-      (let ([a (atom 'ref '_NET_WM_STATE_FULLSCREEN)]
-            [states (get-net-wm-state wid)])
-        (if (memq a states)
-            #t
-            #f))))
+       (window-wm-state? wid '_NET_WM_STATE_FULLSCREEN)))
 
   ;;;; _NET_WM_ALLOWED_ACTIONS ATOM[]/32
   ;; TODO

@@ -60,7 +60,7 @@ all: $(WSOS)
 	chmod +x "$@"
 
 $(BINDIR)/%: bin/%.wso
-	$(INSTALL) $< $@
+	$(INSTALL) -p $< $@
 
 $(CONFDIR)/%.sls: etc/%.sls
 	$(INSTALL) -D -p $< $@

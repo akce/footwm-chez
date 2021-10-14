@@ -77,6 +77,8 @@
 
    ;; Changing window state.
    on-create-window
+   window-iconic?
+   window-normal?
    iconify-window
    deiconify-window
    show-window
@@ -441,6 +443,15 @@
             #f)))
 
   ;;;;;; ICCCM 4.1.4 Changing Window State.
+
+  (define window-iconic?
+    (lambda (wid)
+      (eq? (get-wm-state wid) IconicState)))
+
+  (define window-normal?
+    (lambda (wid)
+      (eq? (get-wm-state wid) NormalState)))
+
   (define show-window!
     (lambda (wid)
       (wm-state-set! wid NormalState)
@@ -453,17 +464,17 @@
 
   (define iconify-window
     (lambda (wid)
-      (if (eq? (get-wm-state wid) NormalState)
+      (if (window-normal? wid)
         (iconify-window! wid))))
 
   (define deiconify-window
     (lambda (wid)
-      (if (eq? (get-wm-state wid) IconicState)
+      (if (window-iconic? wid)
         (show-window! wid))))
 
   (define show-window
     (lambda (wid)
-      (unless (eq? (get-wm-state wid) NormalState)
+      (unless (window-normal? wid)
         (show-window! wid))))
 
   (define on-map-request

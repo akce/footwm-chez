@@ -6,6 +6,7 @@
 
 (library (footwm wm)
   (export
+   on-client-state
    add-window
    ;; Window operations.
    activate-window
@@ -26,6 +27,7 @@
    desktop-rename
    get-desktop-id
    ;; Layout operations.
+   calculate-workarea
    ideal-window-geometry
    draw-active-window
    arrange-windows
@@ -44,6 +46,34 @@
 
   (define top-level-window? ewmh.user-selectable?)
 
+  (define change-client-state-prop!
+    (lambda (wid action prop)
+      (define make-change!
+        (lambda (a window-has-prop?)
+          (cond
+            [(and (eq? a 'REMOVE) window-has-prop?)
+             ;; Special per/property processing can go here.
+             (ewmh.del-net-wm-states-state! wid prop)]
+            [(and (eq? a 'ADD) (not window-has-prop?))
+             ;; Special per/property processing can go here.
+             (ewmh.add-net-wm-states-state! wid prop)]
+            [(eq? a 'TOGGLE)
+             (make-change! (if window-has-prop? 'REMOVE 'ADD) prop)]
+            [else
+              (format #t "#x~x Bad _NET_WM_STATE action! ~a has-prop? ~a~n" wid a window-has-prop?)])))
+      (format #t "#x~x _NET_WM_STATE ~a ~a(~a)~n" wid action (x-get-atom-name prop) prop)
+      (make-change! action (ewmh.window-wm-state? wid prop))))
+
+  ;; Make the _NET_WM_STATE property change to the client and have arrange-windows react to it.
+  ;; eg, add/remove fullscreen property and have arrange-windows handle docks, workarea and visible window etc.
+  (define on-client-state
+    (lambda (wid ev)
+      (let ([wso (ewmh.make-wm-state-change ev)])
+        (change-client-state-prop! wid (ewmh.wm-state-change-action wso) (ewmh.wm-state-change-prop1 wso))
+        (when (ewmh.wm-state-change-prop2 wso)
+          (change-client-state-prop! wid (ewmh.wm-state-change-action wso) (ewmh.wm-state-change-prop2 wso)))
+        (arrange-windows))))
+
   (define add-window
     (lambda (ev assignments)
       ;; Mainly EWMH house keeping.
@@ -53,7 +83,6 @@
       (let ([wid (xmaprequestevent-wid ev)])
         (let ([clients ewmh.client-list]
               [deskid (assign-desktop assignments wid)])
-          (ewmh.window-desktop-set! wid deskid)
           (set! ewmh.client-list
             (cons
               wid
@@ -62,30 +91,24 @@
                 clients)))
           (cond
             [(ewmh.dock-window? wid)
-             (ewmh.calculate-workarea ewmh.client-list)
-             (arrange-windows)]
+             (arrange-windows)
+             ]
             [(eqv? deskid ewmh.current-desktop)
-              (activate-window wid)]
+             (ewmh.window-desktop-set! wid deskid)
+             (activate-window wid)]
             [else
-             (desktop-activate deskid)])))))
+              (ewmh.window-desktop-set! wid deskid)
+              (desktop-activate deskid)])))))
 
   (define activate-window
     (lambda (wid)
       ;; promote window to top of ewmh.client-list, set as ewmh.active-window.
-      (let ([deskid (ewmh.window-desktop wid)])
-        #;(if wid
-          (format #t "#x~x ACTIVATE-WINDOW aw=~x wd=~a ~a~n" wid ewmh.active-window deskid (window-name wid))
-          (format #t "~a ACTIVATE-WINDOW" wid))
-        (when (and
-                ;; wid and deskid must not be #f as can happen if there's lots of activity between X next event
-                ;; generation and X server grabbing (exclusive lock).
-                wid deskid
-                (top-level-window? wid)
-                (not (= wid ewmh.active-window)))
-          (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-          (if (= (ewmh.window-desktop wid) ewmh.current-desktop)
-            (arrange-windows)
-            (desktop-activate (ewmh.window-desktop wid)))))))
+      (if (top-level-window? wid)
+          (unless (eqv? wid ewmh.active-window)
+            (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+            (if (eqv? (ewmh.window-desktop wid) ewmh.current-desktop)
+                (arrange-windows)
+                (desktop-activate (ewmh.window-desktop wid)))))))
 
   (define banish-window
     (lambda (wid)
@@ -109,12 +132,11 @@
     (lambda (wid)
       (ewmh.remove-window wid)
       (cond
-        [(eqv? wid ewmh.active-window)
-         ;; DOCK windows (affecting STRUTS) will never be the active window so no need to calculate workarea here.
-         (set! ewmh.active-window None)
+        [(or (eqv? wid ewmh.active-window) (ewmh.dock-window? wid))
          (arrange-windows)]
         [else
-          (ewmh.calculate-workarea ewmh.client-list)
+          ;; XXX only do this if the window was visible.
+          (calculate-workarea)
           (draw-active-window ewmh.active-window)])))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
@@ -226,7 +248,7 @@
 
   (define desktop-activate
     (lambda (index)
-      (when (< index ewmh.desktop-count)
+      (when (and index (< index ewmh.desktop-count))
         (let ([c ewmh.current-desktop])
           (unless (= index c)
             (for-each
@@ -315,6 +337,12 @@
 
  ;;;;;; Layout operations.
 
+  (define calculate-workarea
+    (lambda ()
+      (let ([wids (filter (lambda (w)
+                            (and (ewmh.dock-window? w) (icccm.window-normal? w))) ewmh.client-list)])
+        (ewmh.calculate-workarea wids))))
+
   (define ideal-window-geometry
     (lambda (wid)
       (cond
@@ -327,8 +355,12 @@
     (lambda (wid)
       (ewmh.showing-desktop #f)
       (set! ewmh.active-window wid)
-      (ewmh.show-window wid)
-      (icccm.show-window wid)))
+      (show-dock-window wid)))
+
+  (define show-dock-window
+    (lambda (d)
+      (ewmh.show-window d)
+      (icccm.show-window d)))
 
   (define iconify-window
     (lambda (wid)
@@ -345,13 +377,7 @@
         ;; will be visible.
         ;; (As is the case with tint2. My guess is it's reusing its tooltip window so
         ;; newer footwm windows would obscure tooltips unless we lower our window.)
-        (cond
-          [(ewmh.fullscreen-window? wid)
-           ;; This is a work-around to stop fullscreen windows being obstructed by strut windows.
-           ;; TODO: redo the way strut windows are (not) managed by this wm.
-           (x-raise-window wid)]
-          [else
-            (x-lower-window wid)])
+        (x-lower-window wid)
         (show-window wid))))
 
   (define show-desktop
@@ -363,18 +389,28 @@
 
   (define arrange-windows
     (lambda ()
-      (let ([d ewmh.current-desktop])
-        (let-values ([(ws ows) (partition
-                                 (lambda (w) (eq? d (ewmh.window-desktop w)))
-                                 (filter ewmh.user-selectable? ewmh.client-list))])
-          (for-each iconify-window ows)	; should do this only on wm-init and desktop change..
-          (if (null? ws)
-            (show-desktop)	; no window to show:
-            (let ([vis (car ws)]		; visible window
-                  [hs (cdr ws)])		; hidden windows
-              (for-each iconify-window hs)
-              (unless (eq? vis ewmh.active-window)
-                (draw-active-window vis))))))))
+      (let*-values
+        ([(d) ewmh.current-desktop]
+         ;; split client windows into dock windows and user windows.
+         [(docks uws) (partition ewmh.dock-window? ewmh.client-list)]
+         ;; split user windows into those on the current desktop, and those on other desktops.
+         [(cdws odws) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) uws)])
+        (for-each iconify-window odws)	; should do this only on wm-init and desktop change..
+        (cond
+          [(null? cdws)	; no window to show in current desktop.
+           (for-each show-dock-window docks)
+           (show-desktop)]
+          [else
+            (let ([wid (car cdws)])		; visible window
+               ;; iconify hidden windows
+               (for-each iconify-window (cdr cdws))
+               (cond
+                 [(ewmh.fullscreen-window? wid)
+                  (for-each iconify-window docks)]
+                 [else
+                   (for-each show-dock-window docks)])
+               (calculate-workarea)
+               (draw-active-window wid))]))))
 
   ;;; Misc
 
