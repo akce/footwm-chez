@@ -152,8 +152,13 @@
         (when (eqv? wid (xanyevent-wid (xconfigureevent-xany ev)))
           ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
           (let ([ev-geom (xconfigureevent-geometry ev)]
-                [win-geom (window-attributes-geom (x-get-window-attributes wid))])
-          (format #t "#x~x ConfigureNotify ~a ~a = ~a~n" wid ev-geom win-geom (geometry=? ev-geom win-geom)))))))
+                 [wa (x-get-window-attributes wid)])
+            (cond
+              [wa
+                (let ([win-geom (window-attributes-geom wa)])
+                  (format #t "#x~x ConfigureNotify ~a ~a = ~a~n" wid ev-geom win-geom (geometry=? ev-geom win-geom)))]
+              [else
+                (format #t "#x~x ConfigureNotify ~a #f~n" wid ev-geom)]))))))
 
   (define on-configure-request
     (lambda (ev)

@@ -377,16 +377,22 @@
       (let ([normal-hints (icccm.get-normal-hints wid)]
             [wa (x-get-window-attributes wid)]
             [ideal (ideal-window-geometry wid)])
-        #;(format #t "#x~x WMHints ~a ~a~n" wid (icccm.normal-hints-flags->string normal-hints) normal-hints)
-        ;; Only resize if window has a different geometry than what we want.
-        ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
-        (unless (geometry=? (window-attributes-geom wa) ideal)
-          (format #t "#x~x resizing non-ideal window geom ~a -> ~a~n" wid (window-attributes-geom wa) ideal)
-          (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal)))
-        ;; Footwm won't arrange any overlapping windows so move the active window to the bottom of the
-        ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
-        (x-lower-window wid)
-        (show-window wid))))
+        (cond
+          [(not wa)
+           ;; TODO somehow arrange-windows is calling here with a window that has no window attributes.
+           ;; TODO it appears to happen when the last window is deleted from a desktop.
+           (format #t "#x~x draw-active-window dead window!~n" wid)]
+          [else
+            #;(format #t "#x~x WMHints ~a ~a~n" wid (icccm.normal-hints-flags->string normal-hints) normal-hints)
+            ;; Only resize if window has a different geometry than what we want.
+            ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
+            (unless (geometry=? (window-attributes-geom wa) ideal)
+              (format #t "#x~x resizing non-ideal window geom ~a -> ~a~n" wid (window-attributes-geom wa) ideal)
+              (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal)))
+            ;; Footwm won't arrange any overlapping windows so move the active window to the bottom of the
+            ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
+            (x-lower-window wid)
+            (show-window wid)]))))
 
   (define show-desktop
     (lambda ()
