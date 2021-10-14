@@ -2,7 +2,7 @@
 ;;
 ;; This contains the footwm init, end and event loop functions.
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
@@ -131,7 +131,7 @@
          [(ewmh.atom 'ref '_NET_CURRENT_DESKTOP)
           (wm.desktop-activate (list-ref (xclientmessageevent-data ev) 0))]
          [(ewmh.atom 'ref '_NET_REQUEST_FRAME_EXTENTS)
-          (ewmh.frame-extents-set! wid (wm.ideal-window-geometry wid))]
+          (ewmh.window-frame-extents-set! wid)]
          [(ewmh.atom 'ref '_NET_WM_STATE)
           (wm.on-client-state wid ev)]
          [(ewmh.atom 'ref '_NET_WM_DESKTOP)

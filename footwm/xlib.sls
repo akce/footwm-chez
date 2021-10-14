@@ -1,6 +1,6 @@
 ;; Footwm Chez scheme XLib layer.
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2021.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 

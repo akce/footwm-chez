@@ -91,14 +91,16 @@
                 clients)))
           (cond
             [(ewmh.dock-window? wid)
-             (arrange-windows)
-             ]
-            [(eqv? deskid ewmh.current-desktop)
-             (ewmh.window-desktop-set! wid deskid)
-             (activate-window wid)]
+             (arrange-windows)]
             [else
               (ewmh.window-desktop-set! wid deskid)
-              (desktop-activate deskid)])))))
+              (ewmh.window-frame-extents-set! wid)
+              (cond
+                [(eqv? deskid ewmh.current-desktop)
+                 (activate-window wid)]
+                [else
+                  (ewmh.window-desktop-set! wid deskid)
+                  (desktop-activate deskid)])])))))
 
   (define activate-window
     (lambda (wid)

@@ -48,8 +48,8 @@
    get-wm-strut
    get-wm-strut-partial
    pid
-   #;frame-extents
-   frame-extents-set!
+   window-frame-extents
+   window-frame-extents-set!
    remove-window)
   (import
    (rnrs)
@@ -422,25 +422,21 @@
   ;; TODO
 
   ;;;; _NET_FRAME_EXTENTS left, right, top, bottom, CARDINAL[4]/32
-  ;; TODO
-  #;(define frame-extents
+
+  (define window-frame-extents
     (lambda (wid)
-      (let ([gl (property->ulongs wid (atom 'ref '_NET_FRAME_EXTENTS) (x-atom 'ref 'CARDINAL))])
+      (let ([exts (property->ulongs wid (atom 'ref '_NET_FRAME_EXTENTS) (x-atom 'ref 'CARDINAL))])
         (cond
-          [(null? gl)
+          [(null? exts)
            #f]
           [else
-            ;; FIXME: left right top bottom != x y width height
-            ;; FIXME: This is unused by the WM, but there should be an extents->geometry function.
-            (make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3))]))))
+            ;; TODO Convert to geometry?
+            exts]))))
 
-  (define frame-extents-set!
-    (lambda (wid g)
+  (define window-frame-extents-set!
+    (lambda (wid)
       (ulongs-property-set! wid (atom 'ref '_NET_FRAME_EXTENTS)
-                            `(,(geometry-x g)		                ; left
-                               ,(- (geometry-width g) (geometry-x g))	; right
-                               ,(geometry-y g)				; top
-                               ,(- (geometry-height g) (geometry-y g)))	; bottom
+                            '(0 0 0 0)		; footwm adds no borders.
                             (x-atom 'ref 'CARDINAL))))
 
   ;;;; _NET_WM_OPAQUE_REGION x, y, width, height, CARDINAL[][4]/32
