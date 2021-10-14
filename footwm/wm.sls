@@ -95,6 +95,7 @@
             [else
               (ewmh.window-desktop-set! wid deskid)
               (ewmh.window-frame-extents-set! wid)
+              (ewmh.window-allowed-actions-set! wid)
               (cond
                 [(eqv? deskid ewmh.current-desktop)
                  (activate-window wid)]

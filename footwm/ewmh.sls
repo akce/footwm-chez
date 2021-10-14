@@ -45,6 +45,8 @@
    iconify-window
    demands-attention?
    fullscreen-window?
+   window-allowed-actions
+   window-allowed-actions-set!
    get-wm-strut
    get-wm-strut-partial
    pid
@@ -71,21 +73,32 @@
          _NET_SHOWING_DESKTOP
          _NET_SUPPORTED
          _NET_SUPPORTING_WM_CHECK
-         _NET_WORKAREA
+
+         _NET_WM_ALLOWED_ACTIONS
+         _NET_WM_ACTION_MINIMIZE
+         _NET_WM_ACTION_FULLSCREEN
+         _NET_WM_ACTION_CHANGE_DESKTOP
+         _NET_WM_ACTION_CLOSE
+
          _NET_WM_DESKTOP
          _NET_WM_FULL_PLACEMENT
          _NET_WM_NAME
          _NET_WM_PID
+
          _NET_WM_STATE
          _NET_WM_STATE_DEMANDS_ATTENTION
          _NET_WM_STATE_HIDDEN
          _NET_WM_STATE_FULLSCREEN
+
          _NET_WM_STRUT
          _NET_WM_STRUT_PARTIAL
+
          _NET_WM_WINDOW_TYPE
          _NET_WM_WINDOW_TYPE_DIALOG
          _NET_WM_WINDOW_TYPE_DOCK
-         _NET_WM_WINDOW_TYPE_NORMAL)))
+         _NET_WM_WINDOW_TYPE_NORMAL
+
+         _NET_WORKAREA)))
 
   ;; Return first (and likely only) item in list or false if list is empty.
   (define first-or-false
@@ -381,7 +394,25 @@
        (window-wm-state? wid '_NET_WM_STATE_FULLSCREEN)))
 
   ;;;; _NET_WM_ALLOWED_ACTIONS ATOM[]/32
-  ;; TODO
+
+  (define window-allowed-actions
+    (lambda (wid)
+      (map
+        (lambda (x)
+          (string->symbol (x-get-atom-name x)))
+        (property->ulongs wid (atom 'ref '_NET_WM_ALLOWED_ACTIONS) (x-atom 'ref 'ATOM)))))
+
+  (define window-allowed-actions-set!
+    (lambda (wid)
+      (ulongs-property-set! wid (atom 'ref '_NET_WM_ALLOWED_ACTIONS)
+                            (map
+                              (lambda (x)
+                                (atom 'ref x))
+                              '(_NET_WM_ACTION_MINIMIZE
+                                 _NET_WM_ACTION_FULLSCREEN
+                                 _NET_WM_ACTION_CHANGE_DESKTOP
+                                 _NET_WM_ACTION_CLOSE))
+                            (x-atom 'ref 'ATOM))))
 
   ;;;; _NET_WM_STRUT left, right, top, bottom, CARDINAL[4]/32
   (define get-wm-strut
