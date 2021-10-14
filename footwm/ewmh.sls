@@ -24,9 +24,11 @@
    window-active-request!
    workarea-geometry
    calculate-workarea
+   net-supporting-wm-check-init!
    showing-desktop
    window-close-request!
-   name
+   window-name
+   window-name-set!
    window-desktop
    window-desktop-set!
    window-desktop-request!
@@ -68,6 +70,7 @@
          _NET_REQUEST_FRAME_EXTENTS
          _NET_SHOWING_DESKTOP
          _NET_SUPPORTED
+         _NET_SUPPORTING_WM_CHECK
          _NET_WORKAREA
          _NET_WM_DESKTOP
          _NET_WM_FULL_PLACEMENT
@@ -198,7 +201,12 @@
                     (max bottom (list-ref strut 3))))])))))
 
   ;;;; _NET_SUPPORTING_WM_CHECK WINDOW/32
-  ;; TODO
+  (define net-supporting-wm-check-init!
+    (lambda ()
+      (let ([wid (x-create-simple-window (root) 0 0 10 10 0 0 0)])
+        (ulongs-property-set! (root) (atom 'ref '_NET_SUPPORTING_WM_CHECK) (list wid) (x-atom 'ref 'WINDOW))
+        (window-name-set! wid "footwm")
+        wid)))
 
   ;;;; _NET_VIRTUAL_ROOTS WINDOW[]/32
   ;; N/A
@@ -237,9 +245,13 @@
   ;;;; _NET_WM_NAME UTF8_STRING
 
   ;; Get the name for the window.
-  (define name
+  (define window-name
     (lambda (wid)
       (property->string wid (atom 'ref '_NET_WM_NAME))))
+
+  (define window-name-set!
+    (lambda (wid name)
+      (text-property-set! wid (list name) (atom 'ref '_NET_WM_NAME))))
 
   ;;;; _NET_WM_VISIBLE_NAME UTF8_STRING
   ;; N/A

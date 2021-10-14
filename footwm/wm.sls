@@ -142,7 +142,7 @@
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
   (define window-name
     (lambda (wid)
-      (let ([ename (ewmh.name wid)])
+      (let ([ename (ewmh.window-name wid)])
         (if ename
             ename
             (icccm.name wid)))))

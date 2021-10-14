@@ -238,6 +238,7 @@
 
    UTF8String
 
+   x-create-simple-window
    x-change-property
    x-delete-property
    x-close-display
@@ -648,6 +649,8 @@
 
   (c-default-function
     (dpy* (current-display))
+    ;; Window XCreateSimpleWindow(parent x y width height border_width border background);
+    (x-create-simple-window (window int int unsigned unsigned unsigned unsigned-long unsigned-long) window)
     (x-change-property (window atom atom int int void* int) int)
     (x-delete-property (window atom) int)
     (x-close-display () int)
@@ -1002,13 +1005,13 @@
             (list)]))))
 
   (define text-property-set!
-    (lambda (wid str* propatom)
+    (lambda (wid string-list propatom)
       (fmem ([tp &tp XTextProperty])
-            (let ([u8mem (str*->u8** str*)])
-              (let ([rc (xutf8-text-list-to-text-property u8mem (length str*) UTF8String &tp)])
+            (let ([u8mem (str*->u8** string-list)])
+              (let ([rc (xutf8-text-list-to-text-property u8mem (length string-list) UTF8String &tp)])
                 (if (fx= rc 0)
                     (x-set-text-property wid &tp propatom))
-                (free/u8** u8mem (length str*))
+                (free/u8** u8mem (length string-list))
                 (x-free (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
 
   (define-syntax first-or-false

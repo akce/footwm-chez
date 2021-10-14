@@ -27,6 +27,7 @@
       ;; Replace the default error handler with our own. This ensures that the wm continues to function even
       ;; after an error. eg, when trying to access a resource from a destroyed window.
       (x-set-error-handler)
+      (ewmh.net-supporting-wm-check-init!)
       (ewmh.net-supported-init!)
       (ewmh.desktop-geometry-sync!)
       (ewmh.desktop-viewport-init!)
