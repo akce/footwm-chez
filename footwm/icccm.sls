@@ -531,9 +531,14 @@
 
   ;;;;;; ICCCM 4.1.7 Input Focus.
   ;;;; The XGetWMHints manpage also has useful info in its input section.
+
   (define focus-window
     (lambda (wid)
-      (let* ([h (get-wm-hints wid)]
+      (x-set-input-focus wid RevertToNone CurrentTime)
+      ;; Don't use the fancy icccm version below as it doesn't always work. eg, Some SDL windowed apps
+      ;; won't regain focus and disallow calls to footkeys.
+      ;; The simple version above seems to work better, at least so far..
+      #;(let* ([h (get-wm-hints wid)]
              [input-hint
               (if h
                   (wm-hints-input h)

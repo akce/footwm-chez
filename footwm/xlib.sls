@@ -19,6 +19,7 @@
    geometry-height
    geometry=?
    xconfigureevent-geometry
+   xconfigurerequestevent-geometry
 
    ;; XWindowAttributes.
    window-attributes
@@ -729,6 +730,10 @@
   (define xconfigureevent-geometry
     (lambda (ev)
       (make-geometry (xconfigureevent-x ev) (xconfigureevent-y ev) (xconfigureevent-width ev) (xconfigureevent-height ev))))
+
+  (define xconfigurerequestevent-geometry
+    (lambda (ev)
+      (make-geometry (xconfigurerequestevent-x ev) (xconfigurerequestevent-y ev) (xconfigurerequestevent-width ev) (xconfigurerequestevent-height ev))))
 
   (define-record-type window-attributes
     (fields geom override-redirect map-state))
