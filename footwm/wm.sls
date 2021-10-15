@@ -7,9 +7,10 @@
 (library (footwm wm)
   (export
    on-client-state
-   add-window
+   on-activate-window
+   on-configure-request
+   on-map-request
    ;; Window operations.
-   activate-window
    banish-window
    move-window-to-desktop
    remove-window
@@ -44,8 +45,6 @@
 
   ;;;;;; Window operations.
 
-  (define top-level-window? ewmh.user-selectable?)
-
   (define change-client-state-prop!
     (lambda (wid action prop)
       (define make-change!
@@ -72,77 +71,132 @@
         (change-client-state-prop! wid (ewmh.wm-state-change-action wso) (ewmh.wm-state-change-prop1 wso))
         (when (ewmh.wm-state-change-prop2 wso)
           (change-client-state-prop! wid (ewmh.wm-state-change-action wso) (ewmh.wm-state-change-prop2 wso)))
+        ;; TODO arrange-windows is brute force, try and refine so minimal changes to X server are made.
         (arrange-windows))))
 
-  (define add-window
-    (lambda (ev assignments)
-      ;; Mainly EWMH house keeping.
-      ;; Add/move window to top of client window list etc.
-      ;; Set window desktop and set active window.
-      ;; Adjust workarea with newly mapped dock apps.
-      (let ([wid (xmaprequestevent-wid ev)])
-        (let ([clients ewmh.client-list]
-              [deskid (assign-desktop assignments wid)])
-          ;; TODO moving wid to top of client-list is done in two places: add-window & activate-window.
-          (set! ewmh.client-list
-            (cons
-              wid
-              (if (memq wid clients)
-                (remove wid clients)
-                clients)))
-          (cond
-            [(ewmh.dock-window? wid)
-             (arrange-windows)]
-            [else
-              (ewmh.window-desktop-set! wid deskid)
-              (ewmh.window-frame-extents-set! wid)
-              (ewmh.window-allowed-actions-set! wid)
-              (cond
-                [(eqv? deskid ewmh.current-desktop)
-                 (activate-window wid)]
-                [else
-                  (ewmh.window-desktop-set! wid deskid)
-                  (desktop-activate deskid)])])))))
+  ;; Called in response to a _NET_ACTIVE_WINDOW
+  ;; This function does a sanity check on 'wid' before calling activate-window.
+  (define on-activate-window
+    (lambda (wid)
+      (let-values ([(docks cdws odws) (categorise-client-windows)])
+        ;; Allow remote activation of current desktop windows or other desktop windows only.
+        (cond
+          [(or (memq wid cdws) (memq wid odws))
+           (activate-window wid)]
+          [else
+            (format #t "#x~x on-activate-window ignoring request~n" wid)]))))
 
+  (define on-configure-request
+    (lambda (wid ev)
+      ;; TODO check that the ConfigureRequest isn't a stack-order-only change.
+      (cond
+        [(ewmh.dock-window? wid)
+         ;; Blindly honour dock window changes as they could be for auto-hide panels etc.
+         (icccm.on-configure-request ev)
+         (arrange-windows)]
+        [else
+          ;; ideal also accounts for fullscreen apps.
+          (let ([ideal (ideal-window-geometry wid)])
+            (unless (geometry=? ideal (xconfigurerequestevent-geometry ev))
+              (x-configure-window wid ideal)))])))
+
+  ;; Mainly EWMH house keeping.
+  ;; Add/move window to top of client window list etc.
+  ;; Set window desktop and set active window.
+  ;; Adjust workarea with newly mapped dock apps.
+  (define on-map-request
+    (lambda (wid assignments)
+      (cond
+        [(ewmh.dock-window? wid)
+         ;; TODO moving wid to top of client-list is done in two places: on-map-request & activate-window.
+         (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+         (arrange-windows)]
+        [else
+          (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
+          (ewmh.window-frame-extents-set! wid)
+          (ewmh.window-allowed-actions-set! wid)
+          (activate-window wid)])))
+
+  ;; Show a window, activating it's desktop if necessary.
+  ;; Notes:
+  ;; - wid is assumed to be a valid client window value, eg, not a dock window.
+  ;; - wid will be added to ewmh.client-list if it is not already there.
+  ;; - wid that is already the ewmh.active-window is ignored.
   (define activate-window
     (lambda (wid)
       ;; promote window to top of ewmh.client-list, set as ewmh.active-window.
-      (if (top-level-window? wid)
-          (unless (eqv? wid ewmh.active-window)
-            ;; TODO moving wid to top of client-list is done in two places: add-window & activate-window.
-            (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-            (if (eqv? (ewmh.window-desktop wid) ewmh.current-desktop)
-                (arrange-windows)
-                (desktop-activate (ewmh.window-desktop wid)))))))
+      (unless (eqv? wid ewmh.active-window)
+        ;; TODO moving wid to top of client-list is done in two places: on-map-request & activate-window.
+        (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+        (cond
+          [(eqv? (ewmh.window-desktop wid) ewmh.current-desktop)
+           (arrange-windows)]
+          [else
+            (desktop-activate (ewmh.window-desktop wid))]))))
 
+  ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list.
+  ;; Banishment is only allowed for regular client windows in the current desktop and only when
+  ;; there's another window that can take its place.
+  ;; ie, do not allow an empty desktop view as banishing a window on a desktop with only one window
+  ;; would break the activate window-by-index-1-or-greater model.
   (define banish-window
     (lambda (wid)
-      ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list.
-      (when (top-level-window? wid)
-        (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))
-        (when (eqv? wid ewmh.active-window)
-          (arrange-windows)))))
+      (let-values ([(docks cdws odws) (categorise-client-windows)])
+        (cond
+          [(and (fx>? (length cdws) 1) (memq wid cdws))
+           ;; move to bottom of client-list.
+           (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))
+           ;; activate new top client window.
+           (activate-window (car cdws))]
+          [(memq wid odws)
+           ;; banishing a window that's a member of another desktop merely puts it at the bottom of the client list.
+           (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))]
+          [else
+            (format #t "#x~x banish-window ignoring request '~a'~n" wid (window-name wid))]))))
 
   (define move-window-to-desktop
-    (lambda (wid index)
+    (lambda (wid deskid)
       (when (and
-              (top-level-window? wid)
-              (< index ewmh.desktop-count)
-              (not (= index (ewmh.window-desktop wid))))
-        (ewmh.window-desktop-set! wid index)
-        (when (eqv? (icccm.get-wm-state wid) icccm.NormalState)
-          (arrange-windows)))))
+              (ewmh.user-selectable? wid)
+              (fx<? deskid ewmh.desktop-count)
+              (fx>=? deskid 0)
+              (not (fx=? deskid (ewmh.window-desktop wid))))
+        (ewmh.window-desktop-set! wid deskid)
+        (cond
+          [(fx=? deskid ewmh.current-desktop)
+           ;; Window has been moved to the current desktop.
+           ;; Activate the window if it happens to be the new top in the desktop stack.
+           (let-values ([(docks cdws odws) (categorise-client-windows)])
+             ;; Note: car is safe to call as cdws must have at least one entry in it: wid.
+             (when (eqv? wid (car cdws))
+               (activate-window wid)))]
+          [(fx=? wid ewmh.active-window)
+           ;; wid was active but moved to a desktop that's not visible; find the new top window and show it.
+           (select-active-window)]))))
+
+  ;; Selects a new active-window from the current desktop or show the (empty) desktop if there's none available.
+  ;; This is a lighter-weight version of arrange-windows and usually only needed when ewmh.active-window has changed.
+  ;; ie, call arrange-windows if there's a change to a desktop or in a dock window (either added, deleted, or resized)
+  ;; requiring a workarea recalculation.
+  (define select-active-window
+    (lambda ()
+      (let-values ([(docks cdws odws) (categorise-client-windows)])
+        (cond
+          [(null? cdws)
+           (show-desktop)]
+          [else
+            (activate-window (car cdws))]))))
 
   (define remove-window
     (lambda (wid)
       (ewmh.remove-window wid)
       (cond
-        [(or (eqv? wid ewmh.active-window) (ewmh.dock-window? wid))
-         (arrange-windows)]
+        [(ewmh.user-selectable? wid)
+         ;; Find the next window ond show it, or desktop if there's none left.
+         (select-active-window)]
         [else
-          ;; XXX only do this if the window was visible.
-          (calculate-workarea)
-          (draw-active-window ewmh.active-window)])))
+          ;; other windows like dock windows, will need a full recalculation of the desktop.
+          (arrange-windows)])))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
   (define window-name
@@ -222,7 +276,7 @@
                 ewmh.client-list)])
         (unless (null? wids)
           (activate-window (car wids))
-           (x-sync)))))
+          (x-sync)))))
 
   (define run-or-raise-em
     (lambda (instance command)
@@ -251,24 +305,27 @@
                (ewmh.window-desktop-set! wid (action d)))))
        (filter ewmh.user-selectable? ewmh.client-list))))
 
+  ;; NOTE: by using a most-recently-used (MRU) model, ewmh.current-desktop MUST always equal 0.
+  ;; desktop-activate sets all windows belonging to deskid to desktop 0 and shuffles up ewmh.window-desktop
+  ;; values for windows that previously belonged to desktops 0 => deskid.
   (define desktop-activate
-    (lambda (index)
-      (when (and index (< index ewmh.desktop-count))
+    (lambda (deskid)
+      (when (and deskid (< deskid ewmh.desktop-count))
         (let ([c ewmh.current-desktop])
-          (unless (= index c)
+          (unless (= deskid c)
             (for-each
              (lambda (wid)
                (let ([wd (ewmh.window-desktop wid)])
                  (if wd
                    (cond
-                    [(= wd index)
+                    [(= wd deskid)
                      (ewmh.window-desktop-set! wid c)]
-                    [(< wd index)
+                    [(< wd deskid)
                      (ewmh.window-desktop-set! wid (add1 wd))]))
-                  #| else ignore, only windows at or below index need adjustment.|#))
+                  #| else ignore, only windows at or below deskid need adjustment.|#))
              (filter ewmh.user-selectable? ewmh.client-list))
             (let* ([names ewmh.desktop-names]
-                   [name (list-ref names index)])
+                   [name (list-ref names deskid)])
               (set! ewmh.desktop-names (util.list-insert (remove name names) name c)))
             (arrange-windows))))))
 
@@ -280,8 +337,8 @@
           (set! ewmh.desktop-names (util.list-insert names name index))
           (adjust-windows-desktop index add1)
           (set! ewmh.desktop-count (add1 (length names)))
-          (if (= index ewmh.current-desktop)
-              (arrange-windows))))))
+          (when (= index ewmh.current-desktop)
+            (arrange-windows))))))
 
   (define merge-desktop-to
     (lambda (old-desktop-id new-desktop-id)
@@ -356,12 +413,6 @@
         [else
           (ewmh.workarea-geometry)])))
 
-  (define show-window
-    (lambda (wid)
-      (ewmh.showing-desktop #f)
-      (set! ewmh.active-window wid)
-      (show-dock-window wid)))
-
   (define show-dock-window
     (lambda (d)
       (ewmh.show-window d)
@@ -377,22 +428,18 @@
       (let ([normal-hints (icccm.get-normal-hints wid)]
             [wa (x-get-window-attributes wid)]
             [ideal (ideal-window-geometry wid)])
-        (cond
-          [(not wa)
-           ;; TODO somehow arrange-windows is calling here with a window that has no window attributes.
-           ;; TODO it appears to happen when the last window is deleted from a desktop.
-           (format #t "#x~x draw-active-window dead window!~n" wid)]
-          [else
-            #;(format #t "#x~x WMHints ~a ~a~n" wid (icccm.normal-hints-flags->string normal-hints) normal-hints)
-            ;; Only resize if window has a different geometry than what we want.
-            ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
-            (unless (geometry=? (window-attributes-geom wa) ideal)
-              (format #t "#x~x resizing non-ideal window geom ~a -> ~a~n" wid (window-attributes-geom wa) ideal)
-              (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal)))
-            ;; Footwm won't arrange any overlapping windows so move the active window to the bottom of the
-            ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
-            (x-lower-window wid)
-            (show-window wid)]))))
+        #;(format #t "#x~x WMHints ~a ~a~n" wid (icccm.normal-hints-flags->string normal-hints) normal-hints)
+        ;; Only resize if window has a different geometry than what we want.
+        ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
+        (unless (geometry=? (window-attributes-geom wa) ideal)
+          (format #t "#x~x resizing non-ideal window geom ~a -> ~a~n" wid (window-attributes-geom wa) ideal)
+          (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal)))
+        ;; Footwm won't arrange any overlapping windows so move the active window to the bottom of the
+        ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
+        (x-lower-window wid)
+        (ewmh.showing-desktop #f)
+        (set! ewmh.active-window wid)
+        (show-dock-window wid))))
 
   (define show-desktop
     (lambda ()
@@ -401,7 +448,11 @@
       (ewmh.showing-desktop #t)
       (set! ewmh.active-window None)))
 
-  (define arrange-windows
+  ;; divides ewmh.client-list into 3 categories (returned as 'values'):
+  ;; - dock windows
+  ;; - windows belonging to the current desktop (ewmh.current-desktop)
+  ;; - windows belonging to all other desktops.
+  (define categorise-client-windows
     (lambda ()
       (let*-values
         ([(d) ewmh.current-desktop]
@@ -409,10 +460,21 @@
          [(docks uws) (partition ewmh.dock-window? ewmh.client-list)]
          ;; split user windows into those on the current desktop, and those on other desktops.
          [(cdws odws) (partition (lambda (w) (eq? d (ewmh.window-desktop w))) uws)])
+        (values docks cdws odws))))
+
+  ;; arrange-windows is a full recalc and redraw for the current desktop.
+  ;; It will minimise/show user selectable windows based on current desktop.
+  ;; It will minimise/show dock windows depending on state of ewmh.active-window.
+  ;; It will set ewmh.active-window (via draw-active-window) or show-desktop if there's no window available.
+  (define arrange-windows
+    (lambda ()
+      ;; split user windows into those on the current desktop, and those on other desktops.
+      (let-values ([(docks cdws odws) (categorise-client-windows)])
         (for-each iconify-window odws)	; should do this only on wm-init and desktop change..
         (cond
           [(null? cdws)	; no window to show in current desktop.
            (for-each show-dock-window docks)
+           (calculate-workarea)
            (show-desktop)]
           [else
             (let ([wid (car cdws)])		; visible window

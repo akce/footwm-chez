@@ -514,20 +514,17 @@
 
   (define on-configure-request
     (lambda (ev)
-      ;; Honour all configure requests as not all clients behave nicely otherwise.
-      ;; We'll resize (if necessary) in the configure notify handler.
       (let ([x #f] [y #f] [w #f] [h #f])
-          (bit-case (xconfigurerequestevent-value-mask ev)
-            ((CWX (set! x (xconfigurerequestevent-x ev)))
-             (CWY (set! y (xconfigurerequestevent-y ev)))
-             (CWWidth (set! w (xconfigurerequestevent-width ev)))
-             (CWHeight (set! h (xconfigurerequestevent-height ev)))))
-          ;; Request may just be for stack order update, so resize only if there's a geom change.
-          (if (or x y w h)
-            (let ([g (make-geometry x y w h)])
-              (x-configure-window (xconfigurerequestevent-wid ev) g)
-              g)
-            #f))))
+        (bit-case (xconfigurerequestevent-value-mask ev)
+          ((CWX (set! x (xconfigurerequestevent-x ev)))
+           (CWY (set! y (xconfigurerequestevent-y ev)))
+           (CWWidth (set! w (xconfigurerequestevent-width ev)))
+           (CWHeight (set! h (xconfigurerequestevent-height ev)))))
+        ;; Request may just be for stack order update, so resize only if there's a geom change.
+        (when (or x y w h)
+          (let ([g (make-geometry x y w h)])
+            (x-configure-window (xconfigurerequestevent-wid ev) g)
+            g)))))
 
   ;;;;;; ICCCM 4.1.7 Input Focus.
   ;;;; The XGetWMHints manpage also has useful info in its input section.

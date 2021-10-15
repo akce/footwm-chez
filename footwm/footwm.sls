@@ -125,7 +125,7 @@
         (format #t "#x~x ClientMessage ~a ~a~n" wid type (x-get-atom-name type))
         (case-equal? type
          [(ewmh.atom 'ref '_NET_ACTIVE_WINDOW)
-          (wm.activate-window wid)]
+          (wm.on-activate-window wid)]
          [(ewmh.atom 'ref '_NET_CLOSE_WINDOW)
           (icccm.delete-window wid)]
          [(ewmh.atom 'ref '_NET_CURRENT_DESKTOP)
@@ -163,9 +163,10 @@
   (define on-configure-request
     (lambda (ev)
       (let ([wid (xconfigurerequestevent-wid ev)])
-        ;; Do not call x-configure-window here (either directly or via icccm.on-configure-request) as all
-        ;; sizing is taken care of at on-map time via wm.arrange-windows.
-        (format #t "#x~x ConfigureRequest ~a~n" wid (xconfigurerequestevent-geometry ev)))))
+        (format #t "#x~x ConfigureRequest ~a~n" wid (xconfigurerequestevent-geometry ev))
+        ;; ConfigureRequest means client wants a change to window dimensions (structure) and/or stacking position.
+        ;; This must be handled here or else mapped windows requesting these changes will be missed.
+        (wm.on-configure-request wid ev))))
 
   (define on-create-window
     (lambda (ev)
@@ -197,7 +198,7 @@
       (let ([wid (xmaprequestevent-wid ev)])
         (format #t "#x~x MapRequest ~a~n" wid (wm.window-name wid))
         (icccm.on-map-request ev)
-        (wm.add-window ev assignments))))
+        (wm.on-map-request wid assignments))))
 
   (define on-property
     (lambda (ev)
@@ -216,7 +217,8 @@
           ;; This could be a prelude to deletion, or it could be the window is just going iconic.
           ;; Check wm-state:
           ;; - ICONIC (the window is hidden, do nothing unless it was visible)
-          ;; - WITHDRAWN (the window is being removed, remove it from EWMH hints).
+          ;; - WITHDRAWN (the window is being removed, remove it from EWMH hints)
+          ;; - #f (the window has already been deleted by the X server)
           #;(icccm.on-unmap ev)	;; transitions WM_STATE::NORMAL -> WITHDRAWN
           (let ([wid (xunmapevent-wid ev)])
             (cond
