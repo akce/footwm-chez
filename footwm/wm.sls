@@ -190,13 +190,9 @@
   (define remove-window
     (lambda (wid)
       (ewmh.remove-window wid)
-      (cond
-        [(ewmh.user-selectable? wid)
-         ;; Find the next window ond show it, or desktop if there's none left.
-         (select-active-window)]
-        [else
-          ;; other windows like dock windows, will need a full recalculation of the desktop.
-          (arrange-windows)])))
+      ;; wid may no longer exist so we cannot see if it was a dock or regular window.
+      ;; brute force is the only option available.
+      (arrange-windows)))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
   (define window-name
