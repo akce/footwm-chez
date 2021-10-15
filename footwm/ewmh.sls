@@ -55,7 +55,7 @@
    remove-window)
   (import
    (rnrs)
-   (only (chezscheme) errorf format)
+   (only (chezscheme) errorf format iota)
    (footwm xlib))
 
   (define atom
@@ -190,7 +190,10 @@
 
   (define workarea-set!
     (lambda (x y w h)
-      (ulongs-property-set! (root) (atom 'ref '_NET_WORKAREA) (list x y w h) (x-atom 'ref 'CARDINAL))))
+      (ulongs-property-set! (root) (atom 'ref '_NET_WORKAREA)
+                            ;; Copy one workarea set for each desktop.
+                            (apply append (map (lambda args (list x y w h)) (iota desktop-count)))
+                            (x-atom 'ref 'CARDINAL))))
 
   (define calculate-workarea
     (lambda (wids)
@@ -214,10 +217,16 @@
                     (max bottom (list-ref strut 3))))])))))
 
   ;;;; _NET_SUPPORTING_WM_CHECK WINDOW/32
+
   (define net-supporting-wm-check-init!
     (lambda ()
       (let ([wid (x-create-simple-window (root) 0 0 10 10 0 0 0)])
-        (ulongs-property-set! (root) (atom 'ref '_NET_SUPPORTING_WM_CHECK) (list wid) (x-atom 'ref 'WINDOW))
+        ;; *both* the root window and child window must have this set as SDL apps and GTK+3 apps only look
+        ;; to the child window for compliance.
+        (for-each
+          (lambda (w)
+            (ulongs-property-set! w (atom 'ref '_NET_SUPPORTING_WM_CHECK) (list wid) (x-atom 'ref 'WINDOW)))
+          (list (root) wid))
         (window-name-set! wid "footwm")
         wid)))
 

@@ -429,11 +429,20 @@
             [wa (x-get-window-attributes wid)]
             [ideal (ideal-window-geometry wid)])
         #;(format #t "#x~x WMHints ~a ~a~n" wid (icccm.normal-hints-flags->string normal-hints) normal-hints)
-        ;; Only resize if window has a different geometry than what we want.
-        ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
-        (unless (geometry=? (window-attributes-geom wa) ideal)
-          (format #t "#x~x resizing non-ideal window geom ~a -> ~a~n" wid (window-attributes-geom wa) ideal)
-          (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal)))
+        ;; Make sure to try and resize here because not all client apps try to size themselves at creation time.
+        ;; ie, not all initial MapRequests include a ConfigureRequest.
+        (cond
+          ;; Some SDL apps get here without window attributes (wa), so make sure we have one before trying to use.
+          ;; An alternate solution seems to be to enable x-grab-server in xlib:x-with-next-event but Xlib
+          ;; docs *highly* recommend not to use grabs.
+          [wa
+            ;; Only resize if window has a different geometry than what we want.
+            ;; TODO write a fuzzy-geom=? as ev-geom and win-geom might not be exact because of hard resize increments.
+            (unless (geometry=? (window-attributes-geom wa) ideal)
+              (format #t "#x~x resizing non-ideal window geom ~a -> ~a~n" wid (window-attributes-geom wa) ideal)
+              (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal)))]
+          [else
+            (x-configure-window wid (icccm.apply-normal-hints normal-hints ideal))])
         ;; Footwm won't arrange any overlapping windows so move the active window to the bottom of the
         ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
         (x-lower-window wid)
