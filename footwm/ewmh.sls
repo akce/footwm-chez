@@ -289,7 +289,11 @@
   ;; Get the desktop number for the window.
   (define window-desktop
     (lambda (wid)
-      (first-or-false (property->ulongs wid (atom 'ref '_NET_WM_DESKTOP) (x-atom 'ref 'CARDINAL)))))
+      (cond
+        [(first-or-false (property->ulongs wid (atom 'ref '_NET_WM_DESKTOP) (x-atom 'ref 'CARDINAL)))
+         => (lambda (long)
+              ;; Masking required for sticky desktop value #xffffffff.
+              (bitwise-and long #xffffffff))])))
 
   ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
   (define window-desktop-set!
