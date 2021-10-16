@@ -293,7 +293,6 @@
    cardinal-set!
    property->string
    property->string*
-   get-property-ptr
    property->ulongs
    ulongs-property-set!
    text-property-set!
@@ -1034,7 +1033,8 @@
            [(ulong/list)
             #'(define-syntax name
                 (identifier-syntax
-                  [id (property->ulongs (root) atom-id atom-type)]
+                  [id
+                    (property->ulongs (root) atom-id atom-type)]
                   [(set! id value)
                    (ulongs-property-set! (root) atom-id value atom-type)]))]
            [(ulong)

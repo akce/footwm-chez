@@ -148,28 +148,29 @@
         (PBaseSize	8)
         (PWinGravity	9))
 
-  ;; NOTE: ICCCM defines this struct in terms of 32bit cardinals etc. However, client Xlib uses local machine types.
-  ;; NOTE: Accessing the property directly (rather than through XGetWMNormalHints) returns as a list of longs.
-  (define-ftype c-size-hints
+  ;; NOTE: ICCCM defines this struct in terms of 32bit cardinals etc.
+  ;; However, client Xlib returns these structures as ulongs.
+  #;(define-ftype c-size-hints
     (struct
-     [flags		long]
+     [flags		long]	; list-ref 0
      [pad1		long]	; obsolete: x
      [pad2		long]	; obsolete: y
      [pad3		long]	; obsolete: width
      [pad4		long]	; obsolete: height
-     [min-width		long]
-     [min-height	long]
-     [max-width		long]
-     [max-height	long]
-     [width-inc		long]
-     [height-inc	long]
-     [min-aspect-x	long]
-     [min-aspect-y	long]
-     [max-aspect-x	long]
-     [max-aspect-y	long]
-     [base-width	long]
-     [base-height	long]
-     [win-gravity	long]))
+     [min-width		long]	; list-ref 5
+     [min-height	long]	; list-ref 6
+     [max-width		long]	; list-ref 7
+     [max-height	long]	; list-ref 8
+     [width-inc		long]	; list-ref 9
+     [height-inc	long]	; list-ref 10
+     [min-aspect-x	long]	; list-ref 11
+     [min-aspect-y	long]	; list-ref 12
+     [max-aspect-x	long]	; list-ref 13
+     [max-aspect-y	long]	; list-ref 14
+     [base-width	long]	; list-ref 15
+     [base-height	long]	; list-ref 16
+     [win-gravity	long]	; list-ref 17
+     ))
 
   (define-record-type size-hints
     (fields
@@ -183,14 +184,33 @@
       win-gravity)
     (protocol
       (lambda (new)
-        (lambda (fptr)
-          (let ([fl (ftype-ref c-size-hints (flags) fptr)])
+        (define-syntax batch-define
+          (syntax-rules ()
+            [(_ [name value] ...)
+             (begin
+               (define name value) ...)]))
+        ;; Field offsets in the list.
+        (batch-define
+          (flags 0)
+          (min-width 5)
+          (min-height 6)
+          (max-width 7)
+          (max-height 8)
+          (width-inc 9)
+          (height-inc 10)
+          (min-aspect-x 11)
+          (min-aspect-y 12)
+          (max-aspect-x 13)
+          (max-aspect-y 14)
+          (base-width 15)
+          (base-height 16)
+          (win-gravity 17))
+        (lambda (longs)
+          (let ([fl (list-ref longs flags)])
             (let-syntax ([flag-ref
                            (syntax-rules ()
                              [(_ flag field)
-                              (if (bitwise-bit-set? fl flag)
-                                (ftype-ref c-size-hints (field) fptr)
-                                #f)])])
+                              (and (bitwise-bit-set? fl flag) (list-ref longs field))])])
               (new
                 fl
                 (flag-ref PMinSize min-width)
@@ -210,16 +230,12 @@
   (define get-normal-hints
     (lambda (wid)
       ;; WM_NORMAL_HINTS is of type WM_SIZE_HINTS.
-      (let-values ([(ptr len) (get-property-ptr wid (atom 'ref 'WM_NORMAL_HINTS) (atom 'ref 'WM_SIZE_HINTS))])
+      (let ([ulongs (property->ulongs wid (atom 'ref 'WM_NORMAL_HINTS) (atom 'ref 'WM_SIZE_HINTS))])
         (cond
-          [ptr
-            (let* ([wp (make-ftype-pointer c-size-hints (foreign-ref 'void* ptr 0))]
-                   [ret (make-size-hints wp)])
-              (x-free (ftype-pointer-address wp))
-              (foreign-free ptr)
-              ret)]
+          [(null? ulongs)
+           #f]
           [else
-            #f]))))
+            (make-size-hints ulongs)]))))
 
   (define normal-hints-flags->string
     (lambda (nh)
