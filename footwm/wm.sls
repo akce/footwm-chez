@@ -106,31 +106,29 @@
   (define on-map-request
     (lambda (ev assignments)
       (let* ([wid (xmaprequestevent-wid ev)]
-             [hints (icccm.get-wm-hints wid)]
-             [normal? (eqv? (icccm.wm-hints-initial-state hints) icccm.NormalState)])
-        (format #t "#x~x on-map-request normal? ~a dock? ~a~n" wid normal? (ewmh.dock-window? wid))
+             #;[hints (icccm.get-wm-hints wid)]
+             #;[normal? (eqv? (icccm.wm-hints-initial-state hints) icccm.NormalState)]
+             [dock? (ewmh.dock-window? wid)])
+        ;; I have yet to see a window set the initial state into to anything other than 0 (WithdrawnState).
+        ;; Maybe i have a bug in the WMHint FFI code, but it's also likely that clients don't use it..
+        #;(format #t "#x~x on-map-request normal? ~a dock? ~a~n" wid normal? (ewmh.dock-window? wid))
+        (icccm.wm-state-set! wid icccm.NormalState)
         (icccm.watch-window wid)
-        (cond
-          [normal?
-            ;; hidden windows go to the bottom of the stack.
-            (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))]
-          [else
-            (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-            ;; Force a resize here for hidden windows, normal windows will have it through activate-window below.
-            ;; Unless this is done, some windows will be created and mapped and never sized as footwm needs.
-            (resize-window wid)
-            (icccm.show-window! wid)])
-        (cond
-          [(and (ewmh.dock-window? wid) normal?)
-           ;; Do dock windows ever map in a hidden state?
-           (arrange-windows)]
-          [else
-            ;; setup normal window EWMH properties.
-            (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
-            (ewmh.window-frame-extents-set! wid)
-            (ewmh.window-allowed-actions-set! wid)
-            (when normal?
-              (activate-window wid))]))))
+        ;; Set the hints in such a way so as to cause the least disruption to pagers.
+        ;; eg, set desktop id before adding to client list, that way the window is added to the correct
+        ;; desktop in the first go.
+        (unless dock?
+          ;; setup normal window EWMH properties.
+          (ewmh.window-frame-extents-set! wid)
+          (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
+          (ewmh.window-allowed-actions-set! wid))
+
+        (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+
+        (icccm.show-window! wid)
+        ;; Force a resize here.
+        ;; Unless this is done, some windows will be created and mapped but never sized as footwm needs.
+        (resize-window wid))))
 
   ;; Show a window, activating it's desktop if necessary.
   ;; Notes:

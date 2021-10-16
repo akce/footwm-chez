@@ -76,7 +76,7 @@
    wm-state-set!
 
    ;; Changing window state.
-   on-create-window
+   log-create-window?
    window-iconic?
    window-normal?
    show-window!
@@ -428,20 +428,18 @@
 
   ;;;;;; ICCCM 4.1.4 Changing window state.
 
-  ;; From ICCCM (emphasis mine): Newly created *top-level* windows are in the Withdrawn state.
-  ;; Return: #t if we want to manage the window, #f otherwise.
-  (define on-create-window
+  ;; This function now serves as a way to log some created windows of interest.
+  ;; It can't do more than that because we only know if we want to manage a window if it maps itself.
+  ;; There's a surprising amount of windows created as children of (root) but never mapped!
+  ;; Also note that this is the only time we'll see override-redirect windows.
+  (define log-create-window?
     (lambda (ev)
-      (if (and
-           ;; Always ignore self-managed override-redirect windows.
-           (not (xcreatewindowevent-override-redirect ev))
-           ;; is it a top-level window? (ie, parent window is root)
-           (= (xanyevent-wid (xcreatewindowevent-xany ev)) (root)))
-            ;; yes: add WM_STATE set to WithdrawnState.
-            (begin
-              #;(wm-state-set! (xcreatewindowevent-wid ev) WithdrawnState)
-              #t)
-            #f)))
+      (and
+        ;; Always ignore self-managed override-redirect windows.
+        (not (xcreatewindowevent-override-redirect ev))
+        ;; is it a top-level window? (ie, parent window is root)
+        (eqv? (xanyevent-wid (xcreatewindowevent-xany ev)) (root))
+        #t)))
 
   ;;;;;; ICCCM 4.1.4 Changing Window State.
 

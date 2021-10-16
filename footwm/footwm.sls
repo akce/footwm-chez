@@ -164,7 +164,7 @@
 
   (define on-create-window
     (lambda (ev)
-      (when (icccm.on-create-window ev)
+      (when (icccm.log-create-window? ev)
         (format #t "#x~x CreateNotify~n" (xcreatewindowevent-wid ev)))))
 
   (define on-destroy-window
