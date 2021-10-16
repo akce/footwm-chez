@@ -30,7 +30,7 @@
    ;; Layout operations.
    calculate-workarea
    ideal-window-geometry
-   draw-active-window
+   set-active-window!
    arrange-windows
    ;; Misc
    assign-desktop
@@ -105,10 +105,9 @@
   ;; Adjust workarea with newly mapped dock apps.
   (define on-map-request
     (lambda (wid assignments)
+      (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
       (cond
         [(ewmh.dock-window? wid)
-         ;; TODO moving wid to top of client-list is done in two places: on-map-request & activate-window.
-         (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
          (arrange-windows)]
         [else
           (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
@@ -171,26 +170,13 @@
                (activate-window wid)))]
           [(fx=? wid ewmh.active-window)
            ;; wid was active but moved to a desktop that's not visible; find the new top window and show it.
-           (select-active-window)]))))
-
-  ;; Selects a new active-window from the current desktop or show the (empty) desktop if there's none available.
-  ;; This is a lighter-weight version of arrange-windows and usually only needed when ewmh.active-window has changed.
-  ;; ie, call arrange-windows if there's a change to a desktop or in a dock window (either added, deleted, or resized)
-  ;; requiring a workarea recalculation.
-  (define select-active-window
-    (lambda ()
-      (let-values ([(docks cdws odws) (categorise-client-windows)])
-        (cond
-          [(null? cdws)
-           (show-desktop)]
-          [else
-            (activate-window (car cdws))]))))
+           (arrange-windows)]))))
 
   (define remove-window
     (lambda (wid)
       (ewmh.remove-window wid)
       ;; wid may no longer exist so we cannot see if it was a dock or regular window.
-      ;; brute force is the only option available.
+      ;; Brute force is the only option available unless we were to store state ourselves.
       (arrange-windows)))
 
   ;; Retrieve EWMH _NET_WM_NAME or fallback to ICCCM WM_NAME. #f if neither exist.
@@ -437,7 +423,9 @@
       (ewmh.iconify-window wid)
       (icccm.iconify-window wid)))
 
-  (define draw-active-window
+  ;; Setting the active window combines resizing to _NET_WORKAREA and managing ICCCM and EWMH hints for the window.
+  ;; wid must *not* be a dock window. ie, it must be a wid valid for ewmh.active-window.
+  (define set-active-window!
     (lambda (wid)
       ;; Make sure to try and resize here because not all client apps try to size themselves at creation time.
       ;; ie, not all initial MapRequests include a ConfigureRequest.
@@ -473,7 +461,7 @@
   ;; arrange-windows is a full recalc and redraw for the current desktop.
   ;; It will minimise/show user selectable windows based on current desktop.
   ;; It will minimise/show dock windows depending on state of ewmh.active-window.
-  ;; It will set ewmh.active-window (via draw-active-window) or show-desktop if there's no window available.
+  ;; It will set ewmh.active-window or show-desktop if there's no window available.
   (define arrange-windows
     (lambda ()
       ;; split user windows into those on the current desktop, and those on other desktops.
@@ -494,7 +482,7 @@
                  [else
                    (for-each show-dock-window docks)])
                (calculate-workarea)
-               (draw-active-window wid))]))))
+               (set-active-window! wid))]))))
 
   ;;; Misc
 
