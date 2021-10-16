@@ -273,20 +273,22 @@
 
   (define apply-normal-hints
     (lambda (nh max-geom)
-      (if nh
-        (let-values ([(flags) (size-hints-flags nh)]
-                     [(mw mh) (nh-get-max nh max-geom)])
-          (cond
-           [(bitwise-bit-set? flags PResizeInc)
-            (let-values ([(bw bh) (nh-get-base nh max-geom)])
-              (make-geometry 0 0
-                             (calc-max (size-hints-w-inc nh) bw mw)
-                             (calc-max (size-hints-h-inc nh) bh mh)))]
-           [(bitwise-bit-set? flags PMaxSize)
-            (make-geometry 0 0 mw mh)]
-           [else
-            max-geom]))
-        max-geom)))
+      (cond
+        [nh
+          (let-values ([(flags) (size-hints-flags nh)]
+                       [(mw mh) (nh-get-max nh max-geom)])
+            (cond
+              [(bitwise-bit-set? flags PResizeInc)
+               (let-values ([(bw bh) (nh-get-base nh max-geom)])
+                 (make-geometry (geometry-x max-geom) (geometry-y max-geom)
+                                (calc-max (size-hints-w-inc nh) bw mw)
+                                (calc-max (size-hints-h-inc nh) bh mh)))]
+              [(bitwise-bit-set? flags PMaxSize)
+               (make-geometry (geometry-x max-geom) (geometry-y max-geom) mw mh)]
+              [else
+                max-geom]))]
+        [else
+          max-geom])))
 
   ;;;; ICCCM 4.1.2.4 WM_HINTS.
   ;; Other hints that don't fit anywhere else.
@@ -331,9 +333,7 @@
   ;; Add a pseudo record accessor for the urgency hint.
   (define wm-hints-urgency
     (lambda (wh)
-      (if wh
-          (bitwise-bit-set? (wm-hints-flags wh) UrgencyHint)
-          #f)))
+      (and wh (bitwise-bit-set? (wm-hints-flags wh) UrgencyHint))))
 
   (define get-wm-hints
     (lambda (wid)
