@@ -83,7 +83,6 @@
    iconify-window
    deiconify-window
    show-window
-   on-map-request
    on-unmap
    client-iconify-message
    on-configure-request
@@ -478,17 +477,6 @@
     (lambda (wid)
       (unless (window-normal? wid)
         (show-window! wid))))
-
-  (define on-map-request
-    (lambda (ev)
-      ;; MapRequest event.
-      ;; Received when SubstructureRedirect set on a window, and a child of that window wants to Map,
-      ;; (and only where child has override-redirect=false).
-      (let* ([wid (xmaprequestevent-wid ev)]
-             [hints (get-wm-hints wid)])
-        (watch-window wid)
-        (when (eqv? (wm-hints-initial-state hints) NormalState)
-          (show-window! wid)))))
 
   (define on-unmap
     (lambda (ev)
