@@ -300,8 +300,9 @@
         (WindowGroupHint	6)
         (UrgencyHint		8))
 
-  ;; NOTE: ICCCM defines this struct in terms of 32bit cardinals etc. However, client Xlib uses local machine types.
-  (define-ftype c-wm-hints
+  ;; Xlib returns these structs with all fields as longs so it's simpler to retrieve as a list of longs
+  ;; and build a record from that. Especially as we're only interested in a few fields.
+  #;(define-ftype c-wm-hints
     (struct
      [flags		long]
      [input		boolean]	; client input model
@@ -317,19 +318,19 @@
     (fields flags input initial-state window-group)
     (protocol
       (lambda (new)
-        (lambda (fptr)
-          (let ([fl (ftype-ref c-wm-hints (flags) fptr)])
+        (lambda (longs)
+          (let ([flags (list-ref longs 0)])
             (let-syntax ([flag-ref
                            (syntax-rules ()
                              [(_ flag field)
-                              (if (bitwise-bit-set? fl flag)
-                                (ftype-ref c-wm-hints (field) fptr)
+                              (if (bitwise-bit-set? flags flag)
+                                (list-ref longs field)
                                 #f)])])
               (new
-                fl
-                (flag-ref InputHint input)
-                (flag-ref StateHint initial-state)
-                (flag-ref WindowGroupHint window-group))))))))
+                flags
+                (eqv? (flag-ref InputHint 1) 1)		; Convert to boolean.
+                (flag-ref StateHint 2)
+                (flag-ref WindowGroupHint 8))))))))
 
   ;; Add a pseudo record accessor for the urgency hint.
   (define wm-hints-urgency
@@ -339,17 +340,12 @@
   (define get-wm-hints
     (lambda (wid)
       ;; WM_HINTS has type WM_HINTS.
-      (let*-values ([(at) (atom 'ref 'WM_HINTS)]
-                    [(ptr len) (get-property-ptr wid at at)])
+      (let ([longs (property->ulongs wid (atom 'ref 'WM_HINTS) (atom 'ref 'WM_HINTS))])
         (cond
-          [ptr
-            (let* ([wp (make-ftype-pointer c-wm-hints (foreign-ref 'void* ptr 0))]
-                   [ret (make-wm-hints wp)])
-              (x-free (ftype-pointer-address wp))
-              (foreign-free ptr)
-              ret)]
+          [(null? longs)
+           #f]
           [else
-            #f]))))
+            (make-wm-hints longs)]))))
 
   ;;;; ICCCM 4.1.2.5 WM_CLASS
   (define class-hint

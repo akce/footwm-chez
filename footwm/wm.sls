@@ -99,19 +99,38 @@
           ;; Ignore the event geometry as user windows are always displayed to fill the workarea.
           (resize-window wid)])))
 
-  ;; Mainly EWMH house keeping.
-  ;; Add/move window to top of client window list etc.
-  ;; Set window desktop and set active window.
-  ;; Adjust workarea with newly mapped dock apps.
+  ;; on-map-request is *the* function that controls how and if a window should be displayed.
+  ;; It handles new and existing client windows and is the start point for ICCCM and EWMH house keeping.
+  ;; eg,
+  ;; - Add/move window to top or bottom of client window list etc
+  ;; - Set window desktop and set active window
+  ;; - Adjust workarea with newly mapped dock apps
   (define on-map-request
     (lambda (ev assignments)
+      ;; decide if the window to be mapped should be made visible.
+      (define make-visible?
+        (lambda (wid hints)
+          (cond
+            [(or (not hints) (memq wid ewmh.client-list))
+             ;; Assume visible if no hints are defined;
+             ;; or
+             ;; if the window has already been mapped, then ignore initial hints as it wants to be seen.
+             #t]
+            [(icccm.wm-hints-initial-state hints)
+             => (lambda (initial-state)
+                  ;; here is the only point this function could return #f.
+                  ;; it's better to assume visibility than hiding the window.
+                  (eqv? initial-state icccm.NormalState))]
+            [else
+              ;; better to assume window visibility.
+              #t])))
       (let* ([wid (xmaprequestevent-wid ev)]
-             #;[hints (icccm.get-wm-hints wid)]
-             #;[normal? (eqv? (icccm.wm-hints-initial-state hints) icccm.NormalState)]
+             [hints (icccm.get-wm-hints wid)]
+             [visible? (make-visible? wid hints)]
              [dock? (ewmh.dock-window? wid)])
-        ;; I have yet to see a window set the initial state into to anything other than 0 (WithdrawnState).
-        ;; Maybe i have a bug in the WMHint FFI code, but it's also likely that clients don't use it..
-        #;(format #t "#x~x on-map-request normal? ~a dock? ~a~n" wid normal? (ewmh.dock-window? wid))
+        ;; I have yet to see a window set the initial state to anything other than 1 (NormalState)..
+        ;; Still, this could be useful for a future start-banished? parameter.
+        (format #t "#x~x on-map-request visible? ~a dock? ~a ~a~n" wid visible? (ewmh.dock-window? wid) hints)
         (icccm.wm-state-set! wid icccm.NormalState)
         (icccm.watch-window wid)
         ;; Set the hints in such a way so as to cause the least disruption to pagers.
@@ -123,19 +142,25 @@
           (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
           (ewmh.window-allowed-actions-set! wid))
 
-        (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-
-        (icccm.show-window! wid)
-        ;; Force a resize here.
-        ;; Unless this is done, some windows will be created and mapped but never sized as footwm needs.
         (cond
-          [dock?
-            ;; Resize is good enough for dock windows.
-            (resize-window wid)]
+          [visible?
+            (icccm.show-window! wid)
+            ;; Force a resize here.
+            ;; Unless this is done, some windows will be created and mapped but never sized as footwm needs.
+            (cond
+              [dock?
+                ;; Add to front of stack list.
+                (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+                ;; Resize is good enough for dock windows.
+                (resize-window wid)]
+              [else
+                ;; Perform full activation.
+                ;; This ensures proper layout even for newly created windows.
+                (activate-window wid)])]
           [else
-            ;; Do a full arrange.
-            ;; This ensures proper activation even for newly created windows.
-            (arrange-windows)]))))
+            ;; Assume iconified.
+            ;; Put at the end of the stack list and leave it at that.
+            (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))]))))
 
   ;; Show a window, activating it's desktop if necessary.
   ;; Notes:
