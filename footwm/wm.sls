@@ -104,16 +104,33 @@
   ;; Set window desktop and set active window.
   ;; Adjust workarea with newly mapped dock apps.
   (define on-map-request
-    (lambda (wid assignments)
-      (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-      (cond
-        [(ewmh.dock-window? wid)
-         (arrange-windows)]
-        [else
-          (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
-          (ewmh.window-frame-extents-set! wid)
-          (ewmh.window-allowed-actions-set! wid)
-          (activate-window wid)])))
+    (lambda (ev assignments)
+      (let* ([wid (xmaprequestevent-wid ev)]
+             [hints (icccm.get-wm-hints wid)]
+             [normal? (eqv? (icccm.wm-hints-initial-state hints) icccm.NormalState)])
+        (format #t "#x~x on-map-request normal? ~a dock? ~a~n" wid normal? (ewmh.dock-window? wid))
+        (icccm.watch-window wid)
+        (cond
+          [normal?
+            ;; hidden windows go to the bottom of the stack.
+            (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))]
+          [else
+            (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
+            ;; Force a resize here for hidden windows, normal windows will have it through activate-window below.
+            ;; Unless this is done, some windows will be created and mapped and never sized as footwm needs.
+            (resize-window wid)
+            (icccm.show-window! wid)])
+        (cond
+          [(and (ewmh.dock-window? wid) normal?)
+           ;; Do dock windows ever map in a hidden state?
+           (arrange-windows)]
+          [else
+            ;; setup normal window EWMH properties.
+            (ewmh.window-desktop-set! wid (assign-desktop assignments wid))
+            (ewmh.window-frame-extents-set! wid)
+            (ewmh.window-allowed-actions-set! wid)
+            (when normal?
+              (activate-window wid))]))))
 
   ;; Show a window, activating it's desktop if necessary.
   ;; Notes:
@@ -430,6 +447,7 @@
       ;; Footwm has no overlapping user windows so move the active window to the bottom of the
       ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
       (x-lower-window wid)
+      (icccm.focus-window wid)
       (ewmh.showing-desktop #f)
       (set! ewmh.active-window wid)
       (show-dock-window wid)))

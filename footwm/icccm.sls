@@ -79,6 +79,7 @@
    on-create-window
    window-iconic?
    window-normal?
+   show-window!
    iconify-window
    deiconify-window
    show-window
@@ -96,6 +97,7 @@
 
    ;; Misc util functions.
    manage-window?
+   watch-window
    init-window
    send-client-message)
   (import
@@ -438,7 +440,7 @@
            (= (xanyevent-wid (xcreatewindowevent-xany ev)) (root)))
             ;; yes: add WM_STATE set to WithdrawnState.
             (begin
-              (wm-state-set! (xcreatewindowevent-wid ev) WithdrawnState)
+              #;(wm-state-set! (xcreatewindowevent-wid ev) WithdrawnState)
               #t)
             #f)))
 
@@ -482,9 +484,11 @@
       ;; MapRequest event.
       ;; Received when SubstructureRedirect set on a window, and a child of that window wants to Map,
       ;; (and only where child has override-redirect=false).
-      (let ([wid (xmaprequestevent-wid ev)])
+      (let* ([wid (xmaprequestevent-wid ev)]
+             [hints (get-wm-hints wid)])
         (watch-window wid)
-        (show-window! wid))))
+        (when (eqv? (wm-hints-initial-state hints) NormalState)
+          (show-window! wid)))))
 
   (define on-unmap
     (lambda (ev)
