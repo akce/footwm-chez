@@ -132,25 +132,22 @@
           [else
             (desktop-activate (ewmh.window-desktop wid))]))))
 
-  ;; This wm banishes a window by iconifying and moving to the bottom of ewmh.client-list.
-  ;; Banishment is only allowed for regular client windows in the current desktop and only when
-  ;; there's another window that can take its place.
-  ;; ie, do not allow an empty desktop view as banishing a window on a desktop with only one window
-  ;; would break the activate window-by-index-1-or-greater model.
+  ;; This wm banishes a window by moving to the bottom of the stack list and activating the next window if the
+  ;; banished window was active.
+  ;; Note that active windows alone in their desktop group are not iconified as that would break the activate
+  ;; window-by-index-1+ model.
   (define banish-window
     (lambda (wid)
+      ;; Always move to bottom of the window stack list regardless of its desktop or whether it's a docking window.
+      (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))
       (let-values ([(docks cdws odws) (categorise-client-windows)])
         (cond
-          [(and (fx>? (length cdws) 1) (memq wid cdws))
-           ;; move to bottom of client-list.
-           (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))
+          [(and (fx>? (length cdws) 1) (eqv? wid ewmh.active-window))
            ;; activate new top client window.
-           (activate-window (car cdws))]
-          [(memq wid odws)
-           ;; banishing a window that's a member of another desktop merely puts it at the bottom of the client list.
-           (set! ewmh.client-list (append (remove wid ewmh.client-list) (list wid)))]
+           (format #t "#x~x banish active window. New active #x~x '~a'~n" wid (cadr cdws) (window-name (cadr cdws)))
+           (arrange-windows)]
           [else
-            (format #t "#x~x banish-window ignoring request '~a'~n" wid (window-name wid))]))))
+            (format #t "#x~x banish-window desktop layout is unchanged '~a'~n" wid (window-name wid))]))))
 
   (define move-window-to-desktop
     (lambda (wid deskid)
@@ -240,7 +237,7 @@
 
   (define banish-window/index
     (lambda (index)
-      (window-op/index banish-window index)))
+      (window-op/index icccm.client-iconify-message index)))
 
   (define close-window/index
     (lambda (index)
