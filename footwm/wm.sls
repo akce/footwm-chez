@@ -128,7 +128,14 @@
         (icccm.show-window! wid)
         ;; Force a resize here.
         ;; Unless this is done, some windows will be created and mapped but never sized as footwm needs.
-        (resize-window wid))))
+        (cond
+          [dock?
+            ;; Resize is good enough for dock windows.
+            (resize-window wid)]
+          [else
+            ;; Do a full arrange.
+            ;; This ensures proper activation even for newly created windows.
+            (arrange-windows)]))))
 
   ;; Show a window, activating it's desktop if necessary.
   ;; Notes:
