@@ -151,8 +151,7 @@
               [dock?
                 ;; Add to front of stack list.
                 (set! ewmh.client-list (cons wid (remove wid ewmh.client-list)))
-                ;; Resize is good enough for dock windows.
-                (resize-window wid)]
+                (arrange-windows)]
               [else
                 ;; Perform full activation.
                 ;; This ensures proper layout even for newly created windows.
