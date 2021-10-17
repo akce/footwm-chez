@@ -16,7 +16,6 @@
    desktop-geometry
    desktop-geometry-sync!
    desktop-viewport
-   desktop-viewport-init!
    current-desktop
    current-desktop-request!
    desktop-names
@@ -32,11 +31,11 @@
    window-desktop
    window-desktop-set!
    window-desktop-request!
-   get-wm-window-type
+   window-net-wm-type
    dock-window?
    user-selectable?
-   get-net-wm-state
-   window-wm-state?
+   window-net-wm-state
+   window-net-wm-state?
    make-wm-state-change
    wm-state-change-action wm-state-change-prop1 wm-state-change-prop2
    add-net-wm-states-state!
@@ -47,8 +46,9 @@
    fullscreen-window?
    window-allowed-actions
    window-allowed-actions-set!
-   get-wm-strut
-   get-wm-strut-partial
+   window-net-wm-strut
+   window-net-wm-strut-partial
+   window-strut
    pid
    window-frame-extents
    window-frame-extents-set!
@@ -132,8 +132,8 @@
     (x-atom 'ref 'CARDINAL))
 
   ;;;; _NET_DESKTOP_GEOMETRY width, height, CARDINAL[2]/32
-  (define desktop-geometry
-    (lambda ()
+  (define-syntax desktop-geometry
+    (identifier-syntax
       (let ([g (property->ulongs (root) (atom 'ref '_NET_DESKTOP_GEOMETRY) (x-atom 'ref 'CARDINAL))])
         (make-geometry 0 0 (list-ref g 0) (list-ref g 1)))))
 
@@ -143,14 +143,10 @@
         (ulongs-property-set! (root) (atom 'ref '_NET_DESKTOP_GEOMETRY) `(,(geometry-width g) ,(geometry-height g)) (x-atom 'ref 'CARDINAL)))))
 
   ;;;; _NET_DESKTOP_VIEWPORT x, y, CARDINAL[][2]/32
-  ;; Footwm doesn't support large desktops, so it will always be 0, 0.
-  (define desktop-viewport
-    (lambda ()
-      (property->ulongs (root) (atom 'ref '_NET_DESKTOP_VIEWPORT) (x-atom 'ref 'CARDINAL))))
-
-  (define desktop-viewport-init!
-    (lambda ()
-      (ulongs-property-set! (root) (atom 'ref '_NET_DESKTOP_VIEWPORT) '(0 0) (x-atom 'ref 'CARDINAL))))
+  (define-root-property desktop-viewport
+    ulong/list
+    (atom 'ref '_NET_DESKTOP_VIEWPORT)
+    (x-atom 'ref 'CARDINAL))
 
   ;;;; _NET_CURRENT_DESKTOP desktop, CARDINAL/32
 
@@ -183,23 +179,35 @@
       (send-message-cardinal (root) wid (atom 'ref '_NET_ACTIVE_WINDOW) 0)))
 
   ;;;; _NET_WORKAREA x, y, width, height CARDINAL[][4]/32
-  (define workarea-geometry
-    (lambda ()
-      (let ([gl (property->ulongs (root) (atom 'ref '_NET_WORKAREA) (x-atom 'ref 'CARDINAL))])
-        (make-geometry (list-ref gl 0) (list-ref gl 1) (list-ref gl 2) (list-ref gl 3)))))
+  (define-root-property net-workarea
+    ulong/list
+    (atom 'ref '_NET_WORKAREA)
+    (x-atom 'ref 'CARDINAL))
 
-  (define workarea-set!
-    (lambda (x y w h)
-      (ulongs-property-set! (root) (atom 'ref '_NET_WORKAREA)
-                            ;; Copy one workarea set for each desktop.
-                            (apply append (map (lambda args (list x y w h)) (iota desktop-count)))
-                            (x-atom 'ref 'CARDINAL))))
+  (define-syntax workarea-geometry
+    (identifier-syntax
+      (let ([nw net-workarea])
+        (make-geometry (list-ref nw 0) (list-ref nw 1) (list-ref nw 2) (list-ref nw 3)))))
+
+  (define filter-struts
+    (lambda (wids)
+      (fold-left
+        (lambda (acc w)
+          (cond
+            [(window-strut w)
+             => (lambda (strut)
+                  (cons strut acc))]
+            [else
+              acc]))
+        '()
+        wids)))
 
   (define calculate-workarea
     (lambda (wids)
-      (let ([dg (desktop-geometry)])
-        ;; find the maximal strut.
-        (let loop ([struts (map get-strut (filter dock-window? wids))] [left 0] [right 0] [top 0] [bottom 0])
+      (let ([dg desktop-geometry])
+        ;; Adjust usable client workarea by removing reserved strut (dock) areas.
+        ;; Note that partial struts are not supported. ie, the strut will take the enter border area.
+        (let loop ([struts (filter-struts wids)] [left 0] [right 0] [top 0] [bottom 0])
           (cond
            [(null? struts)
             (let ([x left]
@@ -207,7 +215,9 @@
                   [w (- (geometry-width dg) (+ left right))]
                   [h (- (geometry-height dg) (+ top bottom))])
               (format #t "calculate-workarea ~a, ~a ~ax~a ~a~n" x y w h wids)
-              (workarea-set! x y w h))]
+              (set! net-workarea
+                ;; Copy one workarea set for each desktop.
+                (apply append (map (lambda args (list x y w h)) (iota desktop-count)))))]
            [else
             (let ([strut (car struts)])
               (loop (cdr struts)
@@ -237,9 +247,17 @@
   ;; N/A
 
   ;;;; _NET_SHOWING_DESKTOP desktop, CARDINAL/32
-  (define showing-desktop
-    (lambda (bool)
-      (ulongs-property-set! (root) (atom 'ref '_NET_SHOWING_DESKTOP) (list (if bool 1 0)) (x-atom 'ref 'CARDINAL))))
+  (define-syntax showing-desktop
+    (identifier-syntax
+      [id
+        (cond
+          [(first-or-false (property->ulongs (root) (atom 'ref '_NET_SHOWING_DESKTOP) (x-atom 'ref 'CARDINAL)))
+           => (lambda (num)
+                (eqv? num 1))]
+           [else
+             #f])]
+      [(set! id bool)
+       (ulongs-property-set! (root) (atom 'ref '_NET_SHOWING_DESKTOP) (list (if bool 1 0)) (x-atom 'ref 'CARDINAL))]))
 
   ;;;;;; Other Root window messages.
 
@@ -251,16 +269,23 @@
       (send-message-cardinal (root) wid (atom 'ref '_NET_CLOSE_WINDOW) 0)))
 
   ;;;; _NET_MOVERESIZE_WINDOW
-  ;; TODO
+  ;; N/A
 
   ;;;; _NET_WM_MOVERESIZE
-  ;; TODO
+  ;; N/A
 
   ;;;; _NET_RESTACK_WINDOW
-  ;; TODO
+  ;; TODO This could be a way to give fine grained control of stacking list ordering.
 
   ;;;; _NET_REQUEST_FRAME_EXTENTS
-  ;; TODO
+
+  ;; Called in response to a ClientMessage _NET_WM_REQUEST_FRAME_EXTENTS.
+  ;; wid is the window that requests the information.
+  (define window-frame-extents-set!
+    (lambda (wid)
+      (ulongs-property-set! wid (atom 'ref '_NET_FRAME_EXTENTS)
+                            '(0 0 0 0)		; footwm adds no borders.
+                            (x-atom 'ref 'CARDINAL))))
 
   ;;;;;; Application Window properties.
 
@@ -293,7 +318,9 @@
         [(first-or-false (property->ulongs wid (atom 'ref '_NET_WM_DESKTOP) (x-atom 'ref 'CARDINAL)))
          => (lambda (long)
               ;; Masking required for sticky desktop value #xffffffff.
-              (bitwise-and long #xffffffff))])))
+              (bitwise-and long #xffffffff))]
+        [else
+          #f])))
 
   ;; Used by the WM to set the desktop for a window. Clients must use 'window-desktop-request!'.
   (define window-desktop-set!
@@ -306,18 +333,18 @@
       (send-message-cardinal (root) wid (atom 'ref '_NET_WM_DESKTOP) desktop-number)))
 
   ;;;; _NET_WM_WINDOW_TYPE ATOM[]/32
-  (define get-wm-window-type
+  (define window-net-wm-type
     (lambda (wid)
       (property->ulongs wid (atom 'ref '_NET_WM_WINDOW_TYPE) (x-atom 'ref 'ATOM))))
 
   (define dock-window?
     (lambda (wid)
-      (and (memq (atom 'ref '_NET_WM_WINDOW_TYPE_DOCK) (get-wm-window-type wid)) #t)))
+      (and (memq (atom 'ref '_NET_WM_WINDOW_TYPE_DOCK) (window-net-wm-type wid)) #t)))
 
   ;; This has scope for improvement. Refer to discussion in _NET_WM_WINDOW_TYPE.
   (define user-selectable?
     (lambda (wid)
-      (let ([types (get-wm-window-type wid)])
+      (let ([types (window-net-wm-type wid)])
         (cond
          [(null? types) #t]
          [(memq (atom 'ref '_NET_WM_WINDOW_TYPE_NORMAL) types) #t]
@@ -326,7 +353,7 @@
 
   ;;;; _NET_WM_STATE ATOM[]/32
 
-  (define get-net-wm-state
+  (define window-net-wm-state
     (lambda (wid)
       (property->ulongs wid (atom 'ref '_NET_WM_STATE) (x-atom 'ref 'ATOM))))
 
@@ -334,13 +361,13 @@
     (lambda (wid value)
       (ulongs-property-set! wid (atom 'ref '_NET_WM_STATE) value (x-atom 'ref 'ATOM))))
 
-  (define window-wm-state?
+  (define window-net-wm-state?
     (lambda (wid prop)
       (and
         (memq (if (symbol? prop)
                 (atom 'ref prop)
                 prop)
-              (get-net-wm-state wid))
+              (window-net-wm-state wid))
         #t)))
 
   ;; Defines for on-client-state: action.
@@ -376,13 +403,13 @@
 
   (define add-net-wm-states-state!
     (lambda (wid a)
-      (let ([states (get-net-wm-state wid)])
+      (let ([states (window-net-wm-state wid)])
         (unless (memq a states)
           (net-wm-state-set! wid (cons a states))))))
 
   (define del-net-wm-states-state!
     (lambda (wid a)
-      (let ([states (get-net-wm-state wid)])
+      (let ([states (window-net-wm-state wid)])
         (when (memq a states)
           (net-wm-state-set! wid (remove a states))))))
 
@@ -399,12 +426,12 @@
   ;; Like icccm.UrgencyHint but can be set by both wm & clients. It is usually cleared by the wm on activation.
   (define demands-attention?
     (lambda (wid)
-      (window-wm-state? wid '_NET_WM_STATE_DEMANDS_ATTENTION)))
+      (window-net-wm-state? wid '_NET_WM_STATE_DEMANDS_ATTENTION)))
 
   ;; _NET_WM_STATE_FULLSCREEN
   (define fullscreen-window?
     (lambda (wid)
-       (window-wm-state? wid '_NET_WM_STATE_FULLSCREEN)))
+       (window-net-wm-state? wid '_NET_WM_STATE_FULLSCREEN)))
 
   ;;;; _NET_WM_ALLOWED_ACTIONS ATOM[]/32
 
@@ -428,21 +455,27 @@
                             (x-atom 'ref 'ATOM))))
 
   ;;;; _NET_WM_STRUT left, right, top, bottom, CARDINAL[4]/32
-  (define get-wm-strut
+  (define window-net-wm-strut
     (lambda (wid)
       (property->ulongs wid (atom 'ref '_NET_WM_STRUT) (x-atom 'ref 'CARDINAL))))
 
   ;;;; _NET_WM_STRUT_PARTIAL left, right, top, bottom, left_start_y, left_end_y,right_start_y, right_end_y, top_start_x, top_end_x, bottom_start_x,bottom_end_x,CARDINAL[12]/32
-  (define get-wm-strut-partial
+  (define window-net-wm-strut-partial
     (lambda (wid)
       (property->ulongs wid (atom 'ref '_NET_WM_STRUT_PARTIAL) (x-atom 'ref 'CARDINAL))))
 
-  (define get-strut
+  ;; window-strut tries to retrieve the newer _NET_WM_STRUT_PARTIAL property, falling back to _NET_WM_STRUT, or #f if neither are defined.
+  (define window-strut
     (lambda (wid)
-      (let ([partial (get-wm-strut-partial wid)])
-        (if (null? partial)
-            (get-wm-strut wid)
-            partial))))
+      (let ([partial (window-net-wm-strut-partial wid)])
+        (cond
+          [partial
+            partial]
+          [(window-net-wm-strut wid)
+           => values]
+          [else
+            ;; No struts defined for window. ie, window won't be an ewmh dock window.
+            #f]))))
 
   ;;;; _NET_WM_ICON_GEOMETRY x, y, width, height, CARDINAL[4]/32
   ;; N/A
@@ -476,12 +509,6 @@
           [else
             ;; TODO Convert to geometry?
             exts]))))
-
-  (define window-frame-extents-set!
-    (lambda (wid)
-      (ulongs-property-set! wid (atom 'ref '_NET_FRAME_EXTENTS)
-                            '(0 0 0 0)		; footwm adds no borders.
-                            (x-atom 'ref 'CARDINAL))))
 
   ;;;; _NET_WM_OPAQUE_REGION x, y, width, height, CARDINAL[][4]/32
   ;; N/A

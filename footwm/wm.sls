@@ -61,7 +61,7 @@
             [else
               (format #t "#x~x Bad _NET_WM_STATE action! ~a has-prop? ~a~n" wid a window-has-prop?)])))
       (format #t "#x~x _NET_WM_STATE ~a ~a(~a)~n" wid action (x-get-atom-name prop) prop)
-      (make-change! action (ewmh.window-wm-state? wid prop))))
+      (make-change! action (ewmh.window-net-wm-state? wid prop))))
 
   ;; Make the _NET_WM_STATE property change to the client and have arrange-windows react to it.
   ;; eg, add/remove fullscreen property and have arrange-windows handle docks, workarea and visible window etc.
@@ -424,20 +424,22 @@
 
  ;;;;;; Layout operations.
 
+  ;; Calculates the available workarea by looking at the struts for all visible dock windows.
   (define calculate-workarea
     (lambda ()
-      (let ([wids (filter (lambda (w)
-                            (and (ewmh.dock-window? w) (icccm.window-normal? w))) ewmh.client-list)])
-        (ewmh.calculate-workarea wids))))
+      (ewmh.calculate-workarea
+        (filter (lambda (w)
+                  (and (ewmh.dock-window? w) (icccm.window-normal? w)))
+                ewmh.client-list))))
 
   (define ideal-window-geometry
     (lambda (wid)
       (cond
         [(ewmh.fullscreen-window? wid)
-         (ewmh.desktop-geometry)]
+         ewmh.desktop-geometry]
         [else
           ;; Applying the normal hints will adjust the workarea geom based on any increment constraints etc.
-          (icccm.apply-normal-hints (icccm.get-normal-hints wid) (ewmh.workarea-geometry))])))
+          (icccm.apply-normal-hints (icccm.get-normal-hints wid) ewmh.workarea-geometry)])))
 
   (define resize-window
     (lambda (wid)
@@ -478,7 +480,7 @@
       ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
       (x-lower-window wid)
       (icccm.focus-window wid)
-      (ewmh.showing-desktop #f)
+      (set! ewmh.showing-desktop #f)
       (set! ewmh.active-window wid)
       (show-dock-window wid)))
 
@@ -486,7 +488,7 @@
     (lambda ()
       ;; set input focus to root (so keygrabbers still function) and clear ewmh.
       (icccm.focus-root)
-      (ewmh.showing-desktop #t)
+      (set! ewmh.showing-desktop #t)
       (set! ewmh.active-window None)))
 
   ;; divides ewmh.client-list into 3 categories (returned as 'values'):

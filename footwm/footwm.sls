@@ -30,7 +30,8 @@
       (ewmh.net-supporting-wm-check-init!)
       (ewmh.net-supported-init!)
       (ewmh.desktop-geometry-sync!)
-      (ewmh.desktop-viewport-init!)
+      ;; Footwm doesn't support large desktops, so it will always be 0, 0.
+      (set! ewmh.desktop-viewport '(0 0))
       (init-desktops desktops)
       (init-windows assignments)
       (wm.arrange-windows)
