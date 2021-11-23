@@ -475,9 +475,16 @@
       ;; Make sure to try and resize here because not all client apps try to size themselves at creation time.
       ;; ie, not all initial MapRequests include a ConfigureRequest.
       (resize-window wid)
-      ;; Footwm has no overlapping user windows so move the active window to the bottom of the
-      ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
-      (x-lower-window wid)
+      (cond
+        [(icccm.wm-transient-for wid)
+         => (lambda (parent-wid)
+              ;; Should this also raise docker windows in order to guarantee that the transient window is somewhere in the
+              ;; middle of the stacking order?
+              (x-lower-window parent-wid))]
+        [else
+          ;; Footwm has no overlapping user windows so move the active window to the bottom of the
+          ;; stack list so that any override-redirect windows (eg, menu popups, tooltips, etc) will be visible.
+          (x-lower-window wid)])
       (icccm.focus-window wid)
       (set! ewmh.showing-desktop #f)
       (set! ewmh.active-window wid)
@@ -521,7 +528,15 @@
           [else
             (let ([wid (car cdws)])		; visible window
                ;; iconify hidden windows
-               (for-each iconify-window (cdr cdws))
+               ;; Remove transient-for windows from list as iconifying parent windows can cause
+               ;; transient windows to iconify themselves.
+               (for-each iconify-window
+                 (cond
+                   [(icccm.wm-transient-for wid)
+                    => (lambda (parent-wid)
+                         (remove (icccm.wm-transient-for wid) (cdr cdws)))]
+                   [else
+                     (cdr cdws)]))
                (cond
                  [(ewmh.fullscreen-window? wid)
                   (for-each iconify-window docks)]

@@ -60,6 +60,9 @@
    class-hint-instance
    class-hint-class
 
+   ;; WM_TRANSIENT_FOR
+   wm-transient-for
+
    ;; WM_PROTOCOLS
    get-wm-protocols
    has-wm-protocol?
@@ -121,7 +124,8 @@
          WM_PROTOCOLS
          WM_SIZE_HINTS
          WM_STATE
-         WM_TAKE_FOCUS)))
+         WM_TAKE_FOCUS
+         WM_TRANSIENT_FOR)))
 
   ;;;;;; ICCCM 4.1.2 Client properties.
 
@@ -386,7 +390,9 @@
           (list-ref ch 1))))
 
   ;;;; ICCCM 4.1.2.6 WM_TRANSIENT_FOR
-  ;; TODO
+  (define wm-transient-for
+    (lambda (wid)
+      (first-or-false (property->ulongs wid (atom 'ref 'WM_TRANSIENT_FOR) (x-atom 'ref 'WINDOW)))))
 
   ;;;; ICCCM 4.1.2.7 WM_PROTOCOLS
   (define get-wm-protocols

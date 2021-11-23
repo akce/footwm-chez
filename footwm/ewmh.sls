@@ -100,13 +100,6 @@
 
          _NET_WORKAREA)))
 
-  ;; Return first (and likely only) item in list or false if list is empty.
-  (define first-or-false
-    (lambda (lst)
-      (if (null? lst)
-          #f
-          (list-ref lst 0))))
-
   ;;;;;; Root window properties (and messages)
 
   ;;;; _NET_SUPPORTED ATOM[]/32

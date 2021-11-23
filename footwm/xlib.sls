@@ -298,6 +298,7 @@
    text-property-set!
 
    define-root-property
+   first-or-false
 
    send-message-cardinal)
   (import
@@ -1018,6 +1019,7 @@
                 (free/u8** u8mem (length string-list))
                 (x-free (ftype-pointer-address (void*-cast (ftype-ref XTextProperty (value) &tp)))))))))
 
+  ;; Return first (and likely only) item in list or false if list is empty.
   (define-syntax first-or-false
     (syntax-rules ()
       [(_ ls)
