@@ -289,18 +289,23 @@
     (lambda (index)
       (window-op/index ewmh.window-close-request! index)))
 
+  ;; Activate the first appropriate window that wants attention.
   (define activate-urgent
     (lambda ()
+      (define active-wid ewmh.active-window)
       (let ([wids
               (filter
                 (lambda (wid)
-                  (or
-                    (icccm.wm-hints-urgency (icccm.get-wm-hints wid))
-                    (ewmh.demands-attention? wid)))
+                  ;; I have seen active windows keep an urgent bit set so ignore those
+                  ;; when searching for a window to activate.
+                  (and
+                    (not (eqv? wid active-wid))
+                    (or
+                      (icccm.wm-hints-urgency (icccm.get-wm-hints wid))
+                      (ewmh.demands-attention? wid))))
                 ewmh.client-list)])
-        (unless (null? wids)
-          (activate-window (car wids))
-          (x-sync)))))
+        (when (pair? wids)
+          (ewmh.window-active-request! (car wids))))))
 
   (define run-or-raise-em
     (lambda (instance command)
@@ -309,8 +314,7 @@
           [(null? wids)
            (system (string-append "exec " command))]
           [(window-instance? (car wids) instance)
-            (activate-window (car wids))
-            (x-sync)]
+            (ewmh.window-active-request! (car wids))]
           [else
             (loop (cdr wids))]))))
 
