@@ -537,26 +537,27 @@
   ;;;;;; ICCCM 4.1.7 Input Focus.
   ;;;; The XGetWMHints manpage also has useful info in its input section.
 
+  (define wm-input-hint
+    (lambda (wid)
+      (cond
+        [(get-wm-hints wid)
+         => (lambda (h)
+              (wm-hints-input h))]
+        [else
+          #f])))
+
   (define focus-window
     (lambda (wid)
-      (x-set-input-focus wid RevertToNone CurrentTime)
-      ;; Don't use the fancy icccm version below as it doesn't always work. eg, Some SDL windowed apps
-      ;; won't regain focus and disallow calls to footkeys.
-      ;; The simple version above seems to work better, at least so far..
-      #;(let* ([h (get-wm-hints wid)]
-             [input-hint
-              (if h
-                  (wm-hints-input h)
-                  #f)]
-             [take-focus (has-wm-protocol? wid (atom 'ref 'WM_TAKE_FOCUS))])
-        (if input-hint
-            (if take-focus
-                ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
-                (send-client-message wid wid (atom 'ref 'WM_PROTOCOLS) (atom 'ref 'WM_TAKE_FOCUS) StructureNotify)
-                ;; Passive: manually set input focus.
-                (x-set-input-focus wid RevertToNone CurrentTime))
-            ;; PointerRoot mode.
-            (focus-root)))))
+      ;; This function is written so that x-set-input-focus is always called.
+      (cond
+        [(wm-input-hint wid)
+         (x-set-input-focus wid RevertToNone CurrentTime)
+         (when (has-wm-protocol? wid (atom 'ref 'WM_TAKE_FOCUS))
+           ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
+           (send-client-message wid wid (atom 'ref 'WM_PROTOCOLS) (atom 'ref 'WM_TAKE_FOCUS) StructureNotify))]
+        [else
+          ;; PointerRoot mode.
+          (focus-root)])))
 
   (define focus-root
     (lambda ()
