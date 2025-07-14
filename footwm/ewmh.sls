@@ -1,9 +1,9 @@
 ;; Extended Window Manager Hints (EWMH)
 ;; As at version 1.5.
 ;; See:
-;;    https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html
+;;    https://specifications.freedesktop.org/wm-spec/latest
 ;;
-;; Written by Jerry 2019-2021.
+;; Written by Jerry 2019-2025.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
