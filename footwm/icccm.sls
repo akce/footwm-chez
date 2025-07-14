@@ -537,30 +537,19 @@
   ;;;;;; ICCCM 4.1.7 Input Focus.
   ;;;; The XGetWMHints manpage also has useful info in its input section.
 
-  (define wm-input-hint
-    (lambda (wid)
-      (cond
-        [(get-wm-hints wid)
-         => (lambda (h)
-              (wm-hints-input h))]
-        [else
-          #f])))
-
   (define focus-window
     (lambda (wid)
       ;; This function is written so that x-set-input-focus is always called.
-      (cond
-        [(wm-input-hint wid)
-         (x-set-input-focus wid RevertToNone CurrentTime)
-         (when (has-wm-protocol? wid (atom 'ref 'WM_TAKE_FOCUS))
-           ;; Locally active (input-hint #t) or Globally active (#f): always send WM_TAKE_FOCUS client message.
-           (send-client-message wid wid (atom 'ref 'WM_PROTOCOLS) (atom 'ref 'WM_TAKE_FOCUS) StructureNotify))]
-        [else
-          ;; PointerRoot mode.
-          (focus-root)])))
+      ;; This is contrary to the Input Models defined in ICCCM where "No Input" would get nothing.
+      ;; This is because there is at least one app (chromium) that neither defines WM_HINTS nor
+      ;; WM_TAKE_FOCUS, thus classifying it as "No Input". Hence, always set an input focus.
+      (x-set-input-focus wid RevertToPointerRoot CurrentTime)
+      (when (has-wm-protocol? wid (atom 'ref 'WM_TAKE_FOCUS))
+        (send-client-message wid wid (atom 'ref 'WM_PROTOCOLS) (atom 'ref 'WM_TAKE_FOCUS) StructureNotify))))
 
   (define focus-root
     (lambda ()
+      ;; Note that with focus-with set to PointerRoot, the revert-to arg is ignored. (ref: XSetInputFocus(3))
       (x-set-input-focus PointerRoot None CurrentTime)))
 
   ;;;;;; ICCCM 4.2.1.8 Window Deletion.
