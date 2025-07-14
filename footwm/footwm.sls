@@ -212,24 +212,18 @@
           ;; This could be a prelude to deletion, or it could be the window is just going iconic.
           ;; Check wm-state:
           ;; - ICONIC (the window is hidden, do nothing unless it was visible)
-          ;; - WITHDRAWN (the window is being removed, remove it from EWMH hints)
+          ;; All other wm-state result in removal from EWMH client list. eg,
+          ;; - WITHDRAWN (the window is being removed)
           ;; - #f (the window has already been deleted by the X server)
-          #;(icccm.on-unmap ev)	;; transitions WM_STATE::NORMAL -> WITHDRAWN
+          ;; - NORMAL rare but does happen. ghb dialogs are unmapped from Normal and reused later (if needed).
           (let ([wid (xunmapevent-wid ev)])
-            (cond
-              [(memq wid ewmh.client-list)
-               (let ([state (icccm.get-wm-state wid)])
-                 (cond
-                   [(eqv? state icccm.IconicState)
-                    (format #t "#x~x UnmapNotify iconic window~n" wid)
-                    (wm.arrange-windows)]
-                   ;; State could be #f if window is already deleted.
-                   [(or (not state) (eq? state icccm.WithdrawnState))
-                    (format #t "#x~x removing window from EWMH client lists~n" wid)
-                    (wm.remove-window wid)
-                    ]
-                   [else
-                     (format #t "#x~x UnmapNotify ignore state=~a\n" wid state)]
-                   ))]
-              )))))
+            (when (memq wid ewmh.client-list)
+              (let ([state (icccm.get-wm-state wid)])
+                (cond
+                  [(eqv? state icccm.IconicState)
+                   (format #t "#x~x UnmapNotify iconic window~n" wid)
+                   (wm.arrange-windows)]
+                  [else
+                    (format #t "#x~x UnmapNotify remove window state=~a\n" wid state)
+                    (wm.remove-window wid)])))))))
   )
