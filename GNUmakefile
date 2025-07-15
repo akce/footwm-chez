@@ -10,7 +10,6 @@ SCHEMEVER = $(shell $(SCHEME) --version 2>&1)
 # eg, set in CHEZSCHEMELIBDIRS environment variable.
 PREFIX := $(HOME)
 LIBDIR := $(PREFIX)/lib/csv$(SCHEMEVER)
-IRREGEXDIR := $(LIBDIR)
 BINDIR := $(PREFIX)/bin
 CONFDIR := ~/.foot
 
@@ -43,6 +42,7 @@ BINEXE = $(BINOBJ:.so=)
 SUBSRC = \
 	footwm/config.sls	\
 	footwm/ewmh.sls		\
+	footwm/fnmatch.chezscheme.sls	\
 	footwm/footwm.sls	\
 	footwm/ftypes-util.sls	\
 	footwm/gobject.sls	\
@@ -84,7 +84,7 @@ $(BUILDDIR)/%.wpo: %.ss $(TOPSRC) $(SUBSRC)
 		"(reset-handler abort)" \
 		"(compile-imported-libraries #t)" \
 		"(generate-wpo-files #t)" \
-		"(library-directories '"'(("." . "$(BUILDDIR)") ("$(LIBDIR)" . "$(BUILDDIR)") ("$(IRREGEXDIR)" . "$(BUILDDIR)")))' \
+		"(library-directories '"'(("." . "$(BUILDDIR)") ("$(LIBDIR)" . "$(BUILDDIR)")))' \
 		'(compile-program "$<" "$(@:.wpo=).tmp")' | $(SCHEME) $(SFLAGS)
 
 # Compile the all-in-one whole program optimised executable.

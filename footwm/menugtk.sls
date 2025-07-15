@@ -1,6 +1,6 @@
 ;; Footwm GTK menu module.
 ;;
-;; Written by Akce 2019-2020.
+;; Written by Jerry 2019-2025.
 ;;
 ;; SPDX-License-Identifier: Unlicense
 
@@ -15,11 +15,12 @@
   (import
    (rnrs)
    (only (chezscheme) enumerate)
+   (footwm fnmatch)
    (footwm ftypes-util)
    (footwm gobject)
    (footwm gtk)
    (footwm util)
-   (irregex))
+   )
 
   (define-record-type table
     (fields headers types rows))
@@ -112,9 +113,7 @@
       (if (= (string-length needle) 0)
           (lambda (x) #t)	; show-all
           (lambda (haystack)
-            (if (irregex-search `(w/nocase ,needle) haystack)
-                #t
-                #f)))))
+            (and (fnsearch needle haystack) #t)))))
 
   (define row-visible?
     (lambda (row filter?)

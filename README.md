@@ -27,7 +27,18 @@ Or why footwm behaves as it does.
 
 When I'm working, I tend to have a rough idea of the last few windows that I've been using. Storing the windows in most recently used order makes it easy to access.
 
-The menus allow to search for a window/desktop just by typing. The menu removes items that don't match the text as it's being typed leaving the choice of options fairly quickly. Pressing ENTER while there are multiple matches pushes the current text to the filter stack allowing to AND join multiple texts. This can be done as many times as needed to arrive at the desired matches.
+The menus allow to search for a window/desktop just by typing. The menu filters out rows that don't match the text as it's being typed leaving the choice of options fairly quickly. Pressing ENTER while there are multiple matches pushes the current search text to the filter stack allowing for additional search strings to further reduce the matching rows. This can be done as many times as needed to arrive at the desired match.
+
+Match strings are case insensitive by default, but any upper case char will turn the search to case sensitive. eg,
+
+`hello` will match any kind of case combination of hello including `hElLo`.
+`heLlo` will turn on case sensitive matching so only `heLlo` matches.
+
+The search string can occur in any column and in any part of a string for the row to match.
+
+Search strings also support filesystem style globs via [fnmatch(3)](https://www.kernel.org/doc/man-pages/online/pages/man3/fnmatch.3.html).
+
+All searches have an implied leading "\*" and trailing "\*" so that strings can match anywhere. Only globs used within strings are required.
 
 ### Misc menu usage notes
 
@@ -43,8 +54,6 @@ footdesk: typing the name of a desktop that does not exist and pressing ENTER wi
 
 [Chez Scheme]
 
-[irregex] (for footdesk & footwin)
-
 [gtk3] (for footdesk & footwin)
 
 ## Building and Installing
@@ -58,8 +67,6 @@ eg, to install to /usr/local/bin
 $ make
 $ sudo make BINDIR=/usr/local/bin install
 ```
-
-The makefile requires IRREGEXDIR to point to local [irregex] source. The default location is ~/lib/csv**chez-version**. eg, ~/lib/csv9.5.4
 
 The makefile also has a target to install the sample config files. This should only be run once during the very first install.
 
@@ -185,7 +192,5 @@ footwm is an [unlicensed](LICENSE) work released into the Public Domain.
 [ICCC]: https://www.x.org/docs/ICCCM/icccm.pdf
 
 [tmux]: https://github.com/tmux/tmux
-
-[irregex]: http://synthcode.com/scheme/irregex/ "irregex"
 
 [gtk3]: https://developer.gnome.org/gtk3/stable/ "gtk3"
