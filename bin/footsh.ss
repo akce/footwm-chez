@@ -51,7 +51,8 @@
                 '(prefix (footwm shell) shell.)
                 '(prefix (footwm footwm) footwm.)))])
       ;; Setting our own interaction-environment (rather than own eval only) includes our symbols in TAB completion.
-      (parameterize ([interaction-environment foot-env])
+      (parameterize ([interaction-environment foot-env]
+                     [print-radix 16])
         (new-cafe)))]
    [else
     (shell.main argv)]))

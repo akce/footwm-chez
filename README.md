@@ -120,33 +120,52 @@ NOTE: xlib is not prefixed as it uses ftypes and redefining exported symbols can
 
 It's always best here to refer to the source code for what is possible.
 
-A sample session. Comments are embedded:
+A sample session. Numbers are printed in hexadecimal, comments are embedded:
 ```
 $ footsh
 > ; query for all windows
   (x-query-tree)
-(4194786 4196454 4195745 18874371 4196341 4195903 4196100
- 8388614 10485762 10485765 10485768 10485780 25165825
- 18874369 18874384 23068673 18874387 18874390 31457281
- 33554433 35651585 18874409 20971521)
+(#x1E00006 #x1600003 #x1400003 #x1200006 #x2400006 #x1C00006
+ #x2C00003 #x2000006 #x1000006 #xA00004 #xC00001 #x800003
+ #x800006 #x800009 #x800015 #x2C00001 #x2C00009 #x1800001
+ #x1400001 #x1400009 #x1600001 #x1600009)
 > ; query only for managed top level windows
   ewmh.client-list
-(4194786 4196454 18874371 4196341 4195745 4195903 4196100
-  8388614)
+(#x1E00006 #x1600003 #x1400003 #x1200006 #x2400006 #x2C00003
+  #x1C00006 #x2000006 #x1000006 #x800009)
 > ; get the list of managed window titles
-  (map ewmh.name ewmh.client-list)
-("footsh" "README.md + (~/marvels/footwm) - NVIM"
-  "GitHub - akce/footwm-chez: Implementation of footwm in chez scheme — Mozilla Firefox"
-  "icccm.sls (~/marvels/footwm/footwm) - NVIM"
-  "|> Josie (Everything's Gonna Be Fine) / Blink 182 - PEACE"
-  "ewmh.sls (~/marvels/footwm/footwm) - NVIM"
-  "jerry@talisman:~" "tmux")
+  (map ewmh.window-name ewmh.client-list)
+("footsh" "README.md + (~/marvels/footwm-focus) - GVIM1"
+  "footsh.ss (~/marvels/footwm-focus/bin) - GVIM"
+  "|> Everything / Anathema - PEACE"
+  "Chez Scheme Version 10 User's Guide - Lynx"
+  "GNUmakefile (~/marvels/footwm-focus) - GVIM2"
+  "rlwrap gday-shell"
+  " =INBOX [Msgs:30/7189 New:4 Flag:1 819M]|" "tmux" "tint2")
 > ; move the current window to the second desktop
   (ewmh.window-desktop-set! (car ewmh.client-list) 1)
 1
 > ; have footwm react to changes and push to X server
   (shell.sync)
 1
+> ; run some shell commands directly
+> (shell.desktops)
+0 footwm
+1 pea
+2 comms
+3 sys
+> (shell.windows)
+#x1E00006 0 0 shell st-256color footsh
+#x1600003 1 0 gvim Gvim README.md + (~/marvels/footwm-focus) - GVIM1
+#x1400003 2 0 gvim Gvim footsh.ss (~/marvels/footwm-focus/bin) - GVIM
+#x2400006 3 0 lynx st-256color Chez Scheme Version 10 User's Guide - Lynx
+#x2C00003 4 0 gvim Gvim GNUmakefile (~/marvels/footwm-focus) - GVIM2
+#x1200006 5 1 peace st-256color |> Everything / Anathema - PEACE
+#x1C00006 6 2 shell st-256color rlwrap gday-shell
+#x2000006 7 2 hexwizard st-256color  =INBOX [Msgs:30/7189 New:4 Flag:1 819M]|
+#x1000006 8 3 wm st-256color tmux
+#x800009 9 FFFFFFFF tint2 Tint2 tint2
+
 ```
 A limitation of footsh is that it won't manipulate/eval running footwm code, as experienced LISPers might expect.
 
