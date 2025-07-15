@@ -118,8 +118,6 @@ The foot shell (footsh) also allows for easy manipulation of window state. Invok
 
 NOTE: xlib is not prefixed as it uses ftypes and redefining exported symbols can cause issues there.
 
-NOTE NOTE: the compiled version of `footsh` does not pre-import footwm library bindings. This is due to a difference between [Chez Scheme] program mode vs script mode that i haven't quite figured out yet. Run `footsh` from within the source directory if you need this feature although hopefully it's not needed so much now that the code has matured.
-
 It's always best here to refer to the source code for what is possible.
 
 A sample session. Comments are embedded:
